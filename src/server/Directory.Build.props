@@ -1,0 +1,24 @@
+<Project>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('Tests'))">
+    <IsPackable>false</IsPackable>
+    <!--
+      Test names use underscores (CA1707); test code does not need ConfigureAwait (CA2007);
+      xUnit fixtures are disposed through IAsyncLifetime (CA1001), keep helper methods on the
+      instance for readability (CA1822), and name collection definitions "...Collection" (CA1711).
+    -->
+    <NoWarn>$(NoWarn);CA1707;CA2007;CA1001;CA1822;CA1711</NoWarn>
+  </PropertyGroup>
+
+</Project>

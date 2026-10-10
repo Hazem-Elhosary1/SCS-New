@@ -1,0 +1,30 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+# Node / Angular
+node_modules/
+dist/
+.angular/
+coverage/
+*.log
+playwright-report/
+test-results/
+# Environment and secrets
+.env
+.env.*
+!.env.example
+# Terraform
+.terraform/
+*.tfstate*
+.terraform.lock.hcl
+# OS / editors
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.idea/
+.vscode/

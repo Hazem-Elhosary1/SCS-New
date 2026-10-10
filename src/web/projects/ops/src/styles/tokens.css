@@ -1,0 +1,10 @@
+/*
+ * Design tokens for the ops app. Values come from the Figma file
+ * "SCS Ops Console — Admin Design System" and are filled in by spec 001, task T098.
+ * Shared components read these variables and nothing else.
+ */
+:root {
+  --scs-color-surface: #ffffff;
+  --scs-color-text: #111827;
+  --scs-font-family: system-ui, 'Segoe UI', Tahoma, sans-serif;
+}

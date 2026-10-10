@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\shared\Scs.BuildingBlocks\Scs.BuildingBlocks.csproj" />
+    <ProjectReference Include="..\..\modules\Platform\Scs.Platform\Scs.Platform.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+  </ItemGroup>
+
+</Project>

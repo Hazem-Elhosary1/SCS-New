@@ -1,0 +1,51 @@
+# Local development database. Started by scripts/dev.ps1 or scripts/dev.sh.
+# Values come from deploy/compose/.env (created from .env.example).
+# The name is deliberately not "scs": the earlier reference repository uses that one.
+name: heta-scs
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${SCS_SQL_ADMIN_PASSWORD}
+    ports:
+      # Not 1433: a developer machine often already has a SQL Server there.
+      - "${SCS_SQL_PORT:-14333}:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -b -Q \"SELECT 1\" -o /dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  # One-shot: creates the database and the two least-privilege logins, then exits.
+  sqlserver-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    profiles: ["init"]
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    volumes:
+      - ./sql:/sql:ro
+    entrypoint:
+      - /opt/mssql-tools18/bin/sqlcmd
+      - -S
+      - sqlserver
+      - -U
+      - sa
+      - -P
+      - ${SCS_SQL_ADMIN_PASSWORD}
+      - -C
+      - -b
+      - -v
+      - SCS_DB=${SCS_DB_NAME}
+      - SCS_APP_PASSWORD=${SCS_APP_PASSWORD}
+      - SCS_MIGRATOR_PASSWORD=${SCS_MIGRATOR_PASSWORD}
+      - -i
+      - /sql/create-logins.sql
+
+volumes:
+  sqlserver-data:
