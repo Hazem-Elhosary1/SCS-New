@@ -69,6 +69,20 @@ Each placeholder page shows the platform version and the environment it reached.
 1. Open <http://localhost:4201>. Sign in as `owner@noor.example` with the password in
    `SCS_SEED__STAFF_PASSWORD` of `deploy/compose/.env`.
 2. Open the inbox at <http://localhost:8025> and type the six-digit code from the newest message.
+
+To try the password screens (spec 004):
+
+- **Forgot the password**: press «نسيت كلمة المرور؟» on the sign-in form, type a seeded address,
+  and open the link that arrives in the inbox a few seconds later.
+- **A temporary password**: sign in as `temp@noor.example` with the same seed password. After
+  the code, the screen that replaces a temporary password is shown instead of the console. The
+  seed gives that password three more days every time it runs, until somebody replaces it.
+- **A new account**: `new@shifa.example` was never activated. Send its invitation to the inbox
+  with the address below, which exists only when the environment is `local`:
+
+  ```bash
+  curl -X POST http://localhost:5080/v1/dev/staff-invitations -H "Content-Type: application/json" -H "X-Scs-Request: 1" -d '{"email":"new@shifa.example"}'
+  ```
 3. The landing page shows «عيادة النور» and the account, with «تسجيل الخروج».
 
 Other made-up accounts, all with the same password: `reception@noor.example`,
@@ -129,6 +143,15 @@ cd src/web && PLAYWRIGHT_BROWSERS_PATH=0 npx playwright install chromium
 npm --prefix src/web run e2e
 ```
 
+To lay every state of the sign-in and password screens beside its frame in the design file, the
+same tests can save a 1440x900 picture of each state (96 pictures: 48 states in two languages):
+
+```bash
+cd src/web && SCS_SHOTS=/absolute/folder npx playwright test sign-in-states password-states
+```
+
+The folder must exist. Without `SCS_SHOTS` nothing is saved and the tests run as usual.
+
 On Windows PowerShell, set the variable first: `$env:PLAYWRIGHT_BROWSERS_PATH = '0'`. The browser
 tests start the three front ends themselves and answer the platform's calls, so the API does not
 need to be running.
@@ -146,6 +169,8 @@ Docker, the tests that need a database fail and the rest still run.
 | The API stops at start with "Missing required configuration value SCS_…" | `deploy/compose/.env` is incomplete. Delete it and run the script again to recreate it. This is needed once after taking the clinic isolation work (spec 002), which added the report and operator logins. |
 | <http://localhost:4202/noor> shows "clinic not available" | The made-up clinics are not registered. Run `dotnet run --project src/server/tools/Scs.Migrator -- seed`. |
 | Sign-in answers «لم نستطع إرسال رمز التحقق إلى بريدك» | The mail catcher is not running. Start it: `docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.env up -d mailpit`. |
+| A reset link never arrives in the inbox | Links are sent by the background worker, a few seconds after asking, and only to an active account — at most one a minute and five an hour. Check the jobs page at <http://localhost:5080/jobs>. |
+| A link in an email opens the wrong address | `SCS_AUTH__STAFF_APP_URL` in `deploy/compose/.env` says where links lead; locally it defaults to `http://localhost:4201`. |
 | The API stops at start naming `SCS_AUTH__CODE_KEY` or `SCS_MAIL__HOST` | `deploy/compose/.env` predates sign-in (spec 003). Delete it and run the script again, or copy the new sections from `.env.example`. |
 | The support hours in the help window are unreadable | The `.env` file was saved in another encoding. It must be UTF-8. |
 | A placeholder page shows «تعذّر الاتصال بالمنصّة» | The API is not running, or it is still building. Check <http://localhost:5080/health/live>. |

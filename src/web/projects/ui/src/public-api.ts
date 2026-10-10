@@ -9,3 +9,5 @@ export * from './lib/code-input/code-input.component';
 export * from './lib/controls/controls';
 export * from './lib/dialog/dialog.component';
 export * from './lib/field/text-field.component';
+export * from './lib/password-rules/password-rules.component';
+export * from './lib/icon/icon.component';

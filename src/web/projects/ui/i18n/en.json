@@ -62,12 +62,12 @@
     },
     "auth": {
       "intro": {
-        "name": "Smart Clinic Operating System",
-        "tagline": "A complete digital medical infrastructure",
-        "about": "Appointments, patients, medical records and invoices of the clinic in one place, with a booking assistant that answers patients on WhatsApp and Telegram."
+        "badge": "The smart clinic operating system",
+        "headline": "An integrated digital medical infrastructure",
+        "about": "Your clinic's appointments, patients, medical records and invoices in one place, with a booking assistant that answers your patients on WhatsApp and Telegram."
       },
       "footer": {
-        "help": "Need help? Contact technical support",
+        "help": "Need help? Contact support",
         "privacy": "Privacy policy",
         "terms": "Terms of use"
       }
@@ -86,6 +86,13 @@
         "title": "This page is not available yet",
         "back": "Back to sign-in"
       }
+    },
+    "passwordRules": {
+      "title": "Password rules",
+      "pending": "not met yet",
+      "met": "met",
+      "unmet": "not met",
+      "summary": "Rules not met: {{ count }}"
     }
   }
 }

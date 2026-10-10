@@ -22,6 +22,9 @@ public class ApiFactory : WebApplicationFactory<Program>
     /// <summary>Base64 of 32 bytes; a test value only.</summary>
     public const string TestCodeKey = "dGVzdC1vbmx5LWtleS0zMi1ieXRlcy1sb25nLTAxMjM0NQ==";
 
+    /// <summary>Where links in emails lead, in tests.</summary>
+    public const string StaffApp = "https://app.scs.test";
+
     private readonly Dictionary<string, string?> _settings = new(StringComparer.OrdinalIgnoreCase)
     {
         ["Scs:ENVIRONMENT"] = "local",
@@ -30,6 +33,7 @@ public class ApiFactory : WebApplicationFactory<Program>
         ["Scs:DB:CROSSING_CONNECTION"] = FakeConnection,
         ["Scs:ROLE"] = "api",
         ["Scs:AUTH:CODE_KEY"] = TestCodeKey,
+        ["Scs:AUTH:STAFF_APP_URL"] = StaffApp,
         ["Scs:MAIL:HOST"] = "localhost",
         ["Scs:MAIL:PORT"] = "1",
         ["Scs:MAIL:USE_TLS"] = "false",

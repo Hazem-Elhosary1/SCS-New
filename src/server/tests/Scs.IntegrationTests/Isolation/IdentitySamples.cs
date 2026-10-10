@@ -4,7 +4,7 @@ using Scs.Identity.Domain;
 namespace Scs.IntegrationTests.Isolation;
 
 /// <summary>
-/// Isolation samples for the Identity module's four clinic-owned tables (spec 003). Each builds
+/// Isolation samples for the Identity module's clinic-owned tables (specs 003 and 004). Each builds
 /// one valid row with raw SQL, so the isolation tests exercise the database and nothing else.
 /// </summary>
 internal static class IdentityRows
@@ -110,6 +110,54 @@ public sealed class SignInEventSample : IIsolationSample
             """
             INSERT INTO [identity].SignInEvent (Id, ClinicId, AccountId, Kind, Category, TraceId, OccurredAtUtc)
             VALUES (NEWID(), @clinic, @account, 'signed-in', 'activity', REPLICATE('0', 32), SYSDATETIMEOFFSET())
+            """;
+        command.Parameters.AddWithValue("@clinic", clinicId);
+        command.Parameters.AddWithValue("@account", account);
+        await command.ExecuteNonQueryAsync();
+    }
+}
+
+public sealed class PasswordLinkSample : IIsolationSample
+{
+    public Type EntityType => typeof(PasswordLink);
+
+    public string Table => "[identity].PasswordLink";
+
+    public string HarmlessChange => "ReplacedAtUtc = ReplacedAtUtc";
+
+    public async Task InsertAsync(SqlConnection connection, Guid clinicId)
+    {
+        var account = await IdentityRows.InsertAccountAsync(connection, clinicId);
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            INSERT INTO [identity].PasswordLink (Id, ClinicId, AccountId, Kind, SecretHash, CreatedAtUtc, ExpiresAtUtc)
+            VALUES
+                (NEWID(), @clinic, @account, 'reset', CONVERT(binary(32), HASHBYTES('SHA2_256', 'x')),
+                 SYSDATETIMEOFFSET(), DATEADD(MINUTE, 30, SYSDATETIMEOFFSET()))
+            """;
+        command.Parameters.AddWithValue("@clinic", clinicId);
+        command.Parameters.AddWithValue("@account", account);
+        await command.ExecuteNonQueryAsync();
+    }
+}
+
+public sealed class AccountEmailRequestSample : IIsolationSample
+{
+    public Type EntityType => typeof(AccountEmailRequest);
+
+    public string Table => "[identity].AccountEmailRequest";
+
+    public string HarmlessChange => "Outcome = Outcome";
+
+    public async Task InsertAsync(SqlConnection connection, Guid clinicId)
+    {
+        var account = await IdentityRows.InsertAccountAsync(connection, clinicId);
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            INSERT INTO [identity].AccountEmailRequest (Id, ClinicId, AccountId, Kind, RequestedAtUtc)
+            VALUES (NEWID(), @clinic, @account, 'reset-link', SYSDATETIMEOFFSET())
             """;
         command.Parameters.AddWithValue("@clinic", clinicId);
         command.Parameters.AddWithValue("@account", account);

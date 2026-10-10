@@ -92,6 +92,13 @@ internal sealed class StaffAccounts(
 
             if (state == AccountStates.Disabled)
             {
+                // A disabled account's links stop working (spec 004, FR-013).
+                var now = clock.GetUtcNow();
+                await db.PasswordLinks
+                    .Where(l => l.AccountId == accountId && l.UsedAtUtc == null && l.ReplacedAtUtc == null)
+                    .ExecuteUpdateAsync(update => update.SetProperty(l => l.ReplacedAtUtc, now), cancellation)
+                    .ConfigureAwait(false);
+
                 // Disabling an account ends its sessions (SH-045).
                 await sessions.EndForAccountCoreAsync(accountId, SessionEndReasons.Disabled, RequestOrigin.None, cancellation)
                     .ConfigureAwait(false);

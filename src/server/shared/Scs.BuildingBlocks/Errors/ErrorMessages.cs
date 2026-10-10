@@ -38,6 +38,9 @@ public static class ErrorMessages
         [ErrorCodes.ResendLimitReached] = ("لا يمكن إرسال رمز آخر في هذا الدخول", "No more codes can be sent for this sign-in"),
         [ErrorCodes.SignInCodeNotSent] = ("لم نستطع إرسال رمز التحقق إلى بريدك. حاول مرة أخرى بعد قليل.", "The verification code could not be sent to the email. Try again shortly."),
         [ErrorCodes.SignInCodeNotResent] = ("لم نستطع إرسال رمز جديد. الرمز السابق يبقى صالحًا حتى تنتهي مدّته.", "A new code could not be sent. The earlier code stays valid until it expires."),
+        [ErrorCodes.LinkInvalid] = ("انتهت صلاحية الرابط أو استُعمل", "The link has expired or was already used"),
+        [ErrorCodes.PasswordChangeRequired] = ("يلزم تغيير كلمة المرور المؤقتة أولًا", "The temporary password must be changed first"),
+        [ErrorCodes.PasswordChangeNotRequired] = ("كلمة المرور ليست مؤقتة", "The password is not a temporary one"),
     };
 
     public static string Title(string code, string language)

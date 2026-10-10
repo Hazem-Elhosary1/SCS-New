@@ -58,6 +58,8 @@ Read from environment variables, bound to typed options, validated at start-up (
 | `SCS_DB__MIGRATION_CONNECTION` | migration task only | yes | Login that may alter structure |
 | `SCS_AUTH__CODE_KEY` | yes | yes | Base64 of at least 32 bytes; keys the hashes of sign-in codes (added by spec 003) |
 | `SCS_AUTH__*` (fifteen settings) | no | no | Sign-in limits and lifetimes; defaults and ranges in specs/003-clinic-sign-in/data-model.md |
+| `SCS_AUTH__STAFF_APP_URL` | outside local | no | The staff app's address for links in emails; https outside local (added by spec 004) |
+| `SCS_AUTH__*` (six more settings) | no | no | Link and temporary-password lifetimes, reset-email caps, generated password length; defaults and ranges in specs/004-password-account-setup/data-model.md |
 | `SCS_MAIL__HOST`, `SCS_MAIL__FROM` | yes | no | Outgoing mail server and sender (added by spec 003) |
 | `SCS_MAIL__PORT`, `SCS_MAIL__USE_TLS`, `SCS_MAIL__USER`, `SCS_MAIL__TIMEOUT_SECONDS` | no | no | Defaults 587, true, none, 10 |
 | `SCS_MAIL__PASSWORD` | when the server needs sign-in | yes | Mail server password |

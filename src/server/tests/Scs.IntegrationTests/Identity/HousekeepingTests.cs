@@ -54,6 +54,48 @@ public sealed class CleanupJobTests(SqlServerFixture sql)
         Assert.Equal(1, await world.ScalarAsync<int>($"SELECT COUNT(*) FROM [identity].Session WHERE AccountId = '{otherId}'"));
         Assert.Equal(1, await world.ScalarAsync<int>($"SELECT COUNT(*) FROM [identity].SignInChallenge WHERE AccountId = '{otherId}'"));
     }
+
+    [Fact]
+    public async Task Dead_password_links_and_handled_email_requests_are_removed_and_live_ones_kept()
+    {
+        // Spec 004: a link is removed only when it is older than any life it could have had.
+        using var world = await RefusalWorld.CreateAsync(sql, f => f.With("Scs:AUTH:REQUESTS_PER_MINUTE", "120"));
+        var (id, email) = await world.AccountAsync();
+        var otherClinic = await sql.Main.SeedClinicAsync();
+        var (otherId, otherEmail) = await world.Factory.CreateAccountAsync(otherClinic);
+
+        await world.Factory.ResetTokenForAsync(world.Clinic, email);
+        await world.Factory.ResetTokenForAsync(otherClinic, otherEmail);
+        using (var browser = world.Factory.Browser())
+        {
+            // A request nobody has handled yet must survive the cleanup.
+            using var waiting = await browser.ForgotAsync(email);
+        }
+
+        async Task RunAsync() => await world.Factory.ForClinicAsync(
+            world.Clinic, services => ActivatorUtilities.CreateInstance<CleanupJob>(services).RunAsync(default));
+
+        Task<int> LinksAsync(Guid account) =>
+            world.ScalarAsync<int>($"SELECT COUNT(*) FROM [identity].PasswordLink WHERE AccountId = '{account}'");
+
+        Task<string?> RequestsAsync(Guid account) => world.ScalarAsync<string>(
+            $"SELECT CONCAT(SUM(IIF(HandledAtUtc IS NULL, 1, 0)), '|', SUM(IIF(HandledAtUtc IS NULL, 0, 1))) FROM [identity].AccountEmailRequest WHERE AccountId = '{account}'");
+
+        world.Factory.Clock.Advance(TimeSpan.FromDays(1.1));
+        await RunAsync();
+        Assert.Equal(1, await LinksAsync(id));
+        Assert.Equal("1|0", await RequestsAsync(id));
+
+        world.Factory.Clock.Advance(TimeSpan.FromDays(21));
+        await RunAsync();
+        await RunAsync();
+        Assert.Equal(0, await LinksAsync(id));
+        Assert.Equal("1|0", await RequestsAsync(id));
+
+        // The other clinic's rows were not this run's to touch.
+        Assert.Equal(1, await LinksAsync(otherId));
+        Assert.Equal("0|1", await RequestsAsync(otherId));
+    }
 }
 
 /// <summary>

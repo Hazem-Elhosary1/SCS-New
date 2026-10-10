@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { LanguageService, ScsProblemError, SupportChannels, SupportService } from 'core';
-import { ScsDialogComponent, ScsStateComponent } from 'ui';
+import { ScsDialogComponent, ScsIconComponent, ScsStateComponent } from 'ui';
 
 /**
  * The help window of every sign-in screen (BRD B-5-9): the support hours and three channels,
@@ -18,7 +18,7 @@ import { ScsDialogComponent, ScsStateComponent } from 'ui';
  */
 @Component({
   selector: 'app-help-window',
-  imports: [TranslocoPipe, ScsDialogComponent, ScsStateComponent],
+  imports: [TranslocoPipe, ScsDialogComponent, ScsIconComponent, ScsStateComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     .hours {
@@ -37,23 +37,48 @@ import { ScsDialogComponent, ScsStateComponent } from 'ui';
     }
     a {
       display: flex;
+      align-items: center;
       justify-content: space-between;
       gap: var(--scs-spacing-md);
       padding: var(--scs-spacing-12) var(--scs-spacing-md);
-      border: 1px solid var(--scs-color-border-default);
-      border-radius: var(--scs-radius-sm);
+      border-radius: var(--scs-radius-md);
+      background: var(--scs-color-bg-surface-secondary);
       color: var(--scs-color-text-primary);
       text-decoration: none;
     }
     a:hover {
-      background: var(--scs-color-bg-surface-secondary);
+      background: var(--scs-color-border-default);
     }
     a:focus-visible {
       outline: 2px solid var(--scs-color-brand-default);
     }
+    .text {
+      display: flex;
+      flex-direction: column;
+      gap: var(--scs-spacing-2);
+      min-inline-size: 0;
+    }
     .value {
-      color: var(--scs-color-text-link);
+      font-size: var(--scs-text-body-lg);
       font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+    .label {
+      font-size: var(--scs-text-label);
+      color: var(--scs-color-text-tertiary);
+    }
+    .mark {
+      display: grid;
+      place-items: center;
+      flex: none;
+      inline-size: 40px;
+      block-size: 40px;
+      border-radius: var(--scs-radius-full);
+      background: var(--scs-color-bg-surface);
+      color: var(--scs-color-brand-default);
+    }
+    .mark.chat {
+      color: var(--scs-color-feedback-success-icon);
     }
   `,
   template: `
@@ -63,8 +88,11 @@ import { ScsDialogComponent, ScsStateComponent } from 'ui';
         <ul>
           <li>
             <a data-testid="support-hotline" [href]="'tel:' + channels.hotline">
-              <span>{{ 'app.help.hotline' | transloco }}</span>
-              <bdi class="value">{{ channels.hotline }}</bdi>
+              <span class="text">
+                <bdi class="value">{{ channels.hotline }}</bdi>
+                <span class="label">{{ 'app.help.hotline' | transloco }}</span>
+              </span>
+              <span class="mark"><scs-icon name="phone" [size]="20" /></span>
             </a>
           </li>
           <li>
@@ -74,14 +102,20 @@ import { ScsDialogComponent, ScsStateComponent } from 'ui';
               rel="noopener noreferrer"
               [href]="'https://wa.me/' + channels.whatsapp"
             >
-              <span>{{ 'app.help.whatsapp' | transloco }}</span>
-              <bdi class="value">+{{ channels.whatsapp }}</bdi>
+              <span class="text">
+                <bdi class="value">+{{ channels.whatsapp }}</bdi>
+                <span class="label">{{ 'app.help.whatsapp' | transloco }}</span>
+              </span>
+              <span class="mark chat"><scs-icon name="chat" [size]="20" /></span>
             </a>
           </li>
           <li>
             <a data-testid="support-email" [href]="'mailto:' + channels.email">
-              <span>{{ 'app.help.email' | transloco }}</span>
-              <bdi class="value">{{ channels.email }}</bdi>
+              <span class="text">
+                <bdi class="value">{{ channels.email }}</bdi>
+                <span class="label">{{ 'app.help.email' | transloco }}</span>
+              </span>
+              <span class="mark"><scs-icon name="mail" [size]="20" /></span>
             </a>
           </li>
         </ul>

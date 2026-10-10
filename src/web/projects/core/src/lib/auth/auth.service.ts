@@ -11,7 +11,25 @@ export interface StaffSession {
   readonly email: string;
   readonly clinic: { readonly nameAr: string; readonly nameEn: string; readonly state: string };
   readonly expiresAt: string;
+  /** The account holds a temporary password: nothing is reachable until it is replaced (spec 004). */
+  readonly mustChangePassword?: boolean;
 }
+
+export type PasswordLinkKind = 'reset' | 'new-account';
+
+/** A live emailed link, as the page that opened it needs to know it. */
+export interface PasswordLinkView {
+  readonly kind: PasswordLinkKind;
+  readonly email: string;
+  /** Only for a new account. */
+  readonly clinicNameAr?: string | null;
+  readonly clinicNameEn?: string | null;
+}
+
+/** What a call made with a link ended in: its result, or the kind of link that no longer works. */
+export type LinkAnswer<T> =
+  | { readonly live: true; readonly value: T }
+  | { readonly live: false; readonly kind: PasswordLinkKind };
 
 /** What the platform says after sending a sign-in code. */
 export interface CodeSent {
@@ -37,7 +55,18 @@ export const AuthCodes = {
   resendLimitReached: 'RESEND_LIMIT_REACHED',
   codeNotSent: 'SIGN_IN_CODE_NOT_SENT',
   codeNotResent: 'SIGN_IN_CODE_NOT_RESENT',
+  linkInvalid: 'LINK_INVALID',
+  passwordChangeRequired: 'PASSWORD_CHANGE_REQUIRED',
 } as const;
+
+/** A link that no longer works is an ordinary answer, not a failure: the page has a screen for it. */
+function deadLink(error: unknown): { readonly live: false; readonly kind: PasswordLinkKind } {
+  if (error instanceof ScsProblemError && error.problem.code === AuthCodes.linkInvalid) {
+    const kind = (error.problem as { kind?: unknown }).kind;
+    return { live: false, kind: kind === 'new-account' ? 'new-account' : 'reset' };
+  }
+  throw error;
+}
 
 const CHANNEL = 'scs-auth';
 
@@ -138,6 +167,68 @@ export class AuthService implements OnDestroy {
   }
 
   /**
+   * Asks for a reset link (spec 004). The platform answers the same whatever the address, so
+   * this resolves for every well-formed one; only an outage or too many requests are thrown.
+   */
+  async requestPasswordReset(email: string): Promise<void> {
+    await firstValueFrom(this.http.post('/v1/auth/password/forgot', { email }));
+  }
+
+  /** Looks at an emailed link without using it up. */
+  async inspectLink(token: string): Promise<LinkAnswer<PasswordLinkView>> {
+    try {
+      const value = await firstValueFrom(
+        this.http.post<PasswordLinkView>('/v1/auth/password/link', { token }),
+      );
+      return { live: true, value };
+    } catch (error) {
+      return deadLink(error);
+    }
+  }
+
+  /**
+   * Sets the password with a link, using it up. Nobody is signed in by this: the person signs
+   * in afterwards with both steps. A refused password is thrown; the link stays live.
+   */
+  async setPasswordWithLink(
+    token: string,
+    password: string,
+  ): Promise<LinkAnswer<PasswordLinkKind>> {
+    try {
+      const done = await firstValueFrom(
+        this.http.post<{ kind: PasswordLinkKind }>('/v1/auth/password/link/set', {
+          token,
+          password,
+        }),
+      );
+      return { live: true, value: done.kind };
+    } catch (error) {
+      return deadLink(error);
+    }
+  }
+
+  /** Replaces a temporary password. The person stays signed in, in the same session. */
+  async changeTemporaryPassword(password: string): Promise<void> {
+    await firstValueFrom(this.http.post('/v1/auth/password/change', { password }));
+    this.current.update((session) =>
+      session === null ? session : { ...session, mustChangePassword: false },
+    );
+  }
+
+  /**
+   * The platform refused a call because the password is temporary: show the one screen that
+   * is allowed. It is the platform that holds the person there; this only follows.
+   */
+  async held(): Promise<void> {
+    this.current.update((session) =>
+      session === null ? session : { ...session, mustChangePassword: true },
+    );
+    if (!this.router.url.startsWith('/change-password')) {
+      await this.router.navigateByUrl('/change-password');
+    }
+  }
+
+  /**
    * Renews the session. Calls that arrive while a renewal is in flight share it, so three
    * requests that find the access cookie expired cause one renewal, not three.
    */
@@ -216,7 +307,22 @@ export const sessionGuard: CanActivateFn = async () => {
   const auth = inject(AuthService);
   const router = inject(Router);
   await auth.load();
-  return auth.status() === 'signed-in' ? true : router.parseUrl('/sign-in');
+  if (auth.status() !== 'signed-in') {
+    return router.parseUrl('/sign-in');
+  }
+  // A temporary password must be replaced before any page of the console (spec 004, FR-035).
+  return auth.session()?.mustChangePassword === true ? router.parseUrl('/change-password') : true;
+};
+
+/** The screen that replaces a temporary password is for the person who holds one, and nobody else. */
+export const temporaryPasswordGuard: CanActivateFn = async () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  await auth.load();
+  if (auth.status() !== 'signed-in') {
+    return router.parseUrl('/sign-in');
+  }
+  return auth.session()?.mustChangePassword === true ? true : router.parseUrl('/');
 };
 
 /** The sign-in form is for people who are not signed in; the others are taken inside. */
@@ -240,6 +346,7 @@ const HANDLES_ITS_OWN = ['/v1/auth/sign-in', '/v1/auth/session/renew', '/v1/auth
  * - `ACCESS_EXPIRED`: renew once, then repeat the call once.
  * - `SESSION_ENDED`, or a renewal that is refused: clear the screen and show the sign-in form
  *   with the "session ended" notice.
+ * - `PASSWORD_CHANGE_REQUIRED`: show the screen that replaces a temporary password.
  */
 export const sessionInterceptor: HttpInterceptorFn = (request, next) => {
   const app = inject(SCS_APP, { optional: true });
@@ -272,6 +379,10 @@ export const sessionInterceptor: HttpInterceptorFn = (request, next) => {
 
       if (error.problem.code === AuthCodes.sessionEnded) {
         void auth.ended();
+      }
+
+      if (error.problem.code === AuthCodes.passwordChangeRequired) {
+        void auth.held();
       }
 
       return throwError(() => error);

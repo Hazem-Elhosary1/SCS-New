@@ -1,3 +1,4 @@
+import { ScsIconComponent, ScsIconName } from '../icon/icon.component';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -10,6 +11,13 @@ import {
 
 export type ScsBannerTone = 'danger' | 'warning' | 'neutral' | 'success';
 
+const BANNER_ICONS: Record<ScsBannerTone, ScsIconName> = {
+  danger: 'alert-circle',
+  warning: 'alert-triangle',
+  success: 'check-circle',
+  neutral: 'info',
+};
+
 /**
  * A message above a form: what happened, and what to do next. Refusals and warnings are
  * announced at once (`role="alert"`); neutral notices and successes politely (`role="status"`).
@@ -17,6 +25,7 @@ export type ScsBannerTone = 'danger' | 'warning' | 'neutral' | 'success';
  */
 @Component({
   selector: 'scs-banner',
+  imports: [ScsIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '[attr.data-tone]': 'tone()',
@@ -26,48 +35,81 @@ export type ScsBannerTone = 'danger' | 'warning' | 'neutral' | 'success';
   styles: `
     :host {
       display: flex;
-      flex-direction: column;
       align-items: flex-start;
-      gap: var(--scs-spacing-sm);
+      gap: var(--scs-spacing-12);
       padding: var(--scs-spacing-12) var(--scs-spacing-md);
       border: 1px solid var(--scs-color-border-default);
       border-radius: var(--scs-radius-md);
       background: var(--scs-color-bg-surface-secondary);
-      color: var(--scs-color-text-primary);
+      color: var(--scs-color-text-secondary);
       font-size: var(--scs-text-body-sm);
-      line-height: 1.6;
+      font-weight: 500;
+      line-height: 1.8;
+    }
+    scs-icon {
+      margin-block-start: 2px;
+      color: var(--scs-color-icon-default);
+    }
+    .body {
+      flex: 1;
+      min-inline-size: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--scs-spacing-xs);
+    }
+    :host ::ng-deep strong {
+      color: var(--scs-color-text-primary);
+      font-weight: 600;
     }
     :host([data-tone='danger']) {
       border-color: var(--scs-color-feedback-danger-border);
       background: var(--scs-color-feedback-danger-bg);
-      color: var(--scs-color-feedback-danger-text);
+    }
+    :host([data-tone='danger']) scs-icon {
+      color: var(--scs-color-feedback-danger-icon);
+    }
+    :host([data-tone='danger']) button {
+      color: var(--scs-color-feedback-danger-icon);
+    }
+    :host([data-tone='warning']) button {
+      color: var(--scs-color-feedback-warning-icon);
     }
     :host([data-tone='warning']) {
       border-color: var(--scs-color-feedback-warning-border);
       background: var(--scs-color-feedback-warning-bg);
-      color: var(--scs-color-feedback-warning-text);
+    }
+    :host([data-tone='warning']) scs-icon {
+      color: var(--scs-color-feedback-warning-icon);
     }
     :host([data-tone='success']) {
       border-color: var(--scs-color-feedback-success-border);
       background: var(--scs-color-feedback-success-bg);
-      color: var(--scs-color-feedback-success-text);
+    }
+    :host([data-tone='success']) scs-icon {
+      color: var(--scs-color-feedback-success-icon);
     }
     button {
       padding: 0;
       border: 0;
       background: none;
-      color: inherit;
+      color: var(--scs-color-text-link);
       font: inherit;
-      font-weight: 600;
-      text-decoration: underline;
+      font-weight: 700;
+      text-decoration: none;
       cursor: pointer;
     }
   `,
   template: `
-    <div><ng-content /></div>
-    @if (actionLabel(); as label) {
-      <button type="button" data-testid="banner-action" (click)="action.emit()">{{ label }}</button>
-    }
+    <scs-icon [name]="icon()" [size]="20" />
+    <div class="body">
+      <div><ng-content /></div>
+      @if (actionLabel(); as label) {
+        <button type="button" data-testid="banner-action" (click)="action.emit()">
+          {{ label }}
+        </button>
+      }
+    </div>
   `,
 })
 export class ScsBannerComponent {
@@ -77,6 +119,8 @@ export class ScsBannerComponent {
   readonly actionLabel = input<string>('');
 
   readonly action = output<void>();
+
+  protected readonly icon = computed(() => BANNER_ICONS[this.tone()]);
 
   protected readonly role = computed(() =>
     this.tone() === 'danger' || this.tone() === 'warning' ? 'alert' : 'status',

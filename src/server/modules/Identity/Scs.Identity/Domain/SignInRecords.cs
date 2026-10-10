@@ -161,14 +161,22 @@ public static class SignInEventKinds
     public const string RenewalReused = "renewal-reused";
     public const string SessionEnded = "session-ended";
 
+    // Passwords and activation (spec 004).
+    public const string ResetRequested = "reset-requested";
+    public const string ResetCompleted = "reset-completed";
+    public const string InvitationAccepted = "invitation-accepted";
+    public const string TemporaryPasswordChanged = "temp-password-changed";
+    public const string AccessReissued = "access-reissued";
+
     public const string Activity = "activity";
     public const string Security = "security";
 
-    public static string CategoryOf(string kind) => kind == SignedIn ? Activity : Security;
+    public static string CategoryOf(string kind) =>
+        kind is SignedIn or ResetRequested or InvitationAccepted or TemporaryPasswordChanged ? Activity : Security;
 }
 
 /// <summary>
-/// What happened to an account at sign-in: identifiers, where from, and when. No email, no name,
+/// What happened to an account at sign-in or to its password: identifiers, where from, and when. No email, no name,
 /// no free text. Append-only: the database refuses to change or remove a row. Read later by the
 /// clinic's activity and security log (spec 059) and the operators' security page (spec 025).
 /// </summary>
@@ -188,8 +196,11 @@ public sealed class SignInEvent : IClinicOwned
 
     public string Category { get; private set; } = "";
 
-    /// <summary>For <c>session-ended</c>: the end reason.</summary>
+    /// <summary>For <c>session-ended</c>: the end reason. For <c>access-reissued</c>: the way.</summary>
     public string? Detail { get; private set; }
+
+    /// <summary>Who did it, when it was not the account's owner.</summary>
+    public Guid? ActorAccountId { get; private set; }
 
     public Guid? SessionId { get; private set; }
 
@@ -205,13 +216,15 @@ public sealed class SignInEvent : IClinicOwned
 
     public static SignInEvent Record(
         Guid accountId, string kind, DateTimeOffset now, string traceId,
-        string? ipAddress, string? userAgent, Guid? sessionId = null, string? detail = null) => new()
+        string? ipAddress, string? userAgent, Guid? sessionId = null, string? detail = null,
+        Guid? actorAccountId = null) => new()
         {
             Id = Guid.CreateVersion7(),
             AccountId = accountId,
             Kind = kind,
             Category = SignInEventKinds.CategoryOf(kind),
             Detail = detail,
+            ActorAccountId = actorAccountId,
             SessionId = sessionId,
             IpAddress = Session.Truncate(ipAddress, Session.IpAddressMaxLength),
             UserAgent = Session.Truncate(userAgent, Session.UserAgentMaxLength),

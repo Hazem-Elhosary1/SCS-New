@@ -6,7 +6,7 @@ using Scs.Identity.Domain;
 namespace Scs.Identity.Infrastructure.Persistence;
 
 /// <summary>
-/// Accounts, sign-in codes, sessions and sign-in events. All four are clinic-owned: with no
+/// Accounts, sign-in codes, sessions, events, password links and waiting emails. All are clinic-owned: with no
 /// clinic established they are invisible, so a request that has not yet found its account's
 /// clinic can read none of them (spec 003, FR-056).
 /// </summary>
@@ -26,6 +26,10 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
 
     public DbSet<SignInEvent> Events => Set<SignInEvent>();
 
+    public DbSet<PasswordLink> PasswordLinks => Set<PasswordLink>();
+
+    public DbSet<AccountEmailRequest> EmailRequests => Set<AccountEmailRequest>();
+
     /// <summary>Platform-wide and insert-only for the application.</summary>
     public DbSet<AnonymousSignInAttempt> AnonymousAttempts => Set<AnonymousSignInAttempt>();
 
@@ -43,6 +47,13 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
                 table.HasCheckConstraint("CK_StaffAccount_State", "[State] IN ('invited', 'active', 'disabled')");
                 table.HasCheckConstraint(
                     "CK_StaffAccount_PasswordUnlessInvited", "[State] = 'invited' OR [PasswordHash] IS NOT NULL");
+
+                // A temporary password belongs to an account that has one, and its expiry to the mark.
+                table.HasCheckConstraint(
+                    "CK_StaffAccount_TemporaryNotInvited", "[MustChangePassword] = 0 OR [State] <> 'invited'");
+                table.HasCheckConstraint(
+                    "CK_StaffAccount_ExpiryOnlyIfTemporary",
+                    "[MustChangePassword] = 1 OR [TemporaryPasswordExpiresAtUtc] IS NULL");
             });
 
             builder.HasKey(a => a.Id);
@@ -54,6 +65,8 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
             builder.Property(a => a.SpentCodes).HasDefaultValue((byte)0);
             builder.Property(a => a.LastFailedAtUtc).HasColumnType("datetimeoffset");
             builder.Property(a => a.LockedUntilUtc).HasColumnType("datetimeoffset");
+            builder.Property(a => a.MustChangePassword).HasDefaultValue(false);
+            builder.Property(a => a.TemporaryPasswordExpiresAtUtc).HasColumnType("datetimeoffset");
             builder.Property(a => a.CreatedAtUtc).HasColumnType("datetimeoffset").IsRequired();
             builder.Property(a => a.RowVersion).IsRowVersion();
 
@@ -122,6 +135,47 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
             builder.Property(e => e.OccurredAtUtc).HasColumnType("datetimeoffset").IsRequired();
             builder.HasIndex(e => new { e.ClinicId, e.OccurredAtUtc });
             builder.HasIndex(e => new { e.AccountId, e.OccurredAtUtc });
+        });
+
+        modelBuilder.Entity<PasswordLink>(builder =>
+        {
+            builder.ToTable(
+                "PasswordLink",
+                table => table.HasCheckConstraint("CK_PasswordLink_Kind", "[Kind] IN ('reset', 'new-account')"));
+            builder.HasKey(l => l.Id);
+            builder.Property(l => l.Id).ValueGeneratedNever();
+            builder.Property(l => l.Kind).HasMaxLength(PasswordLink.KindMaxLength).IsUnicode(false).IsRequired();
+            builder.Property(l => l.SecretHash).HasColumnType("binary(32)").IsRequired();
+            builder.Property(l => l.CreatedAtUtc).HasColumnType("datetimeoffset").IsRequired();
+            builder.Property(l => l.ExpiresAtUtc).HasColumnType("datetimeoffset").IsRequired();
+            builder.Property(l => l.UsedAtUtc).HasColumnType("datetimeoffset");
+            builder.Property(l => l.ReplacedAtUtc).HasColumnType("datetimeoffset");
+            builder.HasOne<StaffAccount>().WithMany().HasForeignKey(l => l.AccountId).OnDelete(DeleteBehavior.Restrict);
+
+            // At most one link that has been neither used nor replaced, per account.
+            builder.HasIndex(l => l.AccountId).IsUnique()
+                .HasFilter("[UsedAtUtc] IS NULL AND [ReplacedAtUtc] IS NULL")
+                .HasDatabaseName("UX_PasswordLink_OneLivePerAccount");
+            builder.HasIndex(l => new { l.AccountId, l.Kind, l.CreatedAtUtc });
+            builder.HasIndex(l => new { l.ClinicId, l.CreatedAtUtc });
+        });
+
+        modelBuilder.Entity<AccountEmailRequest>(builder =>
+        {
+            builder.ToTable(
+                "AccountEmailRequest",
+                table => table.HasCheckConstraint(
+                    "CK_AccountEmailRequest_Kind", "[Kind] IN ('reset-link', 'password-changed')"));
+            builder.HasKey(r => r.Id);
+            builder.Property(r => r.Id).ValueGeneratedNever();
+            builder.Property(r => r.Kind).HasMaxLength(AccountEmailRequest.KindMaxLength).IsUnicode(false).IsRequired();
+            builder.Property(r => r.Outcome).HasMaxLength(AccountEmailRequest.OutcomeMaxLength).IsUnicode(false);
+            builder.Property(r => r.RequestedAtUtc).HasColumnType("datetimeoffset").IsRequired();
+            builder.Property(r => r.HandledAtUtc).HasColumnType("datetimeoffset");
+            builder.HasOne<StaffAccount>().WithMany().HasForeignKey(r => r.AccountId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasIndex(r => r.ClinicId)
+                .HasFilter("[HandledAtUtc] IS NULL")
+                .HasDatabaseName("IX_AccountEmailRequest_Waiting");
         });
 
         modelBuilder.Entity<AnonymousSignInAttempt>(builder =>

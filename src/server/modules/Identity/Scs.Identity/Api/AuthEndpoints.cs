@@ -28,8 +28,10 @@ internal sealed record CodeSentResponse(int ExpiresInSeconds, int ResendAvailabl
 internal sealed record SessionClinic(string NameAr, string NameEn, string State);
 
 /// <param name="Email">The signed-in person's own address, shown back to them. Personal data.</param>
+/// <param name="MustChangePassword">The account holds a temporary password: only replacing it is allowed (spec 004).</param>
 internal sealed record SessionResponse(
-    Guid AccountId, [property: PersonalData] string Email, SessionClinic Clinic, DateTimeOffset ExpiresAt)
+    Guid AccountId, [property: PersonalData] string Email, SessionClinic Clinic, DateTimeOffset ExpiresAt,
+    bool MustChangePassword)
 {
     public override string ToString() => nameof(SessionResponse);
 }
@@ -95,7 +97,7 @@ internal static class AuthEndpoints
             .AllowAnonymous().HandlesOwnSession()
             .WithName("SignOut");
 
-        auth.MapGet("/session", GetSessionAsync).WithName("GetSession");
+        auth.MapGet("/session", GetSessionAsync).AllowsTemporaryPassword().WithName("GetSession");
 
         return v1;
     }
@@ -291,7 +293,7 @@ internal static class AuthEndpoints
             from session in db.Sessions.AsNoTracking()
             join account in db.Accounts.AsNoTracking() on session.AccountId equals account.Id
             where session.Id == sessionId && account.Id == accountId
-            select new { account.Email, session.ExpiresAtUtc }).SingleOrDefaultAsync(cancellation);
+            select new { account.Email, session.ExpiresAtUtc, account.MustChangePassword }).SingleOrDefaultAsync(cancellation);
 
         if (found is null)
         {
@@ -300,7 +302,8 @@ internal static class AuthEndpoints
 
         var clinic = await profile.GetOwnAsync(cancellation);
         return new SessionResponse(
-            accountId, found.Email, new SessionClinic(clinic.NameAr, clinic.NameEn, clinic.State), found.ExpiresAtUtc);
+            accountId, found.Email, new SessionClinic(clinic.NameAr, clinic.NameEn, clinic.State), found.ExpiresAtUtc,
+            found.MustChangePassword);
     }
 
     /// <summary>The pending sign-in of this browser, unless its ten minutes are over.</summary>
@@ -310,7 +313,7 @@ internal static class AuthEndpoints
         return ticket is not null && ticket.ExpiresAtUtc > clock.GetUtcNow() ? ticket : null;
     }
 
-    private static RequestOrigin Origin(HttpContext context) => new(
+    internal static RequestOrigin Origin(HttpContext context) => new(
         context.Connection.RemoteIpAddress?.ToString(),
         context.Request.Headers.UserAgent.ToString(),
         TraceIdMiddleware.Get(context));

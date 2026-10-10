@@ -2,6 +2,7 @@ import { Page, expect, test } from '@playwright/test';
 import {
   CLINIC,
   StaffPlatform,
+  pictureFor,
   problem,
   staffPlatform,
   submitSignIn,
@@ -171,7 +172,7 @@ const states: State[] = [
     platform: { signIn: instant, resend: problem(503, 'SIGN_IN_CODE_NOT_RESENT') },
     reach: async (page) => {
       await atCode(page);
-      await page.getByTestId('resend-link').click();
+      await page.getByTestId('resend-button').click();
     },
     shows: 'resend-button',
     failure: true,
@@ -232,6 +233,7 @@ for (const language of ['ar', 'en'] as const) {
 
         await state.reach(page);
         await expect(page.getByTestId(state.shows).first()).toBeVisible();
+        await pictureFor(page, 'sign-in', language, state.name);
 
         // The language and its direction; the introduction panel on the end side.
         await expect(page.locator('html')).toHaveAttribute('lang', language);
@@ -341,7 +343,7 @@ for (const language of ['ar', 'en'] as const) {
 test('the links that later specs fill lead to a page that says so', async ({ page }) => {
   await staffPlatform(page);
 
-  for (const path of ['/forgot-password', '/privacy', '/terms']) {
+  for (const path of ['/privacy', '/terms']) {
     await page.goto(`${CLINIC}${path}`);
     await expect(page.getByTestId('not-yet')).toContainText('هذه الصفحة غير متاحة بعد');
   }

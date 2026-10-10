@@ -44,6 +44,7 @@ internal abstract record SignInOutcome
 /// </summary>
 internal sealed class SignInService(
     IdentityDbContext db,
+    AccountLookup lookup,
     IClinicContext clinic,
     IClinicProfile profile,
     IEmailSender mail,
@@ -67,7 +68,7 @@ internal sealed class SignInService(
     public async Task<SignInOutcome> SignInAsync(string? email, string password, RequestOrigin origin, CancellationToken cancellation)
     {
         var normalized = EmailAddress.Normalize(email);
-        var found = await FindAsync(normalized, cancellation).ConfigureAwait(false);
+        var found = await lookup.FindAsync(normalized, cancellation).ConfigureAwait(false);
 
         if (found is null)
         {
@@ -87,7 +88,9 @@ internal sealed class SignInService(
             ? PasswordHasher.Verify(hash, password)
             : PasswordHasher.VerifyDecoy(password);
 
-        if (account is null || !verification.Matches)
+        // A temporary password nobody replaced in time is refused exactly as a wrong one:
+        // same answer, same time, same count toward the lock (spec 004, FR-031).
+        if (account is null || !verification.Matches || account.HasExpiredTemporaryPassword(clock.GetUtcNow()))
         {
             if (account is not null)
             {
@@ -241,18 +244,6 @@ internal sealed class SignInService(
     }
 
     // ---------------------------------------------------------------- pieces
-
-    private async Task<AccountLocation?> FindAsync(string normalizedEmail, CancellationToken cancellation)
-    {
-        // The one declared crossing: no clinic is established yet, and without one the account
-        // table shows nothing. The procedure answers with two identifiers only.
-        var rows = await db.Database
-            .SqlQuery<AccountLocation>($"EXEC [identity].[usp_FindAccountForSignIn] @Email = {normalizedEmail}")
-            .ToListAsync(cancellation)
-            .ConfigureAwait(false);
-
-        return rows.SingleOrDefault();
-    }
 
     /// <summary>
     /// An attempt on an email that matches no account belongs to no clinic. The application may

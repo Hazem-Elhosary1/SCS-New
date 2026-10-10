@@ -201,6 +201,43 @@ public sealed class AuthOptions
     [ConfigurationKeyName("COOKIE_PATH_BASE")]
     public string CookiePathBase { get; set; } = "";
 
+    /// <summary><c>SCS_AUTH__RESET_LINK_MINUTES</c>: life of a password reset link (SH-048).</summary>
+    [ConfigurationKeyName("RESET_LINK_MINUTES")]
+    public int ResetLinkMinutes { get; set; } = 30;
+
+    /// <summary><c>SCS_AUTH__INVITE_LINK_HOURS</c>: life of a new-account link (SH-048).</summary>
+    [ConfigurationKeyName("INVITE_LINK_HOURS")]
+    public int InviteLinkHours { get; set; } = 72;
+
+    /// <summary><c>SCS_AUTH__TEMP_PASSWORD_HOURS</c>: how long a password chosen by someone else is accepted at sign-in.</summary>
+    [ConfigurationKeyName("TEMP_PASSWORD_HOURS")]
+    public int TempPasswordHours { get; set; } = 72;
+
+    /// <summary><c>SCS_AUTH__RESET_EMAIL_GAP_SECONDS</c>: the least time between two reset emails to one account.</summary>
+    [ConfigurationKeyName("RESET_EMAIL_GAP_SECONDS")]
+    public int ResetEmailGapSeconds { get; set; } = 60;
+
+    /// <summary><c>SCS_AUTH__RESET_EMAILS_PER_HOUR</c>: reset emails to one account in any hour.</summary>
+    [ConfigurationKeyName("RESET_EMAILS_PER_HOUR")]
+    public int ResetEmailsPerHour { get; set; } = 5;
+
+    /// <summary><c>SCS_AUTH__GENERATED_PASSWORD_LENGTH</c>: length of a password the system generates.</summary>
+    [ConfigurationKeyName("GENERATED_PASSWORD_LENGTH")]
+    public int GeneratedPasswordLength { get; set; } = 14;
+
+    /// <summary>
+    /// <c>SCS_AUTH__STAFF_APP_URL</c>: the staff app's address, for links in emails. No path.
+    /// Required outside the local environment, where it falls back to the dev server's address.
+    /// </summary>
+    [ConfigurationKeyName("STAFF_APP_URL")]
+    public string StaffAppUrl { get; set; } = "";
+
+    public const string LocalStaffAppUrl = "http://localhost:4201";
+
+    /// <summary>The staff app's address without a trailing slash.</summary>
+    public string StaffAppBase() =>
+        string.IsNullOrWhiteSpace(StaffAppUrl) ? LocalStaffAppUrl : StaffAppUrl.Trim().TrimEnd('/');
+
     public byte[] CodeKeyBytes()
     {
         try

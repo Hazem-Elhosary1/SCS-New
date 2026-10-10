@@ -54,6 +54,15 @@ public sealed class StaffAccount : IClinicOwned
 
     public DateTimeOffset? LockedUntilUtc { get; private set; }
 
+    /// <summary>
+    /// The password was chosen by someone else — generated, or typed by whoever created the
+    /// account — and must be replaced by its owner before anything else is allowed (spec 004).
+    /// </summary>
+    public bool MustChangePassword { get; private set; }
+
+    /// <summary>Until when a temporary password is accepted at sign-in. Null unless <see cref="MustChangePassword"/>.</summary>
+    public DateTimeOffset? TemporaryPasswordExpiresAtUtc { get; private set; }
+
     public DateTimeOffset CreatedAtUtc { get; private set; }
 
 #pragma warning disable CA1819 // The concurrency token is a byte array by the database's definition.
@@ -61,6 +70,10 @@ public sealed class StaffAccount : IClinicOwned
 #pragma warning restore CA1819
 
     public bool IsLocked(DateTimeOffset now) => LockedUntilUtc is { } until && until > now;
+
+    /// <summary>A temporary password that nobody replaced in time opens nothing.</summary>
+    public bool HasExpiredTemporaryPassword(DateTimeOffset now) =>
+        MustChangePassword && TemporaryPasswordExpiresAtUtc is { } until && until <= now;
 
     public static StaffAccount Create(EmailAddress email, string state, string? passwordHash, DateTimeOffset now)
     {
@@ -102,6 +115,27 @@ public sealed class StaffAccount : IClinicOwned
     }
 
     public void ReplacePasswordHash(string passwordHash) => PasswordHash = passwordHash;
+
+    /// <summary>
+    /// Sets a password by any of the routes of spec 004. An invited account becomes active; a
+    /// lock is lifted. With <paramref name="temporaryUntil"/> the password is someone else's
+    /// choice and must be changed at first sign-in; without it, it is the owner's own.
+    /// </summary>
+    public void SetPassword(string passwordHash, DateTimeOffset? temporaryUntil)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(passwordHash);
+
+        if (State == AccountStates.Disabled)
+        {
+            throw new InvalidOperationException("A disabled account's password is not set.");
+        }
+
+        PasswordHash = passwordHash;
+        State = AccountStates.Active;
+        MustChangePassword = temporaryUntil is not null;
+        TemporaryPasswordExpiresAtUtc = temporaryUntil;
+        ClearLock();
+    }
 
     /// <summary>Lifts a lock and forgets what led to it.</summary>
     public void ClearLock()

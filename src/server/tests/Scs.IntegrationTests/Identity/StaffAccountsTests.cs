@@ -105,7 +105,7 @@ public sealed class StaffAccountsTests(SqlServerFixture sql)
     }
 
     [Fact]
-    public async Task The_seed_adds_six_made_up_accounts_once()
+    public async Task The_seed_adds_seven_made_up_accounts_once_and_one_holds_a_temporary_password()
     {
         await sql.EnsureMigratedAsync();
         var noor = await sql.Main.SeedClinicAsync();
@@ -116,15 +116,44 @@ public sealed class StaffAccountsTests(SqlServerFixture sql)
         var first = await Scs.Identity.IdentityModule.SeedAsync(sql.Main.App, clinics, SignIn.Password, default);
         var second = await Scs.Identity.IdentityModule.SeedAsync(sql.Main.App, clinics, SignIn.Password, default);
 
-        Assert.True(first.Count is 0 or 6, $"The first run added {first.Count}.");
+        Assert.True(first.Count is 0 or 7, $"The first run added {first.Count}.");
         Assert.Empty(second);
         Assert.Equal(
-            6,
+            7,
             await TestDatabase.ScalarAsync<int>(
                 sql.Main.Crossing, "SELECT COUNT(*) FROM [identity].StaffAccount WHERE Email LIKE '%@noor.example' OR Email LIKE '%@shifa.example'"));
 
         await Assert.ThrowsAsync<ArgumentException>(
             () => Scs.Identity.IdentityModule.SeedAsync(sql.Main.App, clinics, "weak", default));
+
+        if (first.Count == 0)
+        {
+            // Seeded earlier in this database, for other clinics: nothing here is this run's.
+            return;
+        }
+
+        // Spec 004: one of them holds a temporary password, kept usable by every run of the seed
+        // until somebody replaces it — after which the seed leaves that account alone.
+        const string Temporary = "SELECT CONCAT(MustChangePassword, '|', IIF(TemporaryPasswordExpiresAtUtc > DATEADD(HOUR, 71, SYSDATETIMEOFFSET()), 'fresh', 'stale')) FROM [identity].StaffAccount WHERE Email = 'temp@noor.example'";
+        Assert.Equal(
+            1,
+            await TestDatabase.ScalarAsync<int>(sql.Main.Crossing, "SELECT COUNT(*) FROM [identity].StaffAccount WHERE MustChangePassword = 1 AND (Email LIKE '%@noor.example' OR Email LIKE '%@shifa.example')"));
+        await sql.ExecuteAsync(
+            sql.Main.Crossing,
+            "UPDATE [identity].StaffAccount SET TemporaryPasswordExpiresAtUtc = DATEADD(HOUR, 1, SYSDATETIMEOFFSET()) WHERE Email = 'temp@noor.example'");
+        await Scs.Identity.IdentityModule.SeedAsync(sql.Main.App, clinics, SignIn.Password, default);
+        Assert.Equal("1|fresh", await TestDatabase.ScalarAsync<string>(sql.Main.Crossing, Temporary));
+
+        await sql.ExecuteAsync(
+            sql.Main.Crossing,
+            "UPDATE [identity].StaffAccount SET MustChangePassword = 0, TemporaryPasswordExpiresAtUtc = NULL WHERE Email = 'temp@noor.example'");
+        await Scs.Identity.IdentityModule.SeedAsync(sql.Main.App, clinics, SignIn.Password, default);
+        Assert.Equal("0|stale", await TestDatabase.ScalarAsync<string>(sql.Main.Crossing, Temporary));
+
+        // Leave it as the seed first made it, for whichever test runs this next.
+        await sql.ExecuteAsync(
+            sql.Main.Crossing,
+            "UPDATE [identity].StaffAccount SET MustChangePassword = 1, TemporaryPasswordExpiresAtUtc = DATEADD(HOUR, 72, SYSDATETIMEOFFSET()) WHERE Email = 'temp@noor.example'");
     }
 }
 

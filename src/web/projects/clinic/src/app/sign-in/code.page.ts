@@ -17,6 +17,7 @@ import {
   ScsButtonDirective,
   ScsCodeInputComponent,
   ScsCodeState,
+  ScsIconComponent,
   ScsLinkDirective,
 } from 'ui';
 import { HelpWindowComponent } from './help-window.component';
@@ -39,6 +40,7 @@ type Banner =
     ScsBannerComponent,
     ScsButtonDirective,
     ScsCodeInputComponent,
+    ScsIconComponent,
     ScsLinkDirective,
     HelpWindowComponent,
   ],
@@ -56,24 +58,27 @@ type Banner =
     form {
       display: flex;
       flex-direction: column;
-      gap: var(--scs-spacing-md);
+      gap: var(--scs-spacing-lg);
       margin-block-start: var(--scs-spacing-lg);
+    }
+    .subtitle {
+      font-size: var(--scs-text-body-lg);
+      line-height: 1.8;
     }
     .under {
       margin: 0;
-      text-align: center;
       font-size: var(--scs-text-body-sm);
       color: var(--scs-color-text-secondary);
     }
+    .under .scs-link {
+      font-size: var(--scs-text-body-sm);
+    }
     .back {
       align-self: flex-start;
-      display: inline-flex;
-      align-items: center;
-      gap: var(--scs-spacing-xs);
     }
-    /* The arrow points back, whichever way the page reads. */
-    :host-context([dir='rtl']) .arrow {
-      transform: scaleX(-1);
+    /* The second button sits close under the first: the two are one choice. */
+    .again {
+      margin-block-start: calc(var(--scs-spacing-12) * -1);
     }
   `,
   template: `
@@ -115,6 +120,26 @@ type Banner =
           [(value)]="code"
         />
 
+        <button type="submit" scsButton data-testid="code-submit" [busy]="busy() || accepted()">
+          {{ (accepted() ? 'app.code.opening' : 'app.code.submit') | transloco }}
+        </button>
+
+        <!-- Sending the code again is a button, with its icon, as soon as it is allowed: when
+             the countdown is over, and after a resend that failed (owner decision, 10 Oct 2026). -->
+        @if (!accepted() && resendsLeft() > 0 && (secondsLeft() === 0 || resendFailed())) {
+          <button
+            type="button"
+            scsButton="secondary"
+            class="again"
+            data-testid="resend-button"
+            [busy]="busy()"
+            (click)="resend()"
+          >
+            <scs-icon name="refresh" [size]="20" />
+            <span>{{ 'app.code.resendButton' | transloco }}</span>
+          </button>
+        }
+
         @if (!accepted()) {
           @if (resendsLeft() <= 0) {
             <p class="under" role="status" data-testid="no-more-resends">
@@ -124,41 +149,19 @@ type Banner =
             <p class="under" data-testid="resend-countdown">
               {{ 'app.code.countdown' | transloco }} <bdi>{{ clock() }}</bdi>
             </p>
-          } @else if (!resendFailed()) {
-            <p class="under">
-              <button
-                type="button"
-                scsLink
-                data-testid="resend-link"
-                [disabled]="busy()"
-                (click)="resend()"
-              >
-                {{ 'app.code.resend' | transloco }}
-              </button>
-            </p>
           }
         }
 
-        <button type="submit" scsButton data-testid="code-submit" [busy]="busy() || accepted()">
-          {{ (accepted() ? 'app.code.opening' : 'app.code.submit') | transloco }}
-        </button>
-
-        @if (resendFailed() && !accepted() && resendsLeft() > 0) {
+        @if (!accepted()) {
           <button
             type="button"
-            scsButton="secondary"
-            data-testid="resend-button"
-            [busy]="busy()"
-            (click)="resend()"
+            scsLink
+            class="back scs-back"
+            data-testid="back-to-sign-in"
+            (click)="back()"
           >
-            {{ 'app.code.resendButton' | transloco }}
-          </button>
-        }
-
-        @if (!accepted()) {
-          <button type="button" scsLink class="back" data-testid="back-to-sign-in" (click)="back()">
-            <span class="arrow" aria-hidden="true">←</span>
-            {{ 'app.code.back' | transloco }}
+            <scs-icon name="back" [size]="16" />
+            <span>{{ 'app.code.back' | transloco }}</span>
           </button>
         }
       </form>

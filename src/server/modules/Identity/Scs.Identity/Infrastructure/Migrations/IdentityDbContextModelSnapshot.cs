@@ -23,6 +23,48 @@ namespace Scs.Identity.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Scs.Identity.Domain.AccountEmailRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ClinicId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("HandledAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<string>("Outcome")
+                        .HasMaxLength(16)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(16)");
+
+                    b.Property<DateTimeOffset>("RequestedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId");
+
+                    b.HasIndex("ClinicId")
+                        .HasDatabaseName("IX_AccountEmailRequest_Waiting")
+                        .HasFilter("[HandledAtUtc] IS NULL");
+
+                    b.ToTable("AccountEmailRequest", "identity", t =>
+                        {
+                            t.HasCheckConstraint("CK_AccountEmailRequest_Kind", "[Kind] IN ('reset-link', 'password-changed')");
+                        });
+                });
+
             modelBuilder.Entity("Scs.Identity.Domain.AnonymousSignInAttempt", b =>
                 {
                     b.Property<long>("Id")
@@ -56,6 +98,56 @@ namespace Scs.Identity.Infrastructure.Migrations
                     b.HasIndex("OccurredAtUtc");
 
                     b.ToTable("AnonymousSignInAttempt", "security");
+                });
+
+            modelBuilder.Entity("Scs.Identity.Domain.PasswordLink", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ClinicId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("ExpiresAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(12)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(12)");
+
+                    b.Property<DateTimeOffset?>("ReplacedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<byte[]>("SecretHash")
+                        .IsRequired()
+                        .HasColumnType("binary(32)");
+
+                    b.Property<DateTimeOffset?>("UsedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_PasswordLink_OneLivePerAccount")
+                        .HasFilter("[UsedAtUtc] IS NULL AND [ReplacedAtUtc] IS NULL");
+
+                    b.HasIndex("ClinicId", "CreatedAtUtc");
+
+                    b.HasIndex("AccountId", "Kind", "CreatedAtUtc");
+
+                    b.ToTable("PasswordLink", "identity", t =>
+                        {
+                            t.HasCheckConstraint("CK_PasswordLink_Kind", "[Kind] IN ('reset', 'new-account')");
+                        });
                 });
 
             modelBuilder.Entity("Scs.Identity.Domain.Session", b =>
@@ -177,6 +269,9 @@ namespace Scs.Identity.Infrastructure.Migrations
                     b.Property<Guid>("AccountId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("ActorAccountId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Category")
                         .IsRequired()
                         .HasMaxLength(8)
@@ -257,6 +352,11 @@ namespace Scs.Identity.Infrastructure.Migrations
                     b.Property<DateTimeOffset?>("LockedUntilUtc")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<bool>("MustChangePassword")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("PasswordHash")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
@@ -278,6 +378,9 @@ namespace Scs.Identity.Infrastructure.Migrations
                         .IsUnicode(false)
                         .HasColumnType("varchar(16)");
 
+                    b.Property<DateTimeOffset?>("TemporaryPasswordExpiresAtUtc")
+                        .HasColumnType("datetimeoffset");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ClinicId");
@@ -288,10 +391,32 @@ namespace Scs.Identity.Infrastructure.Migrations
 
                     b.ToTable("StaffAccount", "identity", t =>
                         {
+                            t.HasCheckConstraint("CK_StaffAccount_ExpiryOnlyIfTemporary", "[MustChangePassword] = 1 OR [TemporaryPasswordExpiresAtUtc] IS NULL");
+
                             t.HasCheckConstraint("CK_StaffAccount_PasswordUnlessInvited", "[State] = 'invited' OR [PasswordHash] IS NOT NULL");
 
                             t.HasCheckConstraint("CK_StaffAccount_State", "[State] IN ('invited', 'active', 'disabled')");
+
+                            t.HasCheckConstraint("CK_StaffAccount_TemporaryNotInvited", "[MustChangePassword] = 0 OR [State] <> 'invited'");
                         });
+                });
+
+            modelBuilder.Entity("Scs.Identity.Domain.AccountEmailRequest", b =>
+                {
+                    b.HasOne("Scs.Identity.Domain.StaffAccount", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Scs.Identity.Domain.PasswordLink", b =>
+                {
+                    b.HasOne("Scs.Identity.Domain.StaffAccount", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Scs.Identity.Domain.Session", b =>

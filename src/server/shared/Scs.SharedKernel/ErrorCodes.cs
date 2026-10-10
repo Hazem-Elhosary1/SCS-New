@@ -61,6 +61,18 @@ public static class ErrorCodes
     /// <summary>A new code could not be sent; the earlier one is still valid.</summary>
     public const string SignInCodeNotResent = "SIGN_IN_CODE_NOT_RESENT";
 
+    /// <summary>
+    /// A password link that is expired, used, replaced, altered or never issued (spec 004).
+    /// Carries <c>kind</c>; never says which of those it was.
+    /// </summary>
+    public const string LinkInvalid = "LINK_INVALID";
+
+    /// <summary>The session holds a temporary password: only changing it is allowed (spec 004).</summary>
+    public const string PasswordChangeRequired = "PASSWORD_CHANGE_REQUIRED";
+
+    /// <summary>The account holds no temporary password, so there is nothing to replace here.</summary>
+    public const string PasswordChangeNotRequired = "PASSWORD_CHANGE_NOT_REQUIRED";
+
     public static IReadOnlyList<string> All { get; } =
     [
         ValidationFailed, MalformedRequest, Unauthenticated, Forbidden, NotFound,
@@ -69,5 +81,6 @@ public static class ErrorCodes
         InvalidCredentials, CodeInvalid, AccessExpired, SessionEnded,
         AccountLocked, AccountDisabled, ClinicSuspended, NetworkBlocked,
         ResendTooEarly, ResendLimitReached, SignInCodeNotSent, SignInCodeNotResent,
+        LinkInvalid, PasswordChangeRequired, PasswordChangeNotRequired,
     ];
 }

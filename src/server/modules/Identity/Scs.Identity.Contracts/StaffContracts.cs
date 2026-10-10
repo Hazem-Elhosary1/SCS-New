@@ -78,3 +78,63 @@ public interface IStaffSessions
     /// <summary>Ends every live session of the clinic, except one if given. Returns how many were ended.</summary>
     Task<int> EndForClinicAsync(Guid? exceptSessionId, string reason, CancellationToken cancellation);
 }
+
+/// <summary>How an account reaches its owner (SH-044).</summary>
+public static class HandoverMethods
+{
+    /// <summary>A link by email; the owner chooses the password.</summary>
+    public const string Link = "link";
+
+    /// <summary>A password the system generates, shown once to whoever asked.</summary>
+    public const string Generated = "generated";
+
+    /// <summary>A password typed by whoever asked.</summary>
+    public const string Typed = "typed";
+}
+
+/// <summary>What handing an account over ended in.</summary>
+/// <param name="EmailSent">
+/// False when the email could not be handed to the mail server. The account is as the operation
+/// left it; for a link, nothing usable was left behind. Show it, and offer to send again.
+/// </param>
+/// <param name="GeneratedPassword">
+/// Only for <see cref="HandoverMethods.Generated"/>, and only this once: it cannot be read again
+/// by anyone. Show it once; never store it, log it or put it in an audit entry.
+/// </param>
+public sealed record AccountHandoverResult(Guid AccountId, bool EmailSent, string? GeneratedPassword)
+{
+    /// <summary>The type and id only: this may carry a password.</summary>
+    public override string ToString() => $"{nameof(AccountHandoverResult)}#{AccountId}";
+}
+
+/// <summary>
+/// Handing an account to its owner, and handing it over again (spec 004), for the specs that own
+/// the screens (015 clinic creation, 026 users). Every operation runs for the established clinic,
+/// under isolation: an account of another clinic is "not found". None has an endpoint here, and
+/// whether the caller may do it is the caller's business (spec 005). No email these send ever
+/// contains a password. Passwords set here are temporary: their owner must replace them at
+/// first sign-in, and they stop working after 72 hours if nobody does.
+/// </summary>
+public interface IAccountHandover
+{
+    /// <summary>Creates the account <c>invited</c> and emails a link that activates it (72 hours).</summary>
+    Task<AccountHandoverResult> CreateWithLinkAsync(string email, CancellationToken cancellation);
+
+    /// <summary>Creates the account <c>active</c> with a generated temporary password, returned once.</summary>
+    Task<AccountHandoverResult> CreateWithGeneratedPasswordAsync(string email, CancellationToken cancellation);
+
+    /// <summary>Creates the account <c>active</c> with the caller's temporary password, which must meet the rules.</summary>
+    Task<AccountHandoverResult> CreateWithTypedPasswordAsync(string email, string password, CancellationToken cancellation);
+
+    /// <summary>For an account that was never activated: a new link; the earlier one stops working.</summary>
+    Task<AccountHandoverResult> ResendInvitationAsync(Guid accountId, CancellationToken cancellation);
+
+    /// <summary>
+    /// Hands an existing account over again. <see cref="HandoverMethods.Link"/> emails a reset
+    /// link (an invitation, if the account was never activated) and leaves the password working
+    /// until the link is used. The two password methods replace the password at once, end the
+    /// account's sessions, cancel its links and lift a lock. A disabled account is refused with
+    /// <c>ACCOUNT_DISABLED</c>. The new password is never compared with the current one.
+    /// </summary>
+    Task<AccountHandoverResult> ReissueAsync(Guid accountId, string method, string? password, CancellationToken cancellation);
+}

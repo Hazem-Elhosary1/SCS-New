@@ -37,10 +37,22 @@ public class IdentityRulesTests
         var offenders = Directory
             .EnumerateFiles(server, "*.cs", SearchOption.AllDirectories)
             .Where(file => !InBuildOutput(file) && !file.Contains($"{Path.DirectorySeparatorChar}tests{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
-            .Where(file => Path.GetFileName(file) != "SessionCookies.cs")
             .Where(file =>
             {
+                // The link token of spec 004 has its own purpose and its own class; it writes no cookie.
+                var name = Path.GetFileName(file);
                 var text = File.ReadAllText(file);
+                if (name == "SessionCookies.cs")
+                {
+                    return false;
+                }
+
+                if (name == "PasswordLinkTokens.cs")
+                {
+                    return text.Contains("\"__Host-scs-", StringComparison.Ordinal)
+                           || text.Contains("\"__Secure-scs-", StringComparison.Ordinal);
+                }
+
                 return text.Contains("CreateProtector(", StringComparison.Ordinal)
                        || text.Contains("\"__Host-scs-", StringComparison.Ordinal)
                        || text.Contains("\"__Secure-scs-", StringComparison.Ordinal);

@@ -8,7 +8,8 @@ namespace Scs.Identity.Infrastructure;
 /// <summary>
 /// The daily job <c>identity-cleanup</c>, run for each clinic in turn: removes sign-in codes
 /// older than a day (every one of them long expired) and sessions that ended more than ninety
-/// days ago. Sign-in events are not touched; their retention is decided with the audit trail
+/// days ago; password links long past any life they could have had, and account email requests
+/// handled more than a day ago (spec 004). Sign-in events are not touched; their retention is decided with the audit trail
 /// (spec 007). Running it twice has the same result as once.
 /// </summary>
 internal sealed partial class CleanupJob(IdentityDbContext db, TimeProvider clock, ILogger<CleanupJob> logger) : IClinicJob
@@ -18,6 +19,11 @@ internal sealed partial class CleanupJob(IdentityDbContext db, TimeProvider cloc
 
     public static readonly TimeSpan KeepCodesFor = TimeSpan.FromDays(1);
     public static readonly TimeSpan KeepEndedSessionsFor = TimeSpan.FromDays(90);
+
+    /// <summary>Longer than the longest life a link can be given, so only dead links are removed.</summary>
+    public static readonly TimeSpan KeepLinksFor = TimeSpan.FromDays(21);
+
+    public static readonly TimeSpan KeepHandledEmailRequestsFor = TimeSpan.FromDays(1);
 
     public async Task RunAsync(CancellationToken cancellation)
     {
@@ -31,8 +37,22 @@ internal sealed partial class CleanupJob(IdentityDbContext db, TimeProvider cloc
         var sessions = await db.Sessions.Where(s => s.EndedAtUtc != null && s.EndedAtUtc < sessionsBefore)
             .ExecuteDeleteAsync(cancellation).ConfigureAwait(false);
 
+        var linksBefore = now - KeepLinksFor;
+        var links = await db.PasswordLinks.Where(l => l.CreatedAtUtc < linksBefore)
+            .ExecuteDeleteAsync(cancellation).ConfigureAwait(false);
+
+        var requestsBefore = now - KeepHandledEmailRequestsFor;
+        var requests = await db.EmailRequests.Where(r => r.HandledAtUtc != null && r.HandledAtUtc < requestsBefore)
+            .ExecuteDeleteAsync(cancellation).ConfigureAwait(false);
+
         LogCleaned(logger, codes, sessions);
+        LogCleanedPasswords(logger, links, requests);
     }
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Removed {links} old password links and {requests} handled account email requests")]
+    private static partial void LogCleanedPasswords(ILogger logger, int links, int requests);
 
     [LoggerMessage(
         Level = LogLevel.Information,

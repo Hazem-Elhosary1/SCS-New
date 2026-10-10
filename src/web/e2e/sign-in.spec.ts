@@ -279,12 +279,12 @@ test.describe('step two', () => {
     });
 
     await expect(page.getByTestId('resend-countdown')).toContainText('إعادة الإرسال خلال');
-    await expect(page.getByTestId('resend-link')).toHaveCount(0);
+    await expect(page.getByTestId('resend-button')).toHaveCount(0);
 
-    await expect(page.getByTestId('resend-link')).toHaveText('لم يصلك الرمز؟ إعادة الإرسال', {
+    await expect(page.getByTestId('resend-button')).toHaveText('إعادة إرسال الرمز', {
       timeout: 5000,
     });
-    await page.getByTestId('resend-link').click();
+    await page.getByTestId('resend-button').click();
 
     await expect(page.getByTestId('resend-countdown')).toBeVisible();
     await expect(page).toHaveURL(`${CLINIC}/sign-in/code`);
@@ -301,7 +301,7 @@ test.describe('step two', () => {
       resend: problem(503, 'SIGN_IN_CODE_NOT_RESENT'),
     });
 
-    await page.getByTestId('resend-link').click();
+    await page.getByTestId('resend-button').click();
 
     await expect(page.getByTestId('banner-resendFailed')).toHaveText(
       'لم نستطع إرسال رمز جديد. الرمز السابق يبقى صالحًا حتى تنتهي مدّته.',
@@ -324,10 +324,10 @@ test.describe('step two', () => {
       },
     });
 
-    await page.getByTestId('resend-link').click();
+    await page.getByTestId('resend-button').click();
 
     await expect(page.getByTestId('no-more-resends')).toBeVisible();
-    await expect(page.getByTestId('resend-link')).toHaveCount(0);
+    await expect(page.getByTestId('resend-button')).toHaveCount(0);
 
     await typeCode(page, '123456');
     await page.getByTestId('code-submit').click();
@@ -524,7 +524,7 @@ test('everything above reads the same way in English', async ({ page }) => {
   await page.goto(`${CLINIC}/sign-in`);
 
   await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
-  await expect(page.getByTestId('sign-in-title')).toHaveText('Clinic team sign-in');
+  await expect(page.getByTestId('sign-in-title')).toHaveText('Staff sign-in');
   await submitSignIn(page);
   await expect(page.getByTestId('banner-invalid')).toHaveText(
     'The email or password is incorrect.',

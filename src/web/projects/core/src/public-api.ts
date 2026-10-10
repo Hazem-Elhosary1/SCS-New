@@ -18,3 +18,4 @@ export * from './lib/i18n/language.service';
 export * from './lib/network/online.service';
 export * from './lib/auth/auth.service';
 export * from './lib/auth/support.service';
+export * from './lib/auth/password-rules';

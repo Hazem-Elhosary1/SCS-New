@@ -43,14 +43,15 @@ function digitsOf(text: string): string {
     .boxes {
       display: flex;
       gap: var(--scs-spacing-sm);
-      justify-content: center;
+      justify-content: space-between;
     }
     input {
       inline-size: 48px;
       block-size: 56px;
       border: 1px solid var(--scs-color-border-default);
-      border-radius: var(--scs-radius-sm);
+      border-radius: var(--scs-radius-md);
       background: var(--scs-color-bg-surface);
+      box-shadow: var(--scs-shadow-subtle);
       color: var(--scs-color-text-primary);
       font: inherit;
       font-size: var(--scs-text-title-sm);

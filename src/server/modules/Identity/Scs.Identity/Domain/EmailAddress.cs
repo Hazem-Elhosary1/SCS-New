@@ -73,6 +73,11 @@ public static class PasswordRules
     public const string NoDigit = "NO_DIGIT";
     public const string NoSymbol = "NO_SYMBOL";
 
+    /// <summary>The rules are met, but the password is the one being replaced (spec 004, FR-026).</summary>
+    public const string SameAsCurrent = "SAME_AS_CURRENT";
+
+    public const string Required = "REQUIRED";
+
     /// <summary>One code per rule not met; empty when the password is acceptable.</summary>
     public static IReadOnlyList<string> Check(string? password)
     {

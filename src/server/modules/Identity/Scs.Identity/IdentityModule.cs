@@ -39,8 +39,14 @@ public sealed class IdentityModule : IModule, IMigratableModule
         services.AddScsMail();
         services.AddScsRequestGuards();
 
+        services.TryAddSingleton<PasswordLinkTokens>();
+        services.AddScoped<AccountLookup>();
         services.AddScoped<SessionService>();
         services.AddScoped<SignInService>();
+        services.AddScoped<PasswordLinks>();
+        services.AddScoped<PasswordSetter>();
+        services.AddScoped<ForgotPasswordService>();
+        services.AddScoped<IAccountHandover, AccountHandover>();
         services.AddScoped<IStaffSessions>(provider => provider.GetRequiredService<SessionService>());
         services.AddScoped<IStaffSessionCheck>(provider => provider.GetRequiredService<SessionService>());
         services.AddScoped<IStaffAccounts, StaffAccounts>();
@@ -49,7 +55,11 @@ public sealed class IdentityModule : IModule, IMigratableModule
         services.AddSingleton<IRecurringJobRegistration, IdentityJobs>();
     }
 
-    public void MapEndpoints(IEndpointRouteBuilder v1) => v1.MapAuth();
+    public void MapEndpoints(IEndpointRouteBuilder v1)
+    {
+        v1.MapAuth();
+        v1.MapPasswords();
+    }
 
     public IReadOnlyList<string> GetMigrations(string migrationConnection)
     {
@@ -66,9 +76,12 @@ public sealed class IdentityModule : IModule, IMigratableModule
         }
     }
 
+    /// <summary>The seeded account that holds a temporary password, for the screen of spec 004.</summary>
+    public const string SeedTemporaryAccount = "temp@noor.example";
+
     /// <summary>
     /// Adds the made-up staff accounts every local and test environment starts with, if they are
-    /// not there: three for each of the two seeded clinics. Never run against production
+    /// not there: three for each of the two seeded clinics, and one holding a temporary password. Never run against production
     /// (ops/runbooks/data-handling.md). Returns the emails it added.
     /// </summary>
     /// <param name="appConnection">The application login: accounts are created under isolation, clinic by clinic.</param>
@@ -84,6 +97,7 @@ public sealed class IdentityModule : IModule, IMigratableModule
             ("noor", "owner@noor.example", AccountStates.Active),
             ("noor", "reception@noor.example", AccountStates.Active),
             ("noor", "former@noor.example", AccountStates.Disabled),
+            ("noor", SeedTemporaryAccount, AccountStates.Active),
             ("shifa", "owner@shifa.example", AccountStates.Active),
             ("shifa", "doctor@shifa.example", AccountStates.Active),
             ("shifa", "new@shifa.example", AccountStates.Invited),
@@ -128,6 +142,20 @@ public sealed class IdentityModule : IModule, IMigratableModule
                 }
 
                 await db.SaveChangesAsync(cancellation).ConfigureAwait(false);
+
+                // The temporary password is marked when the account is first seeded, and given a
+                // fresh three days each time the seed runs while nobody has replaced it — so the
+                // screen can always be tried, and a developer who did replace it is left alone.
+                var temporaryUntil = TimeProvider.System.GetUtcNow().AddHours(72);
+                var justAdded = added.Contains(SeedTemporaryAccount);
+                await db.Accounts
+                    .Where(a => a.Email == SeedTemporaryAccount && (justAdded || a.MustChangePassword))
+                    .ExecuteUpdateAsync(
+                        update => update
+                            .SetProperty(a => a.MustChangePassword, true)
+                            .SetProperty(a => a.TemporaryPasswordExpiresAtUtc, temporaryUntil),
+                        cancellation)
+                    .ConfigureAwait(false);
             }
         }
 

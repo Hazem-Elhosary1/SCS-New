@@ -298,7 +298,7 @@ describe('ScsAuthFrameComponent', () => {
 
   for (const [language, name, help] of [
     ['ar', 'نظام تشغيل العيادة الذكي', 'تحتاج مساعدة؟ تواصل مع الدعم الفني'],
-    ['en', 'Smart Clinic Operating System', 'Need help? Contact technical support'],
+    ['en', 'The smart clinic operating system', 'Need help? Contact support'],
   ] as const) {
     it(`has the introduction panel, the form, the language switch and the footer (${language})`, () => {
       const { element, host } = render(Host, language);

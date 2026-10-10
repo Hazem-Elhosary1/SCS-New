@@ -75,6 +75,9 @@ Every failure is `application/problem+json`:
 | `RESEND_LIMIT_REACHED` | 409 | No more codes for this sign-in; the last one is still valid (spec 003) |
 | `SIGN_IN_CODE_NOT_SENT` | 503 | The password was correct; the email failed (spec 003) |
 | `SIGN_IN_CODE_NOT_RESENT` | 503 | The earlier code is still valid (spec 003) |
+| `LINK_INVALID` | 410 | A password link that cannot be used; carries `kind` (spec 004) |
+| `PASSWORD_CHANGE_REQUIRED` | 403 | The session holds a temporary password; only changing it is allowed (spec 004) |
+| `PASSWORD_CHANGE_NOT_REQUIRED` | 409 | The account holds no temporary password (spec 004) |
 
 Later specs add codes (for example `FEATURE_NOT_IN_PLAN`, `CLINIC_READ_ONLY`) to this table by
 amending this contract; they do not invent a second shape.

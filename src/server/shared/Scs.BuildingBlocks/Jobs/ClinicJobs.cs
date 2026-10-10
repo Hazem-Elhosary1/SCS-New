@@ -32,6 +32,13 @@ public interface IClinicJobScheduler
         where TJob : IClinicJob;
 
     /// <summary>
+    /// The same, for a caller whose answer must not depend on the job store being reachable:
+    /// a failure is logged and reported as <c>false</c> instead of thrown.
+    /// </summary>
+    bool TryEnqueueForClinic<TJob>(Guid clinicId)
+        where TJob : IClinicJob;
+
+    /// <summary>
     /// Runs <typeparamref name="TJob"/> on a schedule for every clinic, one clinic at a time:
     /// each clinic's turn is its own job, with its own retries and its own failure.
     /// </summary>
@@ -39,8 +46,27 @@ public interface IClinicJobScheduler
         where TJob : IClinicJob;
 }
 
-internal sealed class ClinicJobScheduler(IBackgroundJobClient jobs, IRecurringJobManager recurring) : IClinicJobScheduler
+internal sealed partial class ClinicJobScheduler(
+    IBackgroundJobClient jobs, IRecurringJobManager recurring, ILogger<ClinicJobScheduler> logger) : IClinicJobScheduler
 {
+    public bool TryEnqueueForClinic<TJob>(Guid clinicId)
+        where TJob : IClinicJob
+    {
+        try
+        {
+            EnqueueForClinic<TJob>(clinicId);
+            return true;
+        }
+        catch (BackgroundJobClientException failure)
+        {
+            LogNotEnqueued(logger, failure, typeof(TJob).Name, clinicId);
+            return false;
+        }
+    }
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Could not enqueue {job} for clinic {clinicId}")]
+    private static partial void LogNotEnqueued(ILogger logger, Exception failure, string job, Guid clinicId);
+
     public string EnqueueForClinic<TJob>(Guid clinicId)
         where TJob : IClinicJob
     {

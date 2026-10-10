@@ -50,6 +50,7 @@ public sealed class ScsOptionsValidator : IValidateOptions<ScsOptions>
         }
 
         ValidateAuth(options.Auth, failures);
+        ValidateStaffAppUrl(options, failures);
 
         if (string.IsNullOrWhiteSpace(options.Mail.Host))
         {
@@ -101,10 +102,52 @@ public sealed class ScsOptionsValidator : IValidateOptions<ScsOptions>
         Range(auth.RequestsPerMinute, 5, 120, "SCS_AUTH__REQUESTS_PER_MINUTE", failures);
         Range(auth.RenewalsPerMinute, 30, 1200, "SCS_AUTH__RENEWALS_PER_MINUTE", failures);
 
+        Range(auth.ResetLinkMinutes, 5, 1440, "SCS_AUTH__RESET_LINK_MINUTES", failures);
+        Range(auth.InviteLinkHours, 1, 336, "SCS_AUTH__INVITE_LINK_HOURS", failures);
+        Range(auth.TempPasswordHours, 1, 336, "SCS_AUTH__TEMP_PASSWORD_HOURS", failures);
+        Range(auth.ResetEmailGapSeconds, 15, 3600, "SCS_AUTH__RESET_EMAIL_GAP_SECONDS", failures);
+        Range(auth.ResetEmailsPerHour, 1, 60, "SCS_AUTH__RESET_EMAILS_PER_HOUR", failures);
+        Range(auth.GeneratedPasswordLength, 12, 64, "SCS_AUTH__GENERATED_PASSWORD_LENGTH", failures);
+
         var path = auth.CookiePathBase;
         if (path.Length > 0 && (!path.StartsWith('/') || path.EndsWith('/')))
         {
             failures.Add("SCS_AUTH__COOKIE_PATH_BASE must be empty, or start with a slash and not end with one.");
+        }
+    }
+
+    /// <summary>
+    /// Links in emails lead here, so outside a developer's machine the address must be given and
+    /// must be HTTPS: a link that carries a secret is never sent over plain HTTP.
+    /// </summary>
+    private static void ValidateStaffAppUrl(ScsOptions options, List<string> failures)
+    {
+        var address = options.Auth.StaffAppUrl;
+        if (string.IsNullOrWhiteSpace(address))
+        {
+            if (!options.IsLocal)
+            {
+                failures.Add("Missing required configuration value SCS_AUTH__STAFF_APP_URL.");
+            }
+
+            return;
+        }
+
+        var wellFormed =
+            Uri.TryCreate(address, UriKind.Absolute, out var uri)
+            && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp)
+            && uri.AbsolutePath == "/"
+            && uri.Query.Length == 0
+            && uri.Fragment.Length == 0
+            && uri.UserInfo.Length == 0;
+
+        if (!wellFormed)
+        {
+            failures.Add("SCS_AUTH__STAFF_APP_URL must be an absolute http(s) address with no path.");
+        }
+        else if (!options.IsLocal && uri!.Scheme != Uri.UriSchemeHttps)
+        {
+            failures.Add("SCS_AUTH__STAFF_APP_URL must use https outside the local environment.");
         }
     }
 

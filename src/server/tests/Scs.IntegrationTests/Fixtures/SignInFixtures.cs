@@ -19,11 +19,16 @@ public sealed class FakeEmailSender : IEmailSender
     /// <summary>While true, every send fails exactly as an unreachable mail server would.</summary>
     public bool Failing { get; set; }
 
+    /// <summary>Addresses the mail server refuses while everyone else's mail goes through.</summary>
+    public ConcurrentDictionary<string, bool> FailingFor { get; } = new(StringComparer.OrdinalIgnoreCase);
+
     public IReadOnlyCollection<EmailMessage> Sent => _sent;
 
     public Task SendAsync(EmailMessage message, CancellationToken cancellation)
     {
-        if (Failing)
+        ArgumentNullException.ThrowIfNull(message);
+
+        if (Failing || FailingFor.ContainsKey(message.To))
         {
             throw new EmailNotSentException();
         }

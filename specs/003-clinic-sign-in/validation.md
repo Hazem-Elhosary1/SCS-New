@@ -149,3 +149,21 @@ a session ended from elsewhere while a page is open (T092); renewal after five m
 |---|---|
 | T091 (completes T077): compare each drawn state with the design file. It needs the export of the Figma sign-in page to be downloaded, which was not done without the product owner's say-so | Product owner to allow; then one pass |
 | T085: confirm the remaining defaults and update the BRD lines listed in the first pass | Product owner |
+
+## Third pass — 10 Oct 2026: the design comparison (T077, T091)
+
+Done while implementing spec 004, after the owner reported missing icons and states that did
+not match the design. The comparison, what was changed in the shared components and what was
+not checked are recorded once, in `specs/004-password-account-setup/validation.md`
+("Compared with the design file" and "Second pass of the comparison").
+
+Two things on these screens changed by owner decision the same day and differ from this spec's
+original text:
+
+- Sending the code again is the secondary button «إعادة إرسال الرمز» with an icon, shown when
+  the countdown ends and after a failed resend. The text link is gone
+  (contracts/sign-in-screens.md is updated; the BRD and the design frame are to follow).
+- The English wording of the sign-in form is the design file's: "Staff sign-in", "Forgot
+  password?".
+
+All 187 browser tests pass with these changes.

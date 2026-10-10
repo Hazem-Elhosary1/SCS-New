@@ -9,6 +9,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
+import { ScsIconComponent } from '../icon/icon.component';
 
 let nextId = 0;
 
@@ -19,19 +20,19 @@ let nextId = 0;
  */
 @Component({
   selector: 'scs-dialog',
-  imports: [TranslocoPipe],
+  imports: [TranslocoPipe, ScsIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     dialog {
-      inline-size: min(440px, calc(100vw - 2 * var(--scs-spacing-md)));
+      inline-size: min(400px, calc(100vw - 2 * var(--scs-spacing-md)));
       /* Centred: the page reset removes the margin the browser would give it. */
       margin: auto;
       padding: 0;
-      border: 1px solid var(--scs-color-border-default);
-      border-radius: var(--scs-radius-md);
+      border: 0;
+      border-radius: calc(var(--scs-radius-md) + var(--scs-spacing-6));
       background: var(--scs-color-bg-surface);
       color: var(--scs-color-text-primary);
-      box-shadow: var(--scs-shadow-subtle);
+      box-shadow: 0 20px 48px 0 #0a0f1433;
     }
     dialog::backdrop {
       background: var(--scs-color-overlay);
@@ -41,8 +42,7 @@ let nextId = 0;
       align-items: center;
       justify-content: space-between;
       gap: var(--scs-spacing-md);
-      padding: var(--scs-spacing-md) var(--scs-spacing-lg);
-      border-block-end: 1px solid var(--scs-color-border-default);
+      padding: var(--scs-spacing-lg) var(--scs-spacing-lg) 0;
     }
     h2 {
       margin: 0;
@@ -50,8 +50,10 @@ let nextId = 0;
       font-weight: 700;
     }
     .close {
-      inline-size: 36px;
-      block-size: 36px;
+      display: inline-grid;
+      place-items: center;
+      inline-size: 32px;
+      block-size: 32px;
       border: 0;
       border-radius: var(--scs-radius-sm);
       background: none;
@@ -67,7 +69,7 @@ let nextId = 0;
       outline: 2px solid var(--scs-color-brand-default);
     }
     .body {
-      padding: var(--scs-spacing-lg);
+      padding: var(--scs-spacing-md) var(--scs-spacing-lg) var(--scs-spacing-lg);
     }
   `,
   template: `
@@ -81,7 +83,7 @@ let nextId = 0;
           [attr.aria-label]="'ui.dialog.close' | transloco"
           (click)="open.set(false)"
         >
-          <span aria-hidden="true">×</span>
+          <scs-icon name="close" [size]="18" />
         </button>
       </header>
       <div class="body"><ng-content /></div>

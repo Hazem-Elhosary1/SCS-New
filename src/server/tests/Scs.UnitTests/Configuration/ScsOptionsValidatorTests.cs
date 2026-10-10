@@ -16,7 +16,7 @@ public class ScsOptionsValidatorTests
                 ReportConnection = "Server=db;Database=scs;User Id=scs_report;Password=Sup3rS3cret",
                 CrossingConnection = "Server=db;Database=scs;User Id=scs_ops;Password=Sup3rS3cret",
             },
-            Auth = new AuthOptions { CodeKey = Convert.ToBase64String(new byte[32]) },
+            Auth = new AuthOptions { CodeKey = Convert.ToBase64String(new byte[32]), StaffAppUrl = "https://app.scs.test" },
             Mail = new MailOptions { Host = "mail", Port = 587, From = "no-reply@scs.test" },
         };
         change?.Invoke(options);
@@ -66,6 +66,12 @@ public class ScsOptionsValidatorTests
     [InlineData("SCS_AUTH__RENEWAL_GRACE_SECONDS", 4, 121)]
     [InlineData("SCS_AUTH__REQUESTS_PER_MINUTE", 4, 121)]
     [InlineData("SCS_AUTH__RENEWALS_PER_MINUTE", 29, 1201)]
+    [InlineData("SCS_AUTH__RESET_LINK_MINUTES", 4, 1441)]
+    [InlineData("SCS_AUTH__INVITE_LINK_HOURS", 0, 337)]
+    [InlineData("SCS_AUTH__TEMP_PASSWORD_HOURS", 0, 337)]
+    [InlineData("SCS_AUTH__RESET_EMAIL_GAP_SECONDS", 14, 3601)]
+    [InlineData("SCS_AUTH__RESET_EMAILS_PER_HOUR", 0, 61)]
+    [InlineData("SCS_AUTH__GENERATED_PASSWORD_LENGTH", 11, 65)]
     public void A_sign_in_setting_outside_its_limits_is_refused_by_name(string variable, int tooLow, int tooHigh)
     {
         foreach (var value in new[] { tooLow, tooHigh })
@@ -112,8 +118,53 @@ public class ScsOptionsValidatorTests
             case "SCS_AUTH__RENEWAL_GRACE_SECONDS": auth.RenewalGraceSeconds = value; break;
             case "SCS_AUTH__REQUESTS_PER_MINUTE": auth.RequestsPerMinute = value; break;
             case "SCS_AUTH__RENEWALS_PER_MINUTE": auth.RenewalsPerMinute = value; break;
+            case "SCS_AUTH__RESET_LINK_MINUTES": auth.ResetLinkMinutes = value; break;
+            case "SCS_AUTH__INVITE_LINK_HOURS": auth.InviteLinkHours = value; break;
+            case "SCS_AUTH__TEMP_PASSWORD_HOURS": auth.TempPasswordHours = value; break;
+            case "SCS_AUTH__RESET_EMAIL_GAP_SECONDS": auth.ResetEmailGapSeconds = value; break;
+            case "SCS_AUTH__RESET_EMAILS_PER_HOUR": auth.ResetEmailsPerHour = value; break;
+            case "SCS_AUTH__GENERATED_PASSWORD_LENGTH": auth.GeneratedPasswordLength = value; break;
             default: throw new ArgumentOutOfRangeException(nameof(variable));
         }
+    }
+
+    [Theory]
+    [InlineData("local", "", true)]
+    [InlineData("local", "http://localhost:4201", true)]
+    [InlineData("test", "", false)]
+    [InlineData("production", "", false)]
+    [InlineData("production", "http://app.scs-heta.com", false)]
+    [InlineData("production", "https://app.scs-heta.com", true)]
+    [InlineData("production", "https://app.scs-heta.com/", true)]
+    [InlineData("production", "https://app.scs-heta.com/sign-in", false)]
+    [InlineData("production", "https://app.scs-heta.com?x=1", false)]
+    [InlineData("production", "app.scs-heta.com", false)]
+    [InlineData("production", "ftp://app.scs-heta.com", false)]
+    public void The_staff_app_address_is_required_and_https_outside_local(string environment, string address, bool valid)
+    {
+        var failures = Failures(Valid(o =>
+        {
+            o.Environment = environment;
+            o.Auth.StaffAppUrl = address;
+        }));
+
+        if (valid)
+        {
+            Assert.Empty(failures);
+        }
+        else
+        {
+            var failure = Assert.Single(failures);
+            Assert.Contains("SCS_AUTH__STAFF_APP_URL", failure, StringComparison.Ordinal);
+            Assert.DoesNotContain("scs-heta", failure, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public void Locally_the_staff_app_address_falls_back_to_the_dev_server()
+    {
+        Assert.Equal("http://localhost:4201", new AuthOptions().StaffAppBase());
+        Assert.Equal("https://app.scs.test", new AuthOptions { StaffAppUrl = "https://app.scs.test/" }.StaffAppBase());
     }
 
     private static IReadOnlyList<string> Failures(ScsOptions options) =>

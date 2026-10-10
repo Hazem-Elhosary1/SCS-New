@@ -35,12 +35,27 @@ internal sealed class SessionService(
 {
     private AuthOptions Auth => options.Value.Auth;
 
-    public Task<bool> IsAliveAsync(Guid sessionId, Guid accountId, CancellationToken cancellation)
+    /// <summary>
+    /// One read on every request: is the session alive, and does its account hold a temporary
+    /// password (spec 004, FR-036)? Both facts are read together, so replacing the password
+    /// frees the session on its very next request.
+    /// </summary>
+    public async Task<StaffSessionState> CheckAsync(Guid sessionId, Guid accountId, CancellationToken cancellation)
     {
         var now = clock.GetUtcNow();
-        return db.Sessions.AsNoTracking().AnyAsync(
-            s => s.Id == sessionId && s.AccountId == accountId && s.EndedAtUtc == null && s.ExpiresAtUtc > now,
-            cancellation);
+        var found = await (
+            from session in db.Sessions.AsNoTracking()
+            join account in db.Accounts.AsNoTracking() on session.AccountId equals account.Id
+            where session.Id == sessionId && session.AccountId == accountId
+                  && session.EndedAtUtc == null && session.ExpiresAtUtc > now
+            select (bool?)account.MustChangePassword).SingleOrDefaultAsync(cancellation).ConfigureAwait(false);
+
+        return found switch
+        {
+            null => StaffSessionState.Ended,
+            true => StaffSessionState.MustChangePassword,
+            false => StaffSessionState.Alive,
+        };
     }
 
     /// <summary>Adds a session and its "signed in" event to the unit of work; the caller saves.</summary>
@@ -186,12 +201,16 @@ internal sealed class SessionService(
         return ended;
     }
 
-    /// <summary>Ends every live session of an account, for any reason, and saves.</summary>
-    public async Task<int> EndForAccountCoreAsync(Guid accountId, string reason, RequestOrigin origin, CancellationToken cancellation)
+    /// <summary>
+    /// Ends every live session of an account, for any reason, and saves — except one, when
+    /// given: the session of the person who has just replaced their own temporary password.
+    /// </summary>
+    public async Task<int> EndForAccountCoreAsync(
+        Guid accountId, string reason, RequestOrigin origin, CancellationToken cancellation, Guid? exceptSessionId = null)
     {
         clinic.Require();
         var alive = await db.Sessions.AsNoTracking()
-            .Where(s => s.AccountId == accountId && s.EndedAtUtc == null)
+            .Where(s => s.AccountId == accountId && s.EndedAtUtc == null && s.Id != exceptSessionId)
             .Select(s => s.Id)
             .ToListAsync(cancellation)
             .ConfigureAwait(false);

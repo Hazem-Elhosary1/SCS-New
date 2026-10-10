@@ -121,6 +121,7 @@ if (scs.IsLocal && corsOrigins.Length > 0)
 
 app.UseScsRequestOriginCheck();
 app.UseAuthentication();
+app.UseScsTemporaryPasswordGate();
 app.UseScsStaffLogScope();
 app.UseAuthorization();
 app.UseScsBlockedNetworks();

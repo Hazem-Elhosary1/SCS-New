@@ -28,11 +28,14 @@ type Banner =
         'ended' | 'invalid' | 'unreachable' | 'codeNotSent' | 'disabled' | 'blocked' | 'unexpected';
     }
   | { kind: 'suspended' }
+  | { kind: 'passwordChanged' | 'accountActivated' }
   | { kind: 'locked'; until: string }
   | { kind: 'rateLimited'; seconds: number };
 
 const TONES: Record<Banner['kind'], ScsBannerTone> = {
   ended: 'neutral',
+  passwordChanged: 'success',
+  accountActivated: 'success',
   invalid: 'danger',
   unreachable: 'danger',
   codeNotSent: 'danger',
@@ -77,16 +80,34 @@ const EMAIL = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
     form {
       display: flex;
       flex-direction: column;
-      gap: var(--scs-spacing-md);
+      gap: var(--scs-spacing-lg);
       margin-block-start: var(--scs-spacing-lg);
+    }
+    /* Fields sit closer to each other than to what is around them. */
+    scs-text-field + scs-text-field {
+      margin-block-start: calc(var(--scs-spacing-sm) * -1);
+    }
+    .subtitle {
+      font-size: var(--scs-text-body-lg);
+      line-height: 1.8;
+    }
+    .links {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--scs-spacing-md);
     }
     .hint {
       margin: 0;
       font-size: var(--scs-text-body-sm);
-      color: var(--scs-color-text-secondary);
+      color: var(--scs-color-text-tertiary);
     }
     .together {
       white-space: nowrap;
+    }
+    .news {
+      display: block;
+      font-weight: 700;
     }
   `,
   template: `
@@ -114,6 +135,18 @@ const EMAIL = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
                 {{ 'app.signIn.banner.rateLimitedBefore' | transloco }}
                 <bdi class="together" data-testid="retry-after">{{ banner.seconds }}</bdi>
                 {{ 'app.signIn.banner.rateLimitedAfter' | transloco }}
+              }
+              @case ('passwordChanged') {
+                <strong class="news">{{
+                  'app.signIn.banner.passwordChangedTitle' | transloco
+                }}</strong>
+                {{ 'app.signIn.banner.signInNow' | transloco }}
+              }
+              @case ('accountActivated') {
+                <strong class="news">{{
+                  'app.signIn.banner.accountActivatedTitle' | transloco
+                }}</strong>
+                {{ 'app.signIn.banner.signInNow' | transloco }}
               }
               @default {
                 {{ 'app.signIn.banner.' + banner.kind | transloco }}
@@ -146,10 +179,14 @@ const EMAIL = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
           {{ (busy() ? 'app.signIn.submitting' : 'app.signIn.submit') | transloco }}
         </button>
 
-        <a scsLink data-testid="forgot-password" routerLink="/forgot-password">{{
-          'app.signIn.forgot' | transloco
-        }}</a>
-        <p class="hint" data-testid="new-account-hint">{{ 'app.signIn.newAccount' | transloco }}</p>
+        <div class="links">
+          <a scsLink data-testid="forgot-password" routerLink="/forgot-password">{{
+            'app.signIn.forgot' | transloco
+          }}</a>
+          <p class="hint" data-testid="new-account-hint">
+            {{ 'app.signIn.newAccount' | transloco }}
+          </p>
+        </div>
       </form>
     </scs-auth-frame>
 
@@ -196,8 +233,13 @@ export class SignInPage implements AfterViewInit {
 
     // A refusal met at the code step (the account was disabled, the clinic suspended) is shown here.
     const carried = this.flow.takeRefusal();
+    const notice = this.flow.takeNotice();
     if (carried !== null) {
       this.show(carried);
+    } else if (notice !== null) {
+      // A password was just set from a link: say so, and save typing the email again.
+      this.banner.set({ kind: notice.kind });
+      this.email.set(notice.email);
     } else if (route.snapshot.queryParamMap.has('ended')) {
       this.banner.set({ kind: 'ended' });
       // The address says nothing about the person once it has been read.

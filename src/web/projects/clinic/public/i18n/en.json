@@ -4,8 +4,8 @@
       "name": "Clinic console"
     },
     "signIn": {
-      "title": "Clinic team sign-in",
-      "subtitle": "Enter the email and password registered for the clinic",
+      "title": "Staff sign-in",
+      "subtitle": "Enter the email and password registered with your clinic",
       "email": {
         "label": "Email",
         "required": "Email is required",
@@ -17,22 +17,25 @@
       },
       "submit": "Sign in",
       "submitting": "Signing in…",
-      "forgot": "Forgot the password?",
-      "newAccount": "New account? Open the link in the email to set a password.",
+      "forgot": "Forgot password?",
+      "newAccount": "New account? Open the link in your email to set your password.",
       "banner": {
         "ended": "The session has ended. Sign in again to continue.",
         "invalid": "The email or password is incorrect.",
         "unreachable": "The server could not be reached. Try again shortly.",
         "codeNotSent": "The verification code could not be sent to the email. Try again shortly.",
         "lockedBefore": "The account was locked after failed sign-in attempts. It opens after",
-        "lockedAfter": ", or at once when the password is reset from \"Forgot the password?\".",
+        "lockedAfter": ", or at once when the password is reset from \"Forgot password?\".",
         "disabled": "This account cannot sign in: it is disabled. Whoever manages users in the clinic can re-enable it.",
         "suspended": "The clinic is suspended, so no session can be opened and signing in is not possible now. Contacting the support team is the only way.",
         "suspendedAction": "Contact support",
         "blocked": "Signing in from this network is blocked now. Contact the support team to learn why and have it lifted.",
         "rateLimitedBefore": "Too many requests from this network. Try again in",
         "rateLimitedAfter": "seconds.",
-        "unexpected": "The request could not be completed. Try again shortly."
+        "unexpected": "The request could not be completed. Try again shortly.",
+        "passwordChangedTitle": "The password was changed",
+        "accountActivatedTitle": "The account was activated",
+        "signInNow": "Sign in now with the new password."
       }
     },
     "code": {
@@ -42,7 +45,6 @@
       "submit": "Confirm code",
       "opening": "Opening the home page…",
       "countdown": "Resend in",
-      "resend": "No code yet? Send it again",
       "resendButton": "Send the code again",
       "back": "Back to sign-in",
       "noMoreResends": "No more codes can be sent for this sign-in. Going back to sign-in starts again.",
@@ -61,6 +63,57 @@
     "landing": {
       "signedInAs": "Signed in as",
       "signOut": "Sign out"
+    },
+    "password": {
+      "back": "Back to sign-in",
+      "loading": "Opening the link…",
+      "field": {
+        "label": "New password"
+      },
+      "rules": {
+        "length": "At least 10 characters",
+        "cases": "An upper-case and a lower-case letter (A-z)",
+        "digit": "At least one digit (0-9)",
+        "symbol": "At least one special character (!@#$%)"
+      },
+      "sameAsCurrent": "This is the current password. A different one must be chosen.",
+      "tooLong": "The password is longer than 200 characters.",
+      "forAccount": "For the account",
+      "forgot": {
+        "title": "Reset the password",
+        "subtitle": "Enter your email and we will send you a link to reset the password",
+        "submit": "Send the reset link",
+        "submitting": "Sending…",
+        "sentTitle": "The request was sent",
+        "sentBefore": "If",
+        "sentAfter": "is registered at the clinic, a link to reset the password will reach it within minutes."
+      },
+      "reset": {
+        "title": "Set a new password",
+        "submit": "Set the new password",
+        "submitting": "Saving…"
+      },
+      "newAccount": {
+        "welcome": "Welcome to",
+        "choose": "Choose a password for your account",
+        "hint": "The link is valid for 72 hours from sending.",
+        "submit": "Activate the account",
+        "submitting": "Activating…"
+      },
+      "dead": {
+        "title": "The link has expired or was already used",
+        "reset": "A password reset link works once and for a limited time.",
+        "newAccount": "A new-account link works once and for a limited time. Sending another is up to whoever sent the first.",
+        "askAgain": "Request a new link"
+      },
+      "temporary": {
+        "title": "The password is temporary and must be changed",
+        "subtitle": "Choosing a password of your own is required before continuing to the clinic console.",
+        "submit": "Save the password and continue",
+        "submitting": "Saving…",
+        "signOut": "Sign out"
+      },
+      "retry": "Try again"
     }
   }
 }

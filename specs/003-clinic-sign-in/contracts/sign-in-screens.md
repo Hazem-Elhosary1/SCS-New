@@ -63,14 +63,14 @@ typing moves on, Backspace moves back, pasting six digits fills all. Button «ت
 
 | State | Shown when | What is shown |
 |---|---|---|
-| Code entry | Arrived from step one | Countdown «إعادة الإرسال خلال ‹د:ث›»; when it ends, «لم يصلك الرمز؟ إعادة الإرسال» |
+| Code entry | Arrived from step one | Under «تأكيد الرمز»: countdown «إعادة الإرسال خلال ‹د:ث›»; when it ends, the secondary button «إعادة إرسال الرمز» with the refresh icon (owner decision, 10 Oct 2026 — it replaces the text link «لم يصلك الرمز؟ إعادة الإرسال» of the BRD and the design frame, both to be updated) |
 | Code error | `CODE_INVALID` | Boxes red; «الرمز غير صحيح أو انتهت صلاحيته. يمكنك طلب رمز جديد.» (danger); button enabled |
 | Resend failed | `SIGN_IN_CODE_NOT_RESENT` | «لم نستطع إرسال رمز جديد. الرمز السابق يبقى صالحًا حتى تنتهي مدّته.» (danger); secondary button «إعادة إرسال الرمز» |
 | Code accepted | 200 | Boxes green and locked; «الرمز صحيح، وسُجّل الدخول.» (success); button «جارٍ فتح الرئيسية…»; no back link; then `/` |
 | Returned | `ACCOUNT_DISABLED` or `CLINIC_SUSPENDED` | Back to the sign-in form in that state |
 | Too many requests | `RATE_LIMITED` | Warning banner with the time, on this screen |
 
-| No more resends | `resendsLeft` is 0, or `RESEND_LIMIT_REACHED` | The countdown and the resend link are replaced by a note saying to go back and sign in again (neutral; wording at page review). «تأكيد الرمز» stays enabled: the last code still works |
+| No more resends | `resendsLeft` is 0, or `RESEND_LIMIT_REACHED` | The countdown and the resend button are replaced by a note saying to go back and sign in again (neutral; wording at page review). «تأكيد الرمز» stays enabled: the last code still works |
 
 `RESEND_TOO_EARLY` is not a state: the screen corrects its countdown from the answer.
 
@@ -105,3 +105,13 @@ Every state exists in Arabic and English with mirrored layout. Banners are annou
 (`role="alert"` for danger and warning, `role="status"` for neutral and success). Field errors
 are tied to their fields. The code boxes are one labelled group. Everything is reachable and
 operable by keyboard; focus starts on the email field, and on the first box of the code step.
+
+## Appearance (added 10 Oct 2026)
+
+The screens were first built from the BRD's wording alone. On 10 Oct 2026 they were compared with
+the page "✓ Sign in" of the clinic design file and the shared components rebuilt to it: line
+icons (`scs-icon`), the segmented language toggle, the introduction panel's mark, badge and
+headline, 48-high fields and buttons with a 10 radius, toned banners with an icon, the warning
+mark inside a field in error, the turning ring on a busy button, the help window's rows, and
+eight dots in an empty password field. The record is in
+`specs/004-password-account-setup/validation.md` ("Compared with the design file").

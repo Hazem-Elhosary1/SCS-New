@@ -15,13 +15,39 @@ using Serilog.Context;
 
 namespace Scs.BuildingBlocks.Security;
 
+/// <summary>What the session of a request is, at this moment.</summary>
+public enum StaffSessionState
+{
+    /// <summary>Over, or never there.</summary>
+    Ended = 0,
+
+    Alive = 1,
+
+    /// <summary>
+    /// Alive, but its account holds a temporary password: nothing is allowed except replacing it
+    /// (spec 004, FR-036).
+    /// </summary>
+    MustChangePassword = 2,
+}
+
 /// <summary>
-/// Answers one question on every request: is this session alive right now? Implemented by the
-/// Identity module; defined here because the shared project may not reference a module.
+/// Answers one question on every request: is this session alive right now, and may it do more
+/// than change a temporary password? Implemented by the Identity module; defined here because
+/// the shared project may not reference a module.
 /// </summary>
 public interface IStaffSessionCheck
 {
-    Task<bool> IsAliveAsync(Guid sessionId, Guid accountId, CancellationToken cancellation);
+    Task<StaffSessionState> CheckAsync(Guid sessionId, Guid accountId, CancellationToken cancellation);
+}
+
+/// <summary>
+/// Marks an endpoint that a person holding a temporary password may still reach: reading who is
+/// signed in, and replacing the password. Everything else that needs a session is refused for
+/// them without its author doing anything (spec 004, FR-036). Do not add it to other endpoints.
+/// </summary>
+public sealed class AllowsTemporaryPasswordMetadata
+{
+    public static AllowsTemporaryPasswordMetadata Instance { get; } = new();
 }
 
 /// <summary>
@@ -38,6 +64,9 @@ public static class StaffClaims
     public const string AccountId = "scs:account";
     public const string SessionId = "scs:session";
     public const string ClinicId = "scs:clinic";
+
+    /// <summary>Present only while the account holds a temporary password.</summary>
+    public const string MustChangePassword = "scs:must-change";
 }
 
 /// <summary>
@@ -81,7 +110,11 @@ public sealed class StaffSessionAuthenticationHandler(
         var clinic = Context.RequestServices.GetRequiredService<IClinicContext>();
         clinic.Establish(ticket.ClinicId, ClinicSource.Account);
 
-        if (check is null || !await check.IsAliveAsync(ticket.SessionId, ticket.AccountId, Context.RequestAborted))
+        var state = check is null
+            ? StaffSessionState.Ended
+            : await check.CheckAsync(ticket.SessionId, ticket.AccountId, Context.RequestAborted);
+
+        if (state == StaffSessionState.Ended)
         {
             Context.Items[RefusalKey] = ErrorCodes.SessionEnded;
             return AuthenticateResult.Fail(ErrorCodes.SessionEnded);
@@ -94,6 +127,11 @@ public sealed class StaffSessionAuthenticationHandler(
                 new Claim(StaffClaims.ClinicId, ticket.ClinicId.ToString()),
             ],
             SchemeName);
+
+        if (state == StaffSessionState.MustChangePassword)
+        {
+            identity.AddClaim(new Claim(StaffClaims.MustChangePassword, "1"));
+        }
 
         return AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(identity), SchemeName));
     }
@@ -145,6 +183,43 @@ public static class StaffSessionExtensions
         builder.WithMetadata(HandlesOwnSessionMetadata.Instance);
         return builder;
     }
+
+    /// <summary>The endpoint stays reachable while the account holds a temporary password.</summary>
+    public static TBuilder AllowsTemporaryPassword<TBuilder>(this TBuilder builder)
+        where TBuilder : IEndpointConventionBuilder
+    {
+        builder.WithMetadata(AllowsTemporaryPasswordMetadata.Instance);
+        return builder;
+    }
+
+    /// <summary>
+    /// Holds a person with a temporary password to the one thing they must do first. Every
+    /// endpoint that needs a session is refused for them unless it is marked
+    /// <see cref="AllowsTemporaryPassword{TBuilder}"/>: a module written later is covered without
+    /// opting in (constitution Principle III). Endpoints open to everyone are not a session's
+    /// business and are left alone. Place right after authentication.
+    /// </summary>
+    public static IApplicationBuilder UseScsTemporaryPasswordGate(this IApplicationBuilder app) =>
+        app.Use(async (context, next) =>
+        {
+            if (context.User.HasClaim(claim => claim.Type == StaffClaims.MustChangePassword))
+            {
+                var endpoint = context.GetEndpoint();
+                var reachable =
+                    endpoint is null
+                    || endpoint.Metadata.GetMetadata<IAllowAnonymous>() is not null
+                    || endpoint.Metadata.GetMetadata<AllowsTemporaryPasswordMetadata>() is not null;
+
+                if (!reachable)
+                {
+                    await ProblemWriter.WriteAsync(
+                        context, StatusCodes.Status403Forbidden, ErrorCodes.PasswordChangeRequired);
+                    return;
+                }
+            }
+
+            await next(context);
+        });
 
     /// <summary>
     /// Marks every log entry of a signed-in request with who it was done for: identifiers only.

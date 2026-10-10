@@ -65,6 +65,43 @@ public class EmailAddressTests
 
 public class PasswordRulesTests
 {
+    /// <summary>
+    /// The same table runs against the screens' own check in
+    /// src/web/projects/core/src/lib/auth/password-rules.spec.ts — keep the two identical, so
+    /// the four lines a person sees can never disagree with the server (spec 004, FR-025).
+    /// </summary>
+    [Theory]
+    [InlineData("", false, false, false, false)]
+    [InlineData("Correct-Horse-9!", true, true, true, true)]
+    [InlineData("Short1!aB", false, true, true, true)]
+    [InlineData("Exactly10!", true, true, true, true)]
+    [InlineData("alllowercase1!", true, false, true, true)]
+    [InlineData("ALLUPPERCASE1!", true, false, true, true)]
+    [InlineData("No-Digits-Here!", true, true, false, true)]
+    [InlineData("NoSymbolHere12", true, true, true, false)]
+    [InlineData("Space only 123", true, true, true, false)]
+    [InlineData("كلمة سرّ Aa1!", true, true, true, true)]
+    [InlineData("كلمةسرطويلةجدا١٢٣", true, false, false, false)]
+    [InlineData("Emoji only 12🙂", true, true, true, false)]
+    [InlineData("Under_score12", true, true, true, true)]
+    [InlineData("Currency12€ab", true, true, true, true)]
+    [InlineData("Ünïcödé-Lettérs1", true, true, true, true)]
+    public void The_server_and_the_screens_judge_a_password_alike(string password, bool length, bool cases, bool digit, bool symbol)
+    {
+        var problems = PasswordRules.Check(password);
+
+        Assert.Equal(
+            (length, cases, digit, symbol),
+            (!problems.Contains("TOO_SHORT"), !problems.Contains("NO_UPPER_LOWER"), !problems.Contains("NO_DIGIT"), !problems.Contains("NO_SYMBOL")));
+    }
+
+    [Fact]
+    public void Exactly_two_hundred_characters_is_the_most_that_is_accepted()
+    {
+        Assert.Empty(PasswordRules.Check("Aa1!" + new string('x', 196)));
+        Assert.Equal(["TOO_LONG"], PasswordRules.Check("Aa1!" + new string('x', 197)));
+    }
+
     [Theory]
     [InlineData("Abcdefg1!x")]
     [InlineData("Correct-Horse-9!")]

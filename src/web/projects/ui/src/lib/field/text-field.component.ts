@@ -10,6 +10,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
+import { ScsIconComponent } from '../icon/icon.component';
 
 let nextId = 0;
 
@@ -20,7 +21,7 @@ let nextId = 0;
  */
 @Component({
   selector: 'scs-text-field',
-  imports: [TranslocoPipe],
+  imports: [TranslocoPipe, ScsIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -28,7 +29,7 @@ let nextId = 0;
     }
     label {
       display: block;
-      margin-block-end: var(--scs-spacing-xs);
+      margin-block-end: var(--scs-spacing-sm);
       font-size: var(--scs-text-body-sm);
       font-weight: 600;
       color: var(--scs-color-text-primary);
@@ -36,9 +37,27 @@ let nextId = 0;
     .box {
       display: flex;
       align-items: center;
+      gap: var(--scs-spacing-12);
+      padding-inline-start: var(--scs-spacing-md);
       border: 1px solid var(--scs-color-border-default);
-      border-radius: var(--scs-radius-sm);
+      border-radius: var(--scs-radius-md);
       background: var(--scs-color-bg-surface);
+      box-shadow: var(--scs-shadow-subtle);
+    }
+    .box.plain {
+      padding-inline-start: 0;
+    }
+    .lead {
+      color: var(--scs-color-icon-default);
+    }
+    .warn {
+      color: var(--scs-color-feedback-danger-icon);
+    }
+    .box:not(.has-eye) .warn {
+      margin-inline-end: var(--scs-spacing-md);
+    }
+    .invalid input {
+      padding-inline-end: 0;
     }
     .box:focus-within {
       border-color: var(--scs-color-brand-default);
@@ -51,18 +70,38 @@ let nextId = 0;
     input {
       flex: 1;
       min-inline-size: 0;
-      min-block-size: 44px;
-      padding: 0 var(--scs-spacing-12);
+      min-block-size: 46px;
+      padding: 0;
+      padding-inline-end: var(--scs-spacing-md);
       border: 0;
       background: transparent;
-      color: inherit;
+      color: var(--scs-color-text-primary);
       font: inherit;
+      font-size: var(--scs-text-body-lg);
       outline: none;
     }
+    .plain input {
+      padding-inline-start: var(--scs-spacing-md);
+    }
+    .has-eye input {
+      padding-inline-end: 0;
+    }
+    input::placeholder {
+      color: var(--scs-color-text-tertiary);
+    }
+    /* A password, an email and a code are written left to right; in an Arabic page they still
+       begin at the start of the line, beside the icon. */
+    :host-context([dir='rtl']) input[dir='ltr'] {
+      text-align: right;
+    }
     .eye {
-      inline-size: 44px;
-      block-size: 44px;
+      display: inline-grid;
+      place-items: center;
+      flex: none;
+      inline-size: 46px;
+      block-size: 46px;
       border: 0;
+      border-radius: var(--scs-radius-md);
       background: none;
       color: var(--scs-color-icon-default);
       cursor: pointer;
@@ -79,14 +118,22 @@ let nextId = 0;
   `,
   template: `
     <label [attr.for]="id">{{ label() }}</label>
-    <div class="box" [class.invalid]="error() !== ''">
+    <div
+      class="box"
+      [class.invalid]="error() !== ''"
+      [class.plain]="kind() === 'text'"
+      [class.has-eye]="kind() === 'password'"
+    >
+      @if (kind() !== 'text') {
+        <scs-icon class="lead" [name]="kind() === 'email' ? 'mail' : 'lock'" [size]="20" />
+      }
       <input
         #field
         [id]="id"
         [type]="shownType()"
         [value]="value()"
         [attr.dir]="kind() === 'text' ? null : 'ltr'"
-        [attr.placeholder]="placeholder() || null"
+        [attr.placeholder]="shownPlaceholder()"
         [attr.autocomplete]="autocomplete() || null"
         [attr.inputmode]="kind() === 'email' ? 'email' : null"
         [attr.aria-invalid]="error() !== '' ? 'true' : null"
@@ -96,6 +143,9 @@ let nextId = 0;
         spellcheck="false"
         (input)="value.set(field.value)"
       />
+      @if (error() !== '') {
+        <scs-icon class="warn" name="alert-circle" [size]="18" />
+      }
       @if (kind() === 'password') {
         <button
           type="button"
@@ -107,23 +157,11 @@ let nextId = 0;
           "
           (click)="revealed.set(!revealed())"
         >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
-            <circle cx="12" cy="12" r="3" />
-            @if (revealed()) {
-              <path data-testid="eye-crossed" d="M4 4l16 16" />
-            }
-          </svg>
+          @if (revealed()) {
+            <scs-icon name="eye-off" [size]="20" data-testid="eye-crossed" />
+          } @else {
+            <scs-icon name="eye" [size]="20" />
+          }
         </button>
       }
     </div>
@@ -156,6 +194,14 @@ export class ScsTextFieldComponent {
   readonly autofocus = input(false, { transform: booleanAttribute });
 
   protected readonly revealed = signal(false);
+
+  /**
+   * An empty password field shows eight dots, as the design draws it: the shape of what goes
+   * there, in no language. Any other field shows the placeholder it was given, or none.
+   */
+  protected readonly shownPlaceholder = computed(
+    () => this.placeholder() || (this.kind() === 'password' ? '••••••••' : null),
+  );
 
   protected readonly shownType = computed(() => {
     if (this.kind() === 'password') {
