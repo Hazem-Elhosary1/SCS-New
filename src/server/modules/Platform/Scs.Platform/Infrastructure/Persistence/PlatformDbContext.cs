@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -7,12 +8,19 @@ using Scs.Platform.Domain;
 namespace Scs.Platform.Infrastructure.Persistence;
 
 /// <summary>The Platform module's own schema. No table here is clinic-owned.</summary>
-public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> options) : DbContext(options)
+public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> options)
+    : DbContext(options), IDataProtectionKeyContext
 {
     public const string Schema = "platform";
     public const string HistoryTable = "__EFMigrationsHistory";
 
     public DbSet<JobHeartbeat> JobHeartbeats => Set<JobHeartbeat>();
+
+    /// <summary>
+    /// The key ring that encrypts and signs session cookies, shared by every server instance
+    /// (spec 003, research R9). Platform-wide; its content is a secret and is never logged.
+    /// </summary>
+    public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
     /// <summary>The one way this context is configured, shared by the app, the migrator and the tools.</summary>
     public static DbContextOptionsBuilder Configure(DbContextOptionsBuilder builder, string connection) =>
@@ -22,6 +30,7 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
     {
         modelBuilder.HasDefaultSchema(Schema);
         modelBuilder.ApplyConfiguration(new JobHeartbeatConfiguration());
+        modelBuilder.Entity<DataProtectionKey>().ToTable("DataProtectionKey");
     }
 }
 

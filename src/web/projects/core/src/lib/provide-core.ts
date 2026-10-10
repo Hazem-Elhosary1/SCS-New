@@ -9,6 +9,7 @@ import {
 import { SCS_APP, ScsApp } from './app-token';
 import { provideRuntimeConfig } from './config/runtime-config';
 import { ScsErrorHandler } from './errors/global-error.handler';
+import { sessionInterceptor } from './auth/auth.service';
 import { apiInterceptor } from './http/api.interceptor';
 import { provideScsI18n } from './i18n/i18n.providers';
 import { VersionCheckService } from './version/version-check.service';
@@ -21,7 +22,8 @@ export function provideScsCore(options: { app: ScsApp }): EnvironmentProviders {
   return makeEnvironmentProviders([
     { provide: SCS_APP, useValue: options.app },
     { provide: ErrorHandler, useClass: ScsErrorHandler },
-    provideHttpClient(withInterceptors([apiInterceptor])),
+    // The session interceptor is outermost: it sees the problems the API interceptor produces.
+    provideHttpClient(withInterceptors([sessionInterceptor, apiInterceptor])),
     provideRuntimeConfig(),
     provideScsI18n(),
     // Not awaited: the app must start even when version.json cannot be read.

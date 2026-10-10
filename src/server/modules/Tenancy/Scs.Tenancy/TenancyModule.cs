@@ -39,6 +39,7 @@ public sealed class TenancyModule : IModule, IMigratableModule
         services.AddScoped<CrossingDbContext>();
         services.AddScoped<IClinicRegistry, ClinicRegistry>();
         services.AddScoped<IClinicLocator, ClinicLocator>();
+        services.AddScoped<IClinicProfile, ClinicProfileReader>();
         services.AddScoped<IClinicIdSource, RegistryClinicIdSource>();
         services.AddScoped<PurgeAccessRecordsJob>();
         services.AddSingleton<IRecurringJobRegistration, TenancyJobs>();
@@ -94,6 +95,21 @@ public sealed class TenancyModule : IModule, IMigratableModule
             }
 
             return added;
+        }
+    }
+
+    /// <summary>The ids of the made-up clinics, by short name, for the seeds of later modules.</summary>
+    public static async Task<IReadOnlyDictionary<string, Guid>> SeededClinicIdsAsync(
+        string crossingConnection, CancellationToken cancellation)
+    {
+        string[] names = ["noor", "shifa"];
+        var db = new CrossingDbContext(new CrossClinicConnectionFactory(crossingConnection));
+        await using (db.ConfigureAwait(false))
+        {
+            return await db.Directory.AsNoTracking()
+                .Where(e => names.Contains(e.ShortName))
+                .ToDictionaryAsync(e => e.ShortName, e => e.ClinicId, cancellation)
+                .ConfigureAwait(false);
         }
     }
 

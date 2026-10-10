@@ -14,7 +14,12 @@ public sealed record ScsProblem(
     string Code,
     string TraceId,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    IReadOnlyDictionary<string, string[]>? Errors = null);
+    IReadOnlyDictionary<string, string[]>? Errors = null)
+{
+    /// <summary>Extra members written beside the fixed ones (for example <c>lockedUntil</c>).</summary>
+    [JsonExtensionData]
+    public Dictionary<string, object?>? Extensions { get; init; }
+}
 
 /// <summary>The single place that builds and writes a failure response.</summary>
 public static class ProblemWriter
@@ -24,7 +29,11 @@ public static class ProblemWriter
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
     public static ScsProblem Create(
-        HttpContext context, int status, string code, IReadOnlyDictionary<string, string[]>? errors = null)
+        HttpContext context,
+        int status,
+        string code,
+        IReadOnlyDictionary<string, string[]>? errors = null,
+        IReadOnlyDictionary<string, object?>? extensions = null)
     {
         var language = ErrorMessages.ResolveLanguage(context.Request);
         context.Response.Headers.ContentLanguage = language;
@@ -35,13 +44,20 @@ public static class ProblemWriter
             Status: status,
             Code: code,
             TraceId: TraceIdMiddleware.Get(context),
-            Errors: errors);
+            Errors: errors)
+        {
+            Extensions = extensions is null ? null : new Dictionary<string, object?>(extensions),
+        };
     }
 
     public static async Task WriteAsync(
-        HttpContext context, int status, string code, IReadOnlyDictionary<string, string[]>? errors = null)
+        HttpContext context,
+        int status,
+        string code,
+        IReadOnlyDictionary<string, string[]>? errors = null,
+        IReadOnlyDictionary<string, object?>? extensions = null)
     {
-        var problem = Create(context, status, code, errors);
+        var problem = Create(context, status, code, errors, extensions);
         context.Response.StatusCode = status;
         context.Response.ContentType = ContentType;
         await JsonSerializer.SerializeAsync(context.Response.Body, problem, Json, context.RequestAborted);

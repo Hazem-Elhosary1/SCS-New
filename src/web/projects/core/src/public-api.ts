@@ -16,3 +16,5 @@ export * from './lib/format/format';
 export * from './lib/i18n/i18n.providers';
 export * from './lib/i18n/language.service';
 export * from './lib/network/online.service';
+export * from './lib/auth/auth.service';
+export * from './lib/auth/support.service';

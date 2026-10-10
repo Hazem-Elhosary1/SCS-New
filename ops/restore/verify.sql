@@ -102,6 +102,35 @@ BEGIN
         PRINT CONCAT('ok    ', @policies, ' isolation policies present and switched on');
 END
 
+-- 6. The one database module that may see across clinics came back, runs as the user it should,
+--    and is the only one (spec 003). A module that runs as someone else and is not this one is
+--    a way around isolation.
+DECLARE @lookup int = (
+    SELECT COUNT(*)
+    FROM sys.sql_modules m
+    JOIN sys.objects o ON o.object_id = m.object_id
+    WHERE SCHEMA_NAME(o.schema_id) = N'identity' AND o.name = N'usp_FindAccountForSignIn'
+      AND USER_NAME(m.execute_as_principal_id) = N'scs_signin_lookup');
+DECLARE @others int = (
+    SELECT COUNT(*)
+    FROM sys.sql_modules m
+    JOIN sys.objects o ON o.object_id = m.object_id
+    WHERE m.execute_as_principal_id IS NOT NULL AND o.is_ms_shipped = 0
+      AND NOT (SCHEMA_NAME(o.schema_id) = N'identity' AND o.name = N'usp_FindAccountForSignIn'));
+
+IF @lookup <> 1
+BEGIN
+    PRINT 'FAIL  the sign-in lookup identity.usp_FindAccountForSignIn is missing or runs as the wrong user';
+    SET @failures += 1;
+END
+ELSE IF @others > 0
+BEGIN
+    PRINT CONCAT('FAIL  ', @others, ' other database module(s) run as another user');
+    SET @failures += 1;
+END
+ELSE
+    PRINT 'ok    the sign-in lookup is present and is the only module that runs as another user';
+
 IF @failures > 0
     RAISERROR('Restore verification FAILED (%d check(s)). Treat this as a production incident.', 16, 1, @failures);
 ELSE

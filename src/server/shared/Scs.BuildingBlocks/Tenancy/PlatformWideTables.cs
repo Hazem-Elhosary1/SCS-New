@@ -18,6 +18,8 @@ public static class PlatformWideTables
         ("platform.JobHeartbeat", "Proof that background work runs; one row for the whole platform."),
         ("tenancy.ClinicDirectory", "Clinic short names, which already appear in public addresses."),
         ("crossing.CrossClinicAccess", "Who used a cross-clinic operation; identifiers only, hidden from clinics."),
+        ("platform.DataProtectionKey", "The key ring that protects session cookies; one for the whole platform."),
+        ("security.AnonymousSignInAttempt", "Sign-in attempts on emails that match no account; a keyed hash, never the email; insert-only for the application."),
     ];
 
     public static bool Contains(string schema, string table) =>

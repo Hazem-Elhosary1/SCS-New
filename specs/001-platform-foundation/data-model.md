@@ -56,6 +56,13 @@ Read from environment variables, bound to typed options, validated at start-up (
 | `SCS_DB__REPORT_CONNECTION` | yes | yes | Read-only login for hand-written report queries, under clinic isolation (added by spec 002) |
 | `SCS_DB__CROSSING_CONNECTION` | yes | yes | Operator login for the declared cross-clinic operations (added by spec 002) |
 | `SCS_DB__MIGRATION_CONNECTION` | migration task only | yes | Login that may alter structure |
+| `SCS_AUTH__CODE_KEY` | yes | yes | Base64 of at least 32 bytes; keys the hashes of sign-in codes (added by spec 003) |
+| `SCS_AUTH__*` (fifteen settings) | no | no | Sign-in limits and lifetimes; defaults and ranges in specs/003-clinic-sign-in/data-model.md |
+| `SCS_MAIL__HOST`, `SCS_MAIL__FROM` | yes | no | Outgoing mail server and sender (added by spec 003) |
+| `SCS_MAIL__PORT`, `SCS_MAIL__USE_TLS`, `SCS_MAIL__USER`, `SCS_MAIL__TIMEOUT_SECONDS` | no | no | Defaults 587, true, none, 10 |
+| `SCS_MAIL__PASSWORD` | when the server needs sign-in | yes | Mail server password |
+| `SCS_SUPPORT__*` (five values) | no | no | Support hours and channels shown in the help window of the sign-in screens |
+| `SCS_SEED__STAFF_PASSWORD` | seed command only | yes | Password of the made-up staff accounts; local and test only |
 | `SCS_CORS__ORIGINS` | `local` only | no | Allowed front-end origins for local development; must be empty in test and production, where calls are same-origin |
 | `SCS_OTEL__ENDPOINT` | no | no | OTLP collector address |
 | `SCS_APIDOCS__ENABLED` | no (default `false`) | no | Ignored when environment is `production` |

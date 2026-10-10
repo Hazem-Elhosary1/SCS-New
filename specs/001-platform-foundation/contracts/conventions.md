@@ -63,6 +63,18 @@ Every failure is `application/problem+json`:
 | `CLINIC_REQUIRED` | 400 | Work that needs a clinic was started without one (spec 002) |
 | `CLINIC_NOT_AVAILABLE` | 404 | The address names no clinic; same answer for every unknown name (spec 002) |
 | `CLINIC_MISMATCH` | 400 | The work carries two different clinics, or tries to change clinic (spec 002) |
+| `INVALID_CREDENTIALS` | 401 | The single answer before a correct password (spec 003) |
+| `CODE_INVALID` | 401 | The single answer for a wrong, expired, spent, used or replaced sign-in code (spec 003) |
+| `ACCESS_EXPIRED` | 401 | Renew the session, then repeat the request (spec 003) |
+| `SESSION_ENDED` | 401 | The session is over; sign in again (spec 003) |
+| `ACCOUNT_LOCKED` | 403 | After a correct password; carries `lockedUntil` (spec 003) |
+| `ACCOUNT_DISABLED` | 403 | After a correct password (spec 003) |
+| `CLINIC_SUSPENDED` | 403 | After a correct password, and at renewal; covers a cancelled clinic (spec 003) |
+| `NETWORK_BLOCKED` | 403 | Before anything about the account (spec 003) |
+| `RESEND_TOO_EARLY` | 409 | Carries `resendAvailableInSeconds` (spec 003) |
+| `RESEND_LIMIT_REACHED` | 409 | No more codes for this sign-in; the last one is still valid (spec 003) |
+| `SIGN_IN_CODE_NOT_SENT` | 503 | The password was correct; the email failed (spec 003) |
+| `SIGN_IN_CODE_NOT_RESENT` | 503 | The earlier code is still valid (spec 003) |
 
 Later specs add codes (for example `FEATURE_NOT_IN_PLAN`, `CLINIC_READ_ONLY`) to this table by
 amending this contract; they do not invent a second shape.

@@ -51,6 +51,11 @@ its `SeedAsync`. Spec 002 starts it with two clinics, `noor` («عيادة ال�
 («عيادة الشفاء»). The command registers only what is missing, so running it again changes
 nothing, and it is never run against production.
 
+Spec 003 adds six made-up staff accounts, three for each of those clinics (`owner@noor.example`,
+`reception@noor.example`, `former@noor.example`, `owner@shifa.example`, `doctor@shifa.example`,
+`new@shifa.example`). They share the password in `SCS_SEED__STAFF_PASSWORD`, a sample value
+that exists only in `.env.example`. The `.example` domain cannot receive mail.
+
 ## If it happens anyway
 
 Treat a copy of production patient data outside production as an incident: delete the copy,

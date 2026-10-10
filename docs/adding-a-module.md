@@ -83,6 +83,7 @@ migration does. Change isolation with a new migration.
 | The application login cannot switch isolation off or widen its own access | `LoginPermissionTests` |
 | No module opens a connection or sets the clinic on one | `TenancyRulesTests` |
 | No personal data or secret reaches the logs | `LogRedactionTests` (covers every mapped endpoint, including new ones) |
+| An endpoint behaves for a signed-in person of a clinic | `factory.SignInAsAsync(clinicId)` gives an `HttpClient` that carries a real session |
 
 ## Conventions to follow
 
@@ -104,6 +105,15 @@ a module.
   a request does; each clinic's turn is its own job with its own retries, so one clinic's
   failure does not stop the others. A job never sets or changes the clinic itself, and a job
   scheduled through `IJobScheduler` has no clinic and sees no clinic-owned rows.
+- **Who is asking** (from spec 003): every endpoint needs a signed-in person unless it is
+  marked `.AllowAnonymous()` and listed in its spec. Inject `ICurrentStaff`
+  (`Scs.Identity.Contracts`) for the account, the session and the clinic. The clinic context is
+  already established from the session before the endpoint runs: never take the clinic from the
+  request. A request that changes something must carry `X-Scs-Request: 1`; the front ends add
+  it for you. Permissions arrive with spec 005.
+- **Never log an email address**, a password, a code or a cookie value. Log `accountId`,
+  `sessionId` and `clinicId`; signed-in requests carry all three on every entry already.
+- **Sending an email**: `IEmailSender` in the shared project, never a mail library directly.
 - **Reaching another module**: call the interface it publishes in its `.Contracts` project.
   Never read or write its tables.
 - **Clinic-owned tables** (from spec 002 on): the isolation policy is in the same migration that

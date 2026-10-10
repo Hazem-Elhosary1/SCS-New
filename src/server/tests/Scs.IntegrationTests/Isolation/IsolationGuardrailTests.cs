@@ -81,6 +81,30 @@ public sealed class GuardrailCatchesTests(SqlServerFixture sql)
     }
 
     [Fact]
+    public async Task A_module_that_runs_as_another_user_must_be_declared()
+    {
+        var database = await PrepareAsync(sql);
+        await TestDatabase.ExecuteAsync(database.Admin, $"CREATE TABLE probe.Good {Columns}");
+        await TestDatabase.ExecuteAsync(database.Admin, ClinicIsolationSql.CreatePolicy("probe", "Good"));
+        await TestDatabase.ExecuteAsync(
+            database.Admin,
+            "CREATE PROCEDURE probe.usp_SeeEverything WITH EXECUTE AS 'scs_signin_lookup' AS SELECT Id FROM probe.Good");
+        await TestDatabase.ExecuteAsync(
+            database.Admin,
+            "CREATE PROCEDURE probe.usp_AsOwner WITH EXECUTE AS OWNER AS SELECT Id FROM probe.Good");
+        await TestDatabase.ExecuteAsync(database.Admin, "CREATE PROCEDURE probe.usp_AsCaller AS SELECT Id FROM probe.Good");
+
+        var violations = await IsolationCatalog.FindViolationsAsync(database.Admin);
+
+        Assert.Equal(
+            [
+                "probe.usp_AsOwner: runs as OWNER and is not declared in DeclaredDatabaseCrossings",
+                "probe.usp_SeeEverything: runs as scs_signin_lookup and is not declared in DeclaredDatabaseCrossings",
+            ],
+            violations);
+    }
+
+    [Fact]
     public async Task A_table_with_no_policy_is_reported_by_name()
     {
         var database = await PrepareAsync(sql);

@@ -11,6 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\modules\Platform\Scs.Platform\Scs.Platform.csproj" />
     <ProjectReference Include="..\..\modules\Tenancy\Scs.Tenancy\Scs.Tenancy.csproj" />
+    <ProjectReference Include="..\..\modules\Identity\Scs.Identity\Scs.Identity.csproj" />
   </ItemGroup>
 
 </Project>

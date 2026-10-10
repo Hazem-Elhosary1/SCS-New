@@ -16,9 +16,104 @@ public class ScsOptionsValidatorTests
                 ReportConnection = "Server=db;Database=scs;User Id=scs_report;Password=Sup3rS3cret",
                 CrossingConnection = "Server=db;Database=scs;User Id=scs_ops;Password=Sup3rS3cret",
             },
+            Auth = new AuthOptions { CodeKey = Convert.ToBase64String(new byte[32]) },
+            Mail = new MailOptions { Host = "mail", Port = 587, From = "no-reply@scs.test" },
         };
         change?.Invoke(options);
         return options;
+    }
+
+    [Fact]
+    public void The_sign_in_defaults_are_the_documented_ones()
+    {
+        var auth = new AuthOptions();
+
+        Assert.Equal(
+            (5, 15, 15, 10, 5, 3, 60, 3, 12, 5, 30, 10, 120, true, ""),
+            (auth.MaxFailedAttempts, auth.AttemptWindowMinutes, auth.LockMinutes, auth.CodeMinutes, auth.CodeAttempts,
+             auth.MaxSpentCodes, auth.ResendSeconds, auth.MaxResends, auth.SessionHours, auth.AccessMinutes,
+             auth.RenewalGraceSeconds, auth.RequestsPerMinute, auth.RenewalsPerMinute, auth.EmailCodeEnabled,
+             auth.CookiePathBase));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("not base64 !")]
+    [InlineData("c2hvcnQ=")]
+    public void A_missing_or_short_code_key_is_refused_without_echoing_it(string key)
+    {
+        var failures = Failures(Valid(o => o.Auth.CodeKey = key));
+
+        var failure = Assert.Single(failures);
+        Assert.Contains("SCS_AUTH__CODE_KEY", failure, StringComparison.Ordinal);
+        if (key.Length > 0)
+        {
+            Assert.DoesNotContain(key, failure, StringComparison.Ordinal);
+        }
+    }
+
+    [Theory]
+    [InlineData("SCS_AUTH__MAX_FAILED_ATTEMPTS", 2, 11)]
+    [InlineData("SCS_AUTH__ATTEMPT_WINDOW_MINUTES", 0, 1441)]
+    [InlineData("SCS_AUTH__LOCK_MINUTES", 0, 1441)]
+    [InlineData("SCS_AUTH__CODE_MINUTES", 0, 31)]
+    [InlineData("SCS_AUTH__CODE_ATTEMPTS", 2, 11)]
+    [InlineData("SCS_AUTH__MAX_SPENT_CODES", 0, 11)]
+    [InlineData("SCS_AUTH__RESEND_SECONDS", 14, 601)]
+    [InlineData("SCS_AUTH__MAX_RESENDS", -1, 11)]
+    [InlineData("SCS_AUTH__SESSION_HOURS", 0, 169)]
+    [InlineData("SCS_AUTH__ACCESS_MINUTES", 0, 31)]
+    [InlineData("SCS_AUTH__RENEWAL_GRACE_SECONDS", 4, 121)]
+    [InlineData("SCS_AUTH__REQUESTS_PER_MINUTE", 4, 121)]
+    [InlineData("SCS_AUTH__RENEWALS_PER_MINUTE", 29, 1201)]
+    public void A_sign_in_setting_outside_its_limits_is_refused_by_name(string variable, int tooLow, int tooHigh)
+    {
+        foreach (var value in new[] { tooLow, tooHigh })
+        {
+            var failures = Failures(Valid(o => Set(o.Auth, variable, value)));
+            Assert.Contains(variable, Assert.Single(failures), StringComparison.Ordinal);
+        }
+    }
+
+    [Theory]
+    [InlineData("api", false)]
+    [InlineData("/api/", false)]
+    [InlineData("/api", true)]
+    [InlineData("", true)]
+    public void The_cookie_path_base_is_empty_or_a_rooted_path(string path, bool accepted)
+    {
+        var failures = Failures(Valid(o => o.Auth.CookiePathBase = path));
+        Assert.Equal(accepted, failures.Count == 0);
+    }
+
+    [Fact]
+    public void Mail_host_and_sender_are_required()
+    {
+        var failures = Failures(Valid(o => o.Mail = new MailOptions()));
+
+        Assert.Contains(failures, f => f.Contains("SCS_MAIL__HOST", StringComparison.Ordinal));
+        Assert.Contains(failures, f => f.Contains("SCS_MAIL__FROM", StringComparison.Ordinal));
+    }
+
+    private static void Set(AuthOptions auth, string variable, int value)
+    {
+        switch (variable)
+        {
+            case "SCS_AUTH__MAX_FAILED_ATTEMPTS": auth.MaxFailedAttempts = value; break;
+            case "SCS_AUTH__ATTEMPT_WINDOW_MINUTES": auth.AttemptWindowMinutes = value; break;
+            case "SCS_AUTH__LOCK_MINUTES": auth.LockMinutes = value; break;
+            case "SCS_AUTH__CODE_MINUTES": auth.CodeMinutes = value; break;
+            case "SCS_AUTH__CODE_ATTEMPTS": auth.CodeAttempts = value; break;
+            case "SCS_AUTH__MAX_SPENT_CODES": auth.MaxSpentCodes = value; break;
+            case "SCS_AUTH__RESEND_SECONDS": auth.ResendSeconds = value; break;
+            case "SCS_AUTH__MAX_RESENDS": auth.MaxResends = value; break;
+            case "SCS_AUTH__SESSION_HOURS": auth.SessionHours = value; break;
+            case "SCS_AUTH__ACCESS_MINUTES": auth.AccessMinutes = value; break;
+            case "SCS_AUTH__RENEWAL_GRACE_SECONDS": auth.RenewalGraceSeconds = value; break;
+            case "SCS_AUTH__REQUESTS_PER_MINUTE": auth.RequestsPerMinute = value; break;
+            case "SCS_AUTH__RENEWALS_PER_MINUTE": auth.RenewalsPerMinute = value; break;
+            default: throw new ArgumentOutOfRangeException(nameof(variable));
+        }
     }
 
     private static IReadOnlyList<string> Failures(ScsOptions options) =>

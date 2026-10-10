@@ -9,6 +9,10 @@
 --   scs_migrator  the migrator: may alter structure; used by the pipeline, never by the
 --                 running application
 --
+-- User scs_signin_lookup has no login. One stored procedure runs as it to find which clinic an
+-- account belongs to before anyone is signed in (spec 003). Nobody can connect as it, and the
+-- application cannot impersonate it.
+--
 -- Role scs_cross_clinic (members scs_ops, scs_migrator) is what the isolation predicate
 -- honours. Membership is granted here, by an administrator, so the application can never
 -- widen its own access.
@@ -48,6 +52,9 @@ IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'scs_ops')
 IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'scs_migrator')
     CREATE USER [scs_migrator] FOR LOGIN [scs_migrator];
 
+IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'scs_signin_lookup')
+    CREATE USER [scs_signin_lookup] WITHOUT LOGIN;
+
 IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = N'scs_cross_clinic' AND type = 'R')
     CREATE ROLE [scs_cross_clinic];
 GO
@@ -58,6 +65,12 @@ IF SCHEMA_ID(N'tenancy') IS NULL
 
 IF SCHEMA_ID(N'crossing') IS NULL
     EXEC (N'CREATE SCHEMA [crossing]');
+
+IF SCHEMA_ID(N'identity') IS NULL
+    EXEC (N'CREATE SCHEMA [identity]');
+
+IF SCHEMA_ID(N'security') IS NULL
+    EXEC (N'CREATE SCHEMA [security]');
 GO
 
 ALTER ROLE [db_datareader] ADD MEMBER [scs_app];
@@ -74,9 +87,18 @@ ALTER ROLE [db_datareader] ADD MEMBER [scs_migrator];
 ALTER ROLE [db_datawriter] ADD MEMBER [scs_migrator];
 ALTER ROLE [scs_cross_clinic] ADD MEMBER [scs_migrator];
 
+-- The sign-in lookup sees accounts of every clinic, through its one procedure only: it holds no
+-- permission of its own, so it can read nothing except what that procedure selects.
+ALTER ROLE [scs_cross_clinic] ADD MEMBER [scs_signin_lookup];
+
 -- The migrator creates the isolation policies and the function they call.
 GRANT ALTER ANY SECURITY POLICY TO [scs_migrator];
 GRANT REFERENCES TO [scs_migrator];
+
+-- The migrator creates the procedure that runs as the sign-in lookup; the application may only
+-- execute what the identity schema offers.
+GRANT IMPERSONATE ON USER::[scs_signin_lookup] TO [scs_migrator];
+GRANT EXECUTE ON SCHEMA::[identity] TO [scs_app];
 GO
 
 -- Clinic records and the directory of clinic names are written only by operators.
@@ -91,4 +113,11 @@ DENY SELECT, INSERT, UPDATE, DELETE ON SCHEMA::[crossing] TO [scs_report];
 -- Nothing may alter one, not even the login that writes it.
 DENY UPDATE ON SCHEMA::[crossing] TO [scs_ops];
 DENY UPDATE ON SCHEMA::[crossing] TO [scs_migrator];
+GO
+
+-- Attempts to sign in with an email that matches no account belong to no clinic. The
+-- application may add one and nothing else; operators read them.
+DENY SELECT, UPDATE, DELETE ON SCHEMA::[security] TO [scs_app];
+DENY SELECT, INSERT, UPDATE, DELETE ON SCHEMA::[security] TO [scs_report];
+DENY UPDATE ON SCHEMA::[security] TO [scs_ops];
 GO

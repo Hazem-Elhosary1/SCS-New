@@ -25,10 +25,49 @@ public static class ErrorCodes
     /// <summary>The work carries two different clinics, or tries to change clinic (spec 002).</summary>
     public const string ClinicMismatch = "CLINIC_MISMATCH";
 
+    /// <summary>The single answer before a correct password (spec 003, SH-043).</summary>
+    public const string InvalidCredentials = "INVALID_CREDENTIALS";
+
+    /// <summary>The single answer for a wrong, expired, spent, used or replaced sign-in code.</summary>
+    public const string CodeInvalid = "CODE_INVALID";
+
+    /// <summary>The access cookie has run out: renew the session, then repeat the request.</summary>
+    public const string AccessExpired = "ACCESS_EXPIRED";
+
+    /// <summary>The session is over; sign in again.</summary>
+    public const string SessionEnded = "SESSION_ENDED";
+
+    /// <summary>Told only after a correct password; carries <c>lockedUntil</c>.</summary>
+    public const string AccountLocked = "ACCOUNT_LOCKED";
+
+    /// <summary>Told only after a correct password.</summary>
+    public const string AccountDisabled = "ACCOUNT_DISABLED";
+
+    /// <summary>Told only after a correct password, and at renewal. Covers a cancelled clinic.</summary>
+    public const string ClinicSuspended = "CLINIC_SUSPENDED";
+
+    /// <summary>Refused before anything about the account is checked.</summary>
+    public const string NetworkBlocked = "NETWORK_BLOCKED";
+
+    /// <summary>The resend countdown has not ended; carries <c>resendAvailableInSeconds</c>.</summary>
+    public const string ResendTooEarly = "RESEND_TOO_EARLY";
+
+    /// <summary>No more codes may be resent in this sign-in; the last one is still valid.</summary>
+    public const string ResendLimitReached = "RESEND_LIMIT_REACHED";
+
+    /// <summary>The password was correct and the code email could not be sent.</summary>
+    public const string SignInCodeNotSent = "SIGN_IN_CODE_NOT_SENT";
+
+    /// <summary>A new code could not be sent; the earlier one is still valid.</summary>
+    public const string SignInCodeNotResent = "SIGN_IN_CODE_NOT_RESENT";
+
     public static IReadOnlyList<string> All { get; } =
     [
         ValidationFailed, MalformedRequest, Unauthenticated, Forbidden, NotFound,
         PayloadTooLarge, RateLimited, InternalError, ServiceUnavailable,
         ClinicRequired, ClinicNotAvailable, ClinicMismatch,
+        InvalidCredentials, CodeInvalid, AccessExpired, SessionEnded,
+        AccountLocked, AccountDisabled, ClinicSuspended, NetworkBlocked,
+        ResendTooEarly, ResendLimitReached, SignInCodeNotSent, SignInCodeNotResent,
     ];
 }

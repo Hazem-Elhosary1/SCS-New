@@ -34,6 +34,13 @@
   --scs-color-feedback-warning-icon: #b45309;
   --scs-color-feedback-warning-bg: #fffbeb;
   --scs-color-feedback-warning-border: #fef3c7;
+  --scs-color-feedback-warning-text: #92400e;
+  --scs-color-feedback-success-icon: #067647;
+  --scs-color-feedback-success-text: #085d3a;
+  --scs-color-feedback-success-bg: #ecfdf3;
+  --scs-color-feedback-success-border: #abefc6;
+  --scs-color-feedback-info-text: #1e40af;
+  --scs-color-overlay: #0a0f1480;
 
   /* Type */
   --scs-font-family: 'Cairo Variable', 'Cairo', system-ui, 'Segoe UI', Tahoma, sans-serif;

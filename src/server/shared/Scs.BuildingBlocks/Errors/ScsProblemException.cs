@@ -16,6 +16,9 @@ public class ScsProblemException(int status, string code, string? logMessage = n
 
     public IReadOnlyDictionary<string, string[]>? Errors { get; init; }
 
+    /// <summary>Extra members of the answer that a client needs to act (a time, a count). Never personal data.</summary>
+    public IReadOnlyDictionary<string, object?>? Extensions { get; init; }
+
     /// <summary>A refusal for invalid input; <paramref name="errors"/> maps field name to field codes.</summary>
     public static ScsProblemException Validation(IReadOnlyDictionary<string, string[]> errors) =>
         new(StatusCodes.Status400BadRequest, ErrorCodes.ValidationFailed) { Errors = errors };

@@ -32,6 +32,14 @@ public sealed class ScsOptions
 
     public RetentionOptions Retention { get; set; } = new();
 
+    public AuthOptions Auth { get; set; } = new();
+
+    public MailOptions Mail { get; set; } = new();
+
+    public SupportOptions Support { get; set; } = new();
+
+    public SeedOptions Seed { get; set; } = new();
+
     /// <summary><c>SCS_VERSION</c>, set at build.</summary>
     public string Version { get; set; } = "0.0.0-dev";
 
@@ -113,4 +121,148 @@ public sealed class ApiDocsOptions
 {
     /// <summary><c>SCS_APIDOCS__ENABLED</c>: ignored when the environment is production.</summary>
     public bool Enabled { get; set; }
+}
+
+/// <summary>
+/// Staff sign-in and sessions (spec 003). Platform settings held as configuration until the
+/// settings screen of the operators console exists (spec 024). Limits are in
+/// <see cref="ScsOptionsValidator"/>.
+/// </summary>
+public sealed class AuthOptions
+{
+    /// <summary>
+    /// <c>SCS_AUTH__CODE_KEY</c>: base64 of at least 32 bytes. Keys the hashes of sign-in codes
+    /// and of emails that match no account.
+    /// </summary>
+    [Secret]
+    [ConfigurationKeyName("CODE_KEY")]
+    public string CodeKey { get; set; } = "";
+
+    /// <summary><c>SCS_AUTH__MAX_FAILED_ATTEMPTS</c>: wrong passwords before the lock.</summary>
+    [ConfigurationKeyName("MAX_FAILED_ATTEMPTS")]
+    public int MaxFailedAttempts { get; set; } = 5;
+
+    /// <summary><c>SCS_AUTH__ATTEMPT_WINDOW_MINUTES</c>: wrong attempts are forgotten after this long without a new one.</summary>
+    [ConfigurationKeyName("ATTEMPT_WINDOW_MINUTES")]
+    public int AttemptWindowMinutes { get; set; } = 15;
+
+    /// <summary><c>SCS_AUTH__LOCK_MINUTES</c>: how long a lock lasts.</summary>
+    [ConfigurationKeyName("LOCK_MINUTES")]
+    public int LockMinutes { get; set; } = 15;
+
+    /// <summary><c>SCS_AUTH__CODE_MINUTES</c>: life of a sign-in code.</summary>
+    [ConfigurationKeyName("CODE_MINUTES")]
+    public int CodeMinutes { get; set; } = 10;
+
+    /// <summary><c>SCS_AUTH__CODE_ATTEMPTS</c>: tries before a code is spent.</summary>
+    [ConfigurationKeyName("CODE_ATTEMPTS")]
+    public int CodeAttempts { get; set; } = 5;
+
+    /// <summary><c>SCS_AUTH__MAX_SPENT_CODES</c>: codes spent in a row before the lock.</summary>
+    [ConfigurationKeyName("MAX_SPENT_CODES")]
+    public int MaxSpentCodes { get; set; } = 3;
+
+    /// <summary><c>SCS_AUTH__RESEND_SECONDS</c>: the countdown before a code may be sent again.</summary>
+    [ConfigurationKeyName("RESEND_SECONDS")]
+    public int ResendSeconds { get; set; } = 60;
+
+    /// <summary><c>SCS_AUTH__MAX_RESENDS</c>: codes that may be resent in one sign-in.</summary>
+    [ConfigurationKeyName("MAX_RESENDS")]
+    public int MaxResends { get; set; } = 3;
+
+    /// <summary><c>SCS_AUTH__SESSION_HOURS</c>: the longest a session lives, however active.</summary>
+    [ConfigurationKeyName("SESSION_HOURS")]
+    public int SessionHours { get; set; } = 12;
+
+    /// <summary><c>SCS_AUTH__ACCESS_MINUTES</c>: life of the access cookie between renewals.</summary>
+    [ConfigurationKeyName("ACCESS_MINUTES")]
+    public int AccessMinutes { get; set; } = 5;
+
+    /// <summary><c>SCS_AUTH__RENEWAL_GRACE_SECONDS</c>: how long a replaced renewal secret is still honoured.</summary>
+    [ConfigurationKeyName("RENEWAL_GRACE_SECONDS")]
+    public int RenewalGraceSeconds { get; set; } = 30;
+
+    /// <summary><c>SCS_AUTH__REQUESTS_PER_MINUTE</c>: sign-in requests per network address (SH-041).</summary>
+    [ConfigurationKeyName("REQUESTS_PER_MINUTE")]
+    public int RequestsPerMinute { get; set; } = 10;
+
+    /// <summary><c>SCS_AUTH__RENEWALS_PER_MINUTE</c>: session renewals per network address.</summary>
+    [ConfigurationKeyName("RENEWALS_PER_MINUTE")]
+    public int RenewalsPerMinute { get; set; } = 120;
+
+    /// <summary><c>SCS_AUTH__EMAIL_CODE_ENABLED</c>: the second step, for the whole platform (FR-022).</summary>
+    [ConfigurationKeyName("EMAIL_CODE_ENABLED")]
+    public bool EmailCodeEnabled { get; set; } = true;
+
+    /// <summary>
+    /// <c>SCS_AUTH__COOKIE_PATH_BASE</c>: the path the API is served under. Empty locally,
+    /// <c>/api</c> when deployed.
+    /// </summary>
+    [ConfigurationKeyName("COOKIE_PATH_BASE")]
+    public string CookiePathBase { get; set; } = "";
+
+    public byte[] CodeKeyBytes()
+    {
+        try
+        {
+            return Convert.FromBase64String(CodeKey);
+        }
+        catch (FormatException)
+        {
+            return [];
+        }
+    }
+}
+
+/// <summary>Outgoing mail (spec 003; templates and events arrive with spec 008).</summary>
+public sealed class MailOptions
+{
+    /// <summary><c>SCS_MAIL__HOST</c></summary>
+    public string Host { get; set; } = "";
+
+    /// <summary><c>SCS_MAIL__PORT</c></summary>
+    public int Port { get; set; } = 587;
+
+    /// <summary><c>SCS_MAIL__USE_TLS</c></summary>
+    [ConfigurationKeyName("USE_TLS")]
+    public bool UseTls { get; set; } = true;
+
+    /// <summary><c>SCS_MAIL__USER</c>: empty when the server needs no sign-in (the local mail catcher).</summary>
+    public string User { get; set; } = "";
+
+    /// <summary><c>SCS_MAIL__PASSWORD</c></summary>
+    [Secret]
+    public string Password { get; set; } = "";
+
+    /// <summary><c>SCS_MAIL__FROM</c></summary>
+    public string From { get; set; } = "";
+
+    /// <summary><c>SCS_MAIL__TIMEOUT_SECONDS</c>: how long a request waits for the mail server.</summary>
+    [ConfigurationKeyName("TIMEOUT_SECONDS")]
+    public int TimeoutSeconds { get; set; } = 10;
+}
+
+/// <summary>What the help window on the sign-in screens shows. Nothing here is private.</summary>
+public sealed class SupportOptions
+{
+    [ConfigurationKeyName("HOURS_AR")]
+    public string HoursAr { get; set; } = "";
+
+    [ConfigurationKeyName("HOURS_EN")]
+    public string HoursEn { get; set; } = "";
+
+    public string Hotline { get; set; } = "";
+
+    public string Whatsapp { get; set; } = "";
+
+    public string Email { get; set; } = "";
+}
+
+/// <summary>Made-up data for local and test environments only.</summary>
+public sealed class SeedOptions
+{
+    /// <summary><c>SCS_SEED__STAFF_PASSWORD</c>: the one password of the seeded staff accounts.</summary>
+    [Secret]
+    [ConfigurationKeyName("STAFF_PASSWORD")]
+    public string StaffPassword { get; set; } = "";
 }

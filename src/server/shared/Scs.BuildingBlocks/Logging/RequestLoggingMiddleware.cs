@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
+using Scs.BuildingBlocks.Security;
 using Scs.BuildingBlocks.Tenancy;
 using Serilog.Context;
 
@@ -31,7 +32,11 @@ public sealed partial class RequestLoggingMiddleware(RequestDelegate next, ILogg
 
             // The clinic the request was done for, if one was established; an identifier only.
             var clinicId = (context.RequestServices.GetService(typeof(IClinicContext)) as IClinicContext)?.ClinicId;
+            var accountId = context.User.FindFirst(StaffClaims.AccountId)?.Value;
+            var sessionId = context.User.FindFirst(StaffClaims.SessionId)?.Value;
             using (clinicId is { } id ? LogContext.PushProperty("clinicId", id) : null)
+            using (accountId is null ? null : LogContext.PushProperty("accountId", accountId))
+            using (sessionId is null ? null : LogContext.PushProperty("sessionId", sessionId))
             {
                 LogCompleted(logger, context.Request.Method, route, context.Response.StatusCode, durationMs);
             }

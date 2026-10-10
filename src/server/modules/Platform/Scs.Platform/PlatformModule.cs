@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -34,12 +35,19 @@ public sealed class PlatformModule : IModule, IMigratableModule
         services.AddScoped<HeartbeatJob>();
         services.AddSingleton<IRecurringJobRegistration, PlatformJobs>();
         services.AddClientErrorRateLimit();
+
+        // Session cookies are protected with one key ring for the whole platform, kept in the
+        // database so every server instance can read what another wrote (spec 003, research R9).
+        services.AddDataProtection()
+            .SetApplicationName("scs")
+            .PersistKeysToDbContext<PlatformDbContext>();
     }
 
     public void MapEndpoints(IEndpointRouteBuilder v1)
     {
         v1.MapVersion();
         v1.MapClientErrors();
+        v1.MapSupport();
     }
 
     public IReadOnlyList<string> GetMigrations(string migrationConnection)

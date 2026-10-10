@@ -21,7 +21,16 @@ var scs = builder.Services.AddScsOptions(builder.Configuration);
 builder.Services.AddScsLogging(scs);
 builder.Services.AddScsTelemetry(scs);
 builder.Services.AddRateLimiter(options => options.OnRejected = async (rejected, _) =>
-    await ProblemWriter.WriteAsync(rejected.HttpContext, StatusCodes.Status429TooManyRequests, ErrorCodes.RateLimited));
+{
+    // Tell the caller when to try again, so a form can say so instead of guessing.
+    if (rejected.Lease.TryGetMetadata(System.Threading.RateLimiting.MetadataName.RetryAfter, out var retryAfter))
+    {
+        rejected.HttpContext.Response.Headers.RetryAfter =
+            ((int)Math.Ceiling(retryAfter.TotalSeconds)).ToString(System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    await ProblemWriter.WriteAsync(rejected.HttpContext, StatusCodes.Status429TooManyRequests, ErrorCodes.RateLimited);
+});
 builder.Services.AddExceptionHandler<ProblemDetailsExceptionHandler>();
 builder.Services.AddHealthChecks().AddScsReadiness();
 builder.Services.AddScsJobs(scs);
@@ -41,7 +50,8 @@ if (scs.IsLocal && corsOrigins.Length > 0)
         .WithOrigins(corsOrigins)
         .AllowAnyHeader()
         .AllowAnyMethod()
-        .WithExposedHeaders(TraceIdMiddleware.HeaderName)));
+        .AllowCredentials()
+        .WithExposedHeaders(TraceIdMiddleware.HeaderName, "Retry-After")));
 }
 
 if (!scs.IsLocal)
@@ -109,8 +119,11 @@ if (scs.IsLocal && corsOrigins.Length > 0)
     app.UseCors();
 }
 
+app.UseScsRequestOriginCheck();
 app.UseAuthentication();
+app.UseScsStaffLogScope();
 app.UseAuthorization();
+app.UseScsBlockedNetworks();
 app.UseRateLimiter();
 app.UseScsPatientSurface();
 

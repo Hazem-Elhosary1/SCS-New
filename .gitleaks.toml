@@ -7,6 +7,9 @@ description = "Sample values for local development and values made up inside tes
 paths = [
   '''deploy/compose/\.env\.example$''',
   '''src/server/tests/.*''',
-  '''src/web/projects/.*\.spec\.ts$''',
+  '''src/web/projects/.*\.spec\.ts  '''specs/.*''',
+]
+'',
+  '''src/web/e2e/.*''',
   '''specs/.*''',
 ]

@@ -1,0 +1,61 @@
+/*
+ * Looks for the directives in controls.ts. A directive has no stylesheet of its own, so each
+ * app's styles.css imports this file. Appearance comes only from the app's token variables.
+ */
+.scs-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--scs-spacing-sm);
+  min-block-size: 44px;
+  padding: var(--scs-spacing-10) var(--scs-spacing-md);
+  border: 1px solid var(--scs-color-brand-default);
+  border-radius: var(--scs-radius-sm);
+  background: var(--scs-color-brand-default);
+  color: var(--scs-color-brand-on-brand);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.scs-button:hover:not(:disabled) {
+  background: var(--scs-color-brand-active);
+  border-color: var(--scs-color-brand-active);
+}
+
+.scs-button[data-variant='secondary'] {
+  background: var(--scs-color-bg-surface);
+  color: var(--scs-color-text-link);
+  border-color: var(--scs-color-border-default);
+}
+
+.scs-button[data-variant='secondary']:hover:not(:disabled) {
+  background: var(--scs-color-bg-surface-secondary);
+  border-color: var(--scs-color-border-default);
+}
+
+.scs-button:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.scs-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--scs-color-text-link);
+  font: inherit;
+  font-size: var(--scs-text-body-sm);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.scs-link:hover {
+  text-decoration: underline;
+}
+
+.scs-button:focus-visible,
+.scs-link:focus-visible {
+  outline: 2px solid var(--scs-color-brand-default);
+  outline-offset: 2px;
+}

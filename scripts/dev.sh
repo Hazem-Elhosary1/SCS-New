@@ -27,6 +27,7 @@ done < "$env_file"
 
 step "Database"
 docker compose -f "$compose" --env-file "$env_file" up -d --wait sqlserver
+docker compose -f "$compose" --env-file "$env_file" up -d mailpit
 docker compose -f "$compose" --env-file "$env_file" --profile init run --rm sqlserver-init
 
 step "Structure"
@@ -60,10 +61,11 @@ Smart Clinic OS is starting. When the builds finish:
 
   Platform   http://localhost:5080/health/ready
   Version    http://localhost:5080/v1/meta/version
-  Clinic     http://localhost:4201
+  Clinic     http://localhost:4201        (sign in as owner@noor.example)
   Patient    http://localhost:4202/noor   (also /shifa)
   Operators  http://localhost:4203
   Jobs       http://localhost:5080/jobs
+  Mail inbox http://localhost:8025   (sign-in codes arrive here)
   API docs   http://localhost:5080/openapi/v1.json
 
 Press Ctrl+C to stop.

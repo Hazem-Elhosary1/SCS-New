@@ -18,6 +18,8 @@ export class ScsProblemError extends Error {
     readonly problem: ScsProblem,
     /** True when the platform never answered and the problem was built in the browser. */
     readonly local: boolean,
+    /** Seconds the platform asked the caller to wait (`Retry-After`), when it said so. */
+    readonly retryAfterSeconds: number | null = null,
   ) {
     super(problem.code);
     this.name = 'ScsProblemError';
@@ -44,7 +46,12 @@ export function isScsProblem(value: unknown): value is ScsProblem {
  */
 export function toProblemError(response: HttpErrorResponse, traceId: string): ScsProblemError {
   if (isScsProblem(response.error)) {
-    return new ScsProblemError(response.error, false);
+    const wait = Number.parseInt(response.headers?.get('Retry-After') ?? '', 10);
+    return new ScsProblemError(
+      response.error,
+      false,
+      Number.isFinite(wait) && wait > 0 ? wait : null,
+    );
   }
 
   return new ScsProblemError(

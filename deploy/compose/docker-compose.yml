@@ -49,5 +49,13 @@ services:
       - -i
       - /sql/create-logins.sql
 
+  # Catches every email the platform sends locally; nothing leaves the machine.
+  # Inbox: http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "${SCS_MAIL_SMTP_PORT:-1025}:1025"
+      - "${SCS_MAIL_INBOX_PORT:-8025}:8025"
+
 volumes:
   sqlserver-data:

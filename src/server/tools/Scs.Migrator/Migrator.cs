@@ -19,6 +19,7 @@ public static class Migrator
     [
         // First: its first migration creates the function every isolation policy calls.
         new TenancyModule(),
+        new Scs.Identity.IdentityModule(),
         new PlatformModule(),
     ];
 

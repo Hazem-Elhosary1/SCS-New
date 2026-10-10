@@ -197,6 +197,23 @@ test('the staff and operators sites never send a clinic name', async ({ page }) 
   });
   await platform(page);
 
+  // The clinic console is behind sign-in (spec 003): answer as a signed-in person would be.
+  await page.route('**/v1/auth/session', (route) =>
+    route.fulfill({
+      status: 200,
+      headers: {
+        'access-control-allow-origin': route.request().headers()['origin'] ?? '*',
+        'access-control-allow-credentials': 'true',
+      },
+      json: {
+        accountId: '0199c0de-0000-7000-8000-000000000001',
+        email: 'owner@noor.example',
+        clinic: { nameAr: 'عيادة النور', nameEn: 'Al Noor Clinic', state: 'active' },
+        expiresAt: '2030-01-01T12:00:00Z',
+      },
+    }),
+  );
+
   await page.goto('http://localhost:4201/noor');
   await expect(page.getByTestId('placeholder')).toBeVisible();
   await page.goto('http://localhost:4203/noor');

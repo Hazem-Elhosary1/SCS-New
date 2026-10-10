@@ -29,13 +29,14 @@ if (-not (Test-Path $envFile)) {
     Copy-Item (Join-Path $root 'deploy/compose/.env.example') $envFile
     Write-Host 'Created deploy/compose/.env from .env.example (sample values).'
 }
-Get-Content $envFile | Where-Object { $_ -match '^\s*[^#\s][^=]*=' } | ForEach-Object {
+Get-Content $envFile -Encoding UTF8 | Where-Object { $_ -match '^\s*[^#\s][^=]*=' } | ForEach-Object {
     $name, $value = $_ -split '=', 2
     Set-Item -Path "Env:$($name.Trim())" -Value $value
 }
 
 Step 'Database'
 Invoke-Checked docker compose -f $compose --env-file $envFile up -d --wait sqlserver
+Invoke-Checked docker compose -f $compose --env-file $envFile up -d mailpit
 Invoke-Checked docker compose -f $compose --env-file $envFile --profile init run --rm sqlserver-init
 
 Step 'Structure'
@@ -70,10 +71,11 @@ Smart Clinic OS is starting. When the builds finish:
 
   Platform   http://localhost:5080/health/ready
   Version    http://localhost:5080/v1/meta/version
-  Clinic     http://localhost:4201
+  Clinic     http://localhost:4201        (sign in as owner@noor.example)
   Patient    http://localhost:4202/noor   (also /shifa)
   Operators  http://localhost:4203
   Jobs       http://localhost:5080/jobs
+  Mail inbox http://localhost:8025   (sign-in codes arrive here)
   API docs   http://localhost:5080/openapi/v1.json
 
 Press Ctrl+C to stop.

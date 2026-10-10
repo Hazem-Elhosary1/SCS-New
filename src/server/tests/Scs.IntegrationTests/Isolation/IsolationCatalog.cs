@@ -27,6 +27,20 @@ public static class IsolationCatalog
         ORDER BY s.name, t.name;
         """;
 
+    /// <summary>
+    /// Every procedure, function or trigger that runs as someone other than its caller. Such a
+    /// module can see what its caller cannot, so each one must be declared (spec 003, FR-056).
+    /// </summary>
+    private const string ModulesQuery =
+        """
+        SELECT SCHEMA_NAME(o.schema_id), o.name,
+               CASE m.execute_as_principal_id WHEN -2 THEN N'OWNER' ELSE USER_NAME(m.execute_as_principal_id) END
+        FROM sys.sql_modules m
+        JOIN sys.objects o ON o.object_id = m.object_id
+        WHERE m.execute_as_principal_id IS NOT NULL AND o.is_ms_shipped = 0
+        ORDER BY 1, 2;
+        """;
+
     /// <summary>One line per problem, each naming the table. Empty when every table is accounted for.</summary>
     public static async Task<IReadOnlyList<string>> FindViolationsAsync(string adminConnection)
     {
@@ -75,6 +89,24 @@ public static class IsolationCatalog
             }
 
             violations.AddRange(Check(facts).Select(problem => $"{facts.Schema}.{facts.Table}: {problem}"));
+        }
+
+        await using (var connection = new SqlConnection(adminConnection))
+        {
+            await connection.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText = ModulesQuery;
+            await using var reader = await command.ExecuteReaderAsync();
+
+            while (await reader.ReadAsync())
+            {
+                var name = $"{reader.GetString(0)}.{reader.GetString(1)}";
+                var runsAs = reader.IsDBNull(2) ? "an unknown user" : reader.GetString(2);
+                if (!DeclaredDatabaseCrossings.Contains(name, runsAs))
+                {
+                    violations.Add($"{name}: runs as {runsAs} and is not declared in DeclaredDatabaseCrossings");
+                }
+            }
         }
 
         return violations;

@@ -2,6 +2,65 @@
   "app": {
     "shell": {
       "name": "Clinic console"
+    },
+    "signIn": {
+      "title": "Clinic team sign-in",
+      "subtitle": "Enter the email and password registered for the clinic",
+      "email": {
+        "label": "Email",
+        "required": "Email is required",
+        "invalid": "The email is not valid — like name@clinic.com"
+      },
+      "password": {
+        "label": "Password",
+        "required": "Password is required"
+      },
+      "submit": "Sign in",
+      "submitting": "Signing in…",
+      "forgot": "Forgot the password?",
+      "newAccount": "New account? Open the link in the email to set a password.",
+      "banner": {
+        "ended": "The session has ended. Sign in again to continue.",
+        "invalid": "The email or password is incorrect.",
+        "unreachable": "The server could not be reached. Try again shortly.",
+        "codeNotSent": "The verification code could not be sent to the email. Try again shortly.",
+        "lockedBefore": "The account was locked after failed sign-in attempts. It opens after",
+        "lockedAfter": ", or at once when the password is reset from \"Forgot the password?\".",
+        "disabled": "This account cannot sign in: it is disabled. Whoever manages users in the clinic can re-enable it.",
+        "suspended": "The clinic is suspended, so no session can be opened and signing in is not possible now. Contacting the support team is the only way.",
+        "suspendedAction": "Contact support",
+        "blocked": "Signing in from this network is blocked now. Contact the support team to learn why and have it lifted.",
+        "rateLimitedBefore": "Too many requests from this network. Try again in",
+        "rateLimitedAfter": "seconds.",
+        "unexpected": "The request could not be completed. Try again shortly."
+      }
+    },
+    "code": {
+      "title": "Two-step verification",
+      "subtitle": "Enter the 6-digit code sent to the email",
+      "label": "Verification code",
+      "submit": "Confirm code",
+      "opening": "Opening the home page…",
+      "countdown": "Resend in",
+      "resend": "No code yet? Send it again",
+      "resendButton": "Send the code again",
+      "back": "Back to sign-in",
+      "noMoreResends": "No more codes can be sent for this sign-in. Going back to sign-in starts again.",
+      "banner": {
+        "invalid": "The code is incorrect or has expired. A new code can be requested.",
+        "resendFailed": "A new code could not be sent. The earlier code stays valid until it expires.",
+        "accepted": "The code is correct; signed in."
+      }
+    },
+    "help": {
+      "title": "Need help?",
+      "hotline": "Hotline",
+      "whatsapp": "WhatsApp",
+      "email": "Email"
+    },
+    "landing": {
+      "signedInAs": "Signed in as",
+      "signOut": "Sign out"
     }
   }
 }

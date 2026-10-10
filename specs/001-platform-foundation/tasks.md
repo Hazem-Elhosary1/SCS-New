@@ -357,3 +357,14 @@ monitoring), one on US5 (front-end conventions). US4 follows US2's production en
 - [X] T124 Either add an interface viewer page next to the OpenAPI document in `src/server/host/Scs.Api/ApiDocs.cs` (same rule: never in production), or amend `specs/001-platform-foundation/research.md` R11 to say the document alone is served, per T022 and research R11 (partial)
 - [X] T125 Record in `specs/001-platform-foundation/research.md` R22 and `specs/001-platform-foundation/contracts/conventions.md` §6 that the jobs dashboard is mapped in `local` only until operator sign-in exists (spec 010), matching `src/server/host/Scs.Api/Program.cs`, per research R22 (contradicts)
 - [X] T126 Update `docs/setup.md` section 5 to list the full local gates — `npm --prefix src/web run ci` and `npm --prefix src/web run e2e` with the browser install command — per FR-006 (partial)
+
+---
+
+## Phase 10: Carried from spec 003 (cloud)
+
+Sign-in works locally and in tests. These three must be done before it serves production.
+
+- [ ] T127 Wrap the data-protection key ring (`platform.DataProtectionKey`) with the cloud key service in every cloud environment, in `src/server/modules/Platform/Scs.Platform/PlatformModule.cs` and `deploy/infra/`, and grant the task role use of that key only (spec 003, research R9; constitution V)
+- [ ] T128 Choose the cloud mail service and put `SCS_MAIL__*` in the secret store of each environment in `deploy/infra/`; send a sign-in code end to end in the test environment (spec 003, research R12)
+- [ ] T129 Share the sign-in request limit between server instances before more than one serves production, replacing the per-instance limiter in `src/server/modules/Identity/Scs.Identity/Api/AuthEndpoints.cs` (spec 003, research R11)
+

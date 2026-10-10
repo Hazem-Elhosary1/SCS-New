@@ -46,6 +46,22 @@ internal static class EntryPoint
         await Console.Out.WriteLineAsync(
             added.Count == 0 ? "Seed clinics are already present." : $"Seeded clinics: {string.Join(", ", added)}.")
             .ConfigureAwait(false);
+
+        var appConnection = Environment.GetEnvironmentVariable("SCS_DB__CONNECTION");
+        var staffPassword = Environment.GetEnvironmentVariable("SCS_SEED__STAFF_PASSWORD");
+        if (string.IsNullOrWhiteSpace(appConnection) || string.IsNullOrWhiteSpace(staffPassword))
+        {
+            await Console.Error.WriteLineAsync(
+                "Missing required configuration value SCS_DB__CONNECTION or SCS_SEED__STAFF_PASSWORD.").ConfigureAwait(false);
+            return 2;
+        }
+
+        var clinics = await Scs.Tenancy.TenancyModule.SeededClinicIdsAsync(connection, CancellationToken.None).ConfigureAwait(false);
+        var accounts = await Scs.Identity.IdentityModule.SeedAsync(appConnection, clinics, staffPassword, CancellationToken.None)
+            .ConfigureAwait(false);
+        await Console.Out.WriteLineAsync(
+            accounts.Count == 0 ? "Seed staff accounts are already present." : $"Seeded staff accounts: {accounts.Count}.")
+            .ConfigureAwait(false);
         return 0;
     }
 }

@@ -31,17 +31,41 @@ const cors = {
   'access-control-expose-headers': 'X-Trace-Id',
 };
 
+/**
+ * The staff and operators sites call the platform with cookies (spec 003), so an answer must
+ * name the calling site rather than allow any.
+ */
+function corsFor(route: Route): Record<string, string> {
+  return {
+    ...cors,
+    'access-control-allow-origin': route.request().headers()['origin'] ?? '*',
+    'access-control-allow-credentials': 'true',
+  };
+}
+
+const signedIn = {
+  accountId: '0199c0de-0000-7000-8000-000000000001',
+  email: 'owner@noor.example',
+  clinic: { nameAr: 'عيادة النور', nameEn: 'Al Noor Clinic', state: 'active' },
+  expiresAt: '2030-01-01T12:00:00Z',
+};
+
 /** Answers the platform's two status calls, including the browser's preflight. */
 async function platform(page: Page, version: (route: Route) => Promise<void>): Promise<void> {
   const answer = (handler: (route: Route) => Promise<void>) => async (route: Route) => {
     if (route.request().method() === 'OPTIONS') {
-      await route.fulfill({ status: 204, headers: cors });
+      await route.fulfill({ status: 204, headers: corsFor(route) });
     } else {
       await handler(route);
     }
   };
 
   await page.route('**/v1/meta/version', answer(version));
+  // The clinic console is behind sign-in; these tests are about what is shown once inside.
+  await page.route(
+    '**/v1/auth/session',
+    answer((route) => route.fulfill({ status: 200, headers: corsFor(route), json: signedIn })),
+  );
   await page.route(
     '**/v1/clinic',
     answer(async (route) => {
@@ -49,7 +73,7 @@ async function platform(page: Page, version: (route: Route) => Promise<void>): P
       if (asked === 'noor' || asked === 'old-noor') {
         await route.fulfill({
           status: 200,
-          headers: cors,
+          headers: corsFor(route),
           json: {
             shortName: 'noor',
             nameAr: 'عيادة النور',
@@ -64,7 +88,7 @@ async function platform(page: Page, version: (route: Route) => Promise<void>): P
       const english = (route.request().headers()['accept-language'] ?? '') === 'en';
       await route.fulfill({
         status: 404,
-        headers: { ...cors, 'content-type': 'application/problem+json' },
+        headers: { ...corsFor(route), 'content-type': 'application/problem+json' },
         body: JSON.stringify({
           type: 'urn:scs:error:clinic-not-available',
           title: english ? 'This page is not available' : 'هذه الصفحة غير متاحة',
@@ -77,11 +101,14 @@ async function platform(page: Page, version: (route: Route) => Promise<void>): P
   );
   await page.route(
     '**/health/ready',
-    answer((route) => route.fulfill({ status: 200, headers: cors, json: { status: 'Healthy' } })),
+    answer((route) =>
+      route.fulfill({ status: 200, headers: corsFor(route), json: { status: 'Healthy' } }),
+    ),
   );
 }
 
-const healthy = (route: Route) => route.fulfill({ status: 200, headers: cors, json: release });
+const healthy = (route: Route) =>
+  route.fulfill({ status: 200, headers: corsFor(route), json: release });
 
 async function open(page: Page, url: string, language: 'ar' | 'en'): Promise<void> {
   await page.goto(url);
@@ -150,7 +177,7 @@ for (const app of apps) {
           sentLanguage = route.request().headers()['accept-language'] ?? '';
           await route.fulfill({
             status: 500,
-            headers: { ...cors, 'content-type': 'application/problem+json' },
+            headers: { ...corsFor(route), 'content-type': 'application/problem+json' },
             body: JSON.stringify({
               type: 'urn:scs:error:internal-error',
               title,

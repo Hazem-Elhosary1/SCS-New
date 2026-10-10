@@ -59,6 +59,33 @@
         "viewOnly": "View only",
         "notInPlan": "Not in plan"
       }
+    },
+    "auth": {
+      "intro": {
+        "name": "Smart Clinic Operating System",
+        "tagline": "A complete digital medical infrastructure",
+        "about": "Appointments, patients, medical records and invoices of the clinic in one place, with a booking assistant that answers patients on WhatsApp and Telegram."
+      },
+      "footer": {
+        "help": "Need help? Contact technical support",
+        "privacy": "Privacy policy",
+        "terms": "Terms of use"
+      }
+    },
+    "field": {
+      "password": {
+        "show": "Show password",
+        "hide": "Hide password"
+      }
+    },
+    "dialog": {
+      "close": "Close"
+    },
+    "page": {
+      "notYet": {
+        "title": "This page is not available yet",
+        "back": "Back to sign-in"
+      }
     }
   }
 }

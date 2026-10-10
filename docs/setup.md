@@ -30,16 +30,19 @@ macOS or Linux:
 ./scripts/dev.sh
 ```
 
-The script does six things, in order:
+The script does seven things, in order:
 
 1. creates `deploy/compose/.env` from `.env.example` if it is not there;
 2. starts SQL Server in a container (host port **14333**) and creates the database and the four
    logins: `scs_app` (the application), `scs_report` (read-only, for reports), `scs_ops`
    (operators, the only one that may cross clinics) and `scs_migrator` (structure changes);
-3. applies the database structure with the migrator;
-4. registers two made-up clinics, `noor` and `shifa`, if they are not there;
-5. starts the platform API on port 5080;
-6. installs the front-end packages if needed and starts the three apps.
+3. starts a mail catcher in a container: every email the platform sends locally lands in its
+   inbox at <http://localhost:8025> and goes nowhere else;
+4. applies the database structure with the migrator;
+5. registers two made-up clinics, `noor` and `shifa`, and six made-up staff accounts, if they
+   are not there;
+6. starts the platform API on port 5080;
+7. installs the front-end packages if needed and starts the three apps.
 
 To start only the database and the API, add `-NoWeb` (PowerShell) or `--no-web` (bash).
 
@@ -50,7 +53,8 @@ To start only the database and the API, add `-NoWeb` (PowerShell) or `--no-web` 
 | <http://localhost:5080/health/live> | `{"status":"Healthy"}` |
 | <http://localhost:5080/health/ready> | `Healthy`, with checks `database` and `jobs` both `Healthy` |
 | <http://localhost:5080/v1/meta/version> | `"environment":"local"` |
-| <http://localhost:4201> | Clinic console placeholder: «المنصّة متاحة» |
+| <http://localhost:4201> | The staff sign-in form: «تسجيل دخول فريق العيادة» |
+| <http://localhost:8025> | The mail inbox, where sign-in codes arrive |
 | <http://localhost:4202/noor> | Patient surfaces placeholder for «عيادة النور» / "Al Noor Clinic" |
 | <http://localhost:4202/shifa> | The same for «عيادة الشفاء» / "Al Shifa Clinic" |
 | <http://localhost:4202/nosuch> and <http://localhost:4202> | The "clinic not available" page, the same for every unknown name |
@@ -59,6 +63,19 @@ To start only the database and the API, add `-NoWeb` (PowerShell) or `--no-web` 
 | <http://localhost:5080/openapi/v1.json> | Interface description (never served in production) |
 
 Each placeholder page shows the platform version and the environment it reached.
+
+### Sign in to the clinic console
+
+1. Open <http://localhost:4201>. Sign in as `owner@noor.example` with the password in
+   `SCS_SEED__STAFF_PASSWORD` of `deploy/compose/.env`.
+2. Open the inbox at <http://localhost:8025> and type the six-digit code from the newest message.
+3. The landing page shows «عيادة النور» and the account, with «تسجيل الخروج».
+
+Other made-up accounts, all with the same password: `reception@noor.example`,
+`owner@shifa.example`, `doctor@shifa.example`; `former@noor.example` is disabled and
+`new@shifa.example` was never activated, to show those two refusals. Five wrong passwords lock
+an account for 15 minutes; `ops/runbooks/sign-in.md` says how to open it at once. More than ten
+sign-in requests in a minute are refused for the rest of that minute.
 
 ### Check the "not ready" behaviour
 
@@ -128,12 +145,16 @@ Docker, the tests that need a database fail and the rest still run.
 | `/health/ready` is 503 with `jobs` unhealthy | The structure was not applied. Run the script again, or run the migrator: `dotnet run --project src/server/tools/Scs.Migrator`. |
 | The API stops at start with "Missing required configuration value SCS_…" | `deploy/compose/.env` is incomplete. Delete it and run the script again to recreate it. This is needed once after taking the clinic isolation work (spec 002), which added the report and operator logins. |
 | <http://localhost:4202/noor> shows "clinic not available" | The made-up clinics are not registered. Run `dotnet run --project src/server/tools/Scs.Migrator -- seed`. |
+| Sign-in answers «لم نستطع إرسال رمز التحقق إلى بريدك» | The mail catcher is not running. Start it: `docker compose -f deploy/compose/docker-compose.yml --env-file deploy/compose/.env up -d mailpit`. |
+| The API stops at start naming `SCS_AUTH__CODE_KEY` or `SCS_MAIL__HOST` | `deploy/compose/.env` predates sign-in (spec 003). Delete it and run the script again, or copy the new sections from `.env.example`. |
+| The support hours in the help window are unreadable | The `.env` file was saved in another encoding. It must be UTF-8. |
 | A placeholder page shows «تعذّر الاتصال بالمنصّة» | The API is not running, or it is still building. Check <http://localhost:5080/health/live>. |
 | Port already in use | Something else uses 5080, 4201–4203 or 14333. Change `SCS_SQL_PORT` in `.env` for the database; stop the other program for the rest. |
 | A blank page saying the page could not start | `config.json` is missing or wrong in `src/web/projects/<app>/public/`. |
 
 ## 7. Where things are
 
+- Unlocking an account, ending sessions and other sign-in operations by hand: [`ops/runbooks/sign-in.md`](../ops/runbooks/sign-in.md)
 - Never copy production patient data to your machine: [`ops/runbooks/data-handling.md`](../ops/runbooks/data-handling.md)
 - Rules of the project: [`.specify/memory/constitution.md`](../.specify/memory/constitution.md)
 - What this foundation delivers: [`specs/001-platform-foundation/`](../specs/001-platform-foundation/)

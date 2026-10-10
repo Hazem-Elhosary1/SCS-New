@@ -61,6 +61,31 @@ public sealed class ProbeEndpoints : IEndpointContributor
             .AllowAnonymous()
             .ForPatientSurface();
 
+        // Needs a signed-in person (no AllowAnonymous). Says who is asking, where the clinic came
+        // from, and how many clinic records the work can see.
+        root.MapGet("/probe/whoami", async (
+                Scs.Identity.Contracts.ICurrentStaff staff, IClinicContext clinic, IClinicConnection connection,
+                CancellationToken cancellation) =>
+            {
+                await using var open = await connection.OpenAsync(cancellation);
+                await using var command = open.CreateCommand();
+                command.CommandText = "SELECT COUNT(*) FROM tenancy.Clinic";
+                var visible = (int)(await command.ExecuteScalarAsync(cancellation))!;
+                return Results.Ok(new
+                {
+                    accountId = staff.AccountId,
+                    sessionId = staff.SessionId,
+                    clinicId = staff.ClinicId,
+                    contextClinicId = clinic.ClinicId,
+                    source = clinic.Source,
+                    clinicsVisible = visible,
+                });
+            });
+
+        // The same person, on an endpoint of the patient surface: the header must agree.
+        root.MapGet("/probe/whoami-patient", (IClinicContext clinic) => Results.Ok(new { clinicId = clinic.ClinicId }))
+            .ForPatientSurface();
+
         // Logs our own objects every way a developer might, then fails with a message that
         // carries pattern-shaped data. Used by LogRedactionTests.
         root.MapPost("/probe/log", (ILoggerFactory loggers) =>

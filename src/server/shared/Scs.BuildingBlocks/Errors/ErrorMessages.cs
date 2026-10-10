@@ -26,6 +26,18 @@ public static class ErrorMessages
         [ErrorCodes.ClinicRequired] = ("يلزم تحديد العيادة", "A clinic must be specified"),
         [ErrorCodes.ClinicNotAvailable] = ("هذه الصفحة غير متاحة", "This page is not available"),
         [ErrorCodes.ClinicMismatch] = ("الطلب لا يخصّ هذه العيادة", "The request does not belong to this clinic"),
+        [ErrorCodes.InvalidCredentials] = ("البريد الإلكتروني أو كلمة المرور غير صحيحة.", "The email or password is incorrect."),
+        [ErrorCodes.CodeInvalid] = ("الرمز غير صحيح أو انتهت صلاحيته. يمكنك طلب رمز جديد.", "The code is incorrect or has expired. A new code can be requested."),
+        [ErrorCodes.AccessExpired] = ("يلزم تجديد الجلسة", "The session needs renewing"),
+        [ErrorCodes.SessionEnded] = ("انتهت الجلسة. الدخول من جديد للمتابعة.", "The session has ended. Sign in again to continue."),
+        [ErrorCodes.AccountLocked] = ("أُقفل الحساب بعد محاولات دخول فاشلة", "The account was locked after failed sign-in attempts"),
+        [ErrorCodes.AccountDisabled] = ("لا يمكن الدخول بهذا الحساب: هو معطَّل", "This account cannot sign in: it is disabled"),
+        [ErrorCodes.ClinicSuspended] = ("اشتراك العيادة موقوف، ولا يمكن الدخول الآن", "The clinic is suspended; signing in is not possible now"),
+        [ErrorCodes.NetworkBlocked] = ("الدخول من هذه الشبكة محظور الآن. راجِع فريق الدعم لمعرفة السبب ورفع الحظر.", "Signing in from this network is blocked now. Contact support to learn why and have it lifted."),
+        [ErrorCodes.ResendTooEarly] = ("لم يحن وقت إعادة الإرسال بعد", "It is too early to send the code again"),
+        [ErrorCodes.ResendLimitReached] = ("لا يمكن إرسال رمز آخر في هذا الدخول", "No more codes can be sent for this sign-in"),
+        [ErrorCodes.SignInCodeNotSent] = ("لم نستطع إرسال رمز التحقق إلى بريدك. حاول مرة أخرى بعد قليل.", "The verification code could not be sent to the email. Try again shortly."),
+        [ErrorCodes.SignInCodeNotResent] = ("لم نستطع إرسال رمز جديد. الرمز السابق يبقى صالحًا حتى تنتهي مدّته.", "A new code could not be sent. The earlier code stays valid until it expires."),
     };
 
     public static string Title(string code, string language)

@@ -8,6 +8,10 @@ import { toProblemError } from './problem';
 import { newTrace } from './trace';
 
 const PLATFORM_PATHS = ['/v1/', '/health/'];
+const SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS'];
+
+/** Sent on every request that changes something. */
+export const REQUEST_HEADER = 'X-Scs-Request';
 
 /** Whether a request URL is a call to the platform (written as `/v1/...` or `/health/...`). */
 export function isPlatformCall(url: string): boolean {
@@ -38,14 +42,27 @@ export const apiInterceptor: HttpInterceptorFn = (request, next) => {
     'Accept-Language': language,
   };
 
-  if (inject(SCS_APP, { optional: true }) === 'patient') {
+  const app = inject(SCS_APP, { optional: true });
+  if (app === 'patient') {
     const clinic = clinicFromPath(document.location?.pathname ?? '/');
     if (clinic !== null) {
       headers[CLINIC_HEADER] = clinic;
     }
   }
 
-  const call = request.clone({ url: config.apiBaseUrl + request.url, setHeaders: headers });
+  // The staff and operators sites work with a session kept in cookies scripts cannot read. The
+  // browser sends them only when asked to, and every request that changes something carries
+  // the header the platform requires of our own sites (spec 003, contracts/sessions.md §6).
+  const withSession = app === 'clinic' || app === 'ops';
+  if (withSession && !SAFE_METHODS.includes(request.method)) {
+    headers[REQUEST_HEADER] = '1';
+  }
+
+  const call = request.clone({
+    url: config.apiBaseUrl + request.url,
+    setHeaders: headers,
+    withCredentials: withSession,
+  });
 
   return next(call).pipe(
     catchError((error: unknown) =>
