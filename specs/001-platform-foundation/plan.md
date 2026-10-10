@@ -81,6 +81,14 @@ assumed), SQL Server edition in production (Standard Multi-AZ assumed), alert th
 | Technology constraints | Pass | .NET 10, Angular, SQL Server, modular monolith, monorepo, EF Core, Tailwind + CDK, Hangfire, Docker on Fargate + RDS — all as fixed. Dapper is not introduced. No AWS SDK in application code. |
 | Workflow | Pass | `main` + `develop`, spec branch by pull request, English artifacts with Arabic UI text quoted from the BRD. |
 
+**Re-check against constitution v1.1.0** (10 Oct 2026, after the address amendment):
+
+| Rule added in v1.1.0 | Status | How the design complies |
+|---|---|---|
+| No per-clinic subdomains; clinic from the account (staff) or the first path segment (patients) | Pass, with one open item | Research R25: one address per audience. The patient app serves any path and loads its files from the site root. Resolving the clinic is left to specs 002 and 003. **Open**: BRD SH-003 still states the old addresses (task T110); the address infrastructure is not built before it is updated. |
+| Staff and patient screens on different browser origins | Pass | `app.scs-heta.com` and `scs-heta.com` are different origins; the operators console is on a third domain. |
+| Each front end calls the API on its own origin under `/api` | Pass | `config.json` is refused unless `apiBaseUrl` is `/api` outside `local`; the platform refuses to start with a cross-origin allowance outside `local`; forwarded headers are trusted from the private network only. |
+
 **Result**: gate passed, no violations. **Post-design re-check** (after Phase 1): unchanged. The
 contracts add no anonymous surface beyond the four endpoints, `config.json` carries no secret,
 and the one table is platform-owned.
@@ -200,4 +208,5 @@ Two choices are recorded because they add moving parts beyond the simplest thing
 | Choice | Why needed | Simpler alternative rejected because |
 |---|---|---|
 | Two projects per module instead of one | Constitution requires module boundaries that fail the build | One project with folders relies on tests alone to stop a cross-module reference |
+| Acceptance scenarios evidenced by a recorded run instead of an automated test: US2/AC1–4 (merge blocked, release to test, promotion with approval, rollback), US3/AC3–4 (outage and error-rate alerts), US4/AC1–5 (daily backup, restore, record, missed-backup alert, backup access) | Constitution VII asks for an automated test per criterion. These outcomes are properties of the hosted repository, the pipeline and the cloud account, not of code that a test process can run | Simulating a branch-protection rule, a production approval or a cloud backup inside a unit test would test the simulation. Each is instead run for real and recorded in `validation.md` (T064, T065, T079, T087, T088); the smoke script and the restore verification script automate the checks inside those runs. Task T111 moves whatever a workflow can assert into the workflows once they exist |
 | Second, weekly native backup in another account | SH-090 requires that the system can move to Egypt; automated snapshots cannot leave the provider | Snapshots only would leave no backup restorable elsewhere |

@@ -3,3 +3,4 @@
  * token variables.
  */
 export * from './lib/placeholder/placeholder-panel.component';
+export * from './lib/state/scs-state.component';

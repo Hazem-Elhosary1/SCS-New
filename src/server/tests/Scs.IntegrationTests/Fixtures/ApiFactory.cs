@@ -2,10 +2,10 @@ using System.Collections.Concurrent;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Scs.BuildingBlocks.Logging;
 using Scs.BuildingBlocks.Modules;
 using Serilog.Core;
 using Serilog.Events;
-using Serilog.Formatting.Compact;
 
 namespace Scs.IntegrationTests.Fixtures;
 
@@ -64,7 +64,7 @@ public class ApiFactory : WebApplicationFactory<Program>
 public sealed class CapturedLogs : ILogEventSink
 {
     private readonly ConcurrentQueue<string> _lines = new();
-    private readonly CompactJsonFormatter _formatter = new();
+    private readonly ScrubbingJsonFormatter _formatter = new();
 
     public IReadOnlyCollection<string> Lines => _lines;
 

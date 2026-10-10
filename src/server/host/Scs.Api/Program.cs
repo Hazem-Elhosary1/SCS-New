@@ -8,7 +8,9 @@ using Scs.BuildingBlocks.Jobs;
 using Scs.BuildingBlocks.Logging;
 using Scs.BuildingBlocks.Modules;
 using Scs.BuildingBlocks.Security;
+using Scs.BuildingBlocks.Telemetry;
 using Scs.BuildingBlocks.Tracing;
+using Scs.SharedKernel;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +18,9 @@ builder.Configuration.AddScsEnvironmentVariables();
 var scs = builder.Services.AddScsOptions(builder.Configuration);
 
 builder.Services.AddScsLogging(scs);
+builder.Services.AddScsTelemetry(scs);
+builder.Services.AddRateLimiter(options => options.OnRejected = async (rejected, _) =>
+    await ProblemWriter.WriteAsync(rejected.HttpContext, StatusCodes.Status429TooManyRequests, ErrorCodes.RateLimited));
 builder.Services.AddExceptionHandler<ProblemDetailsExceptionHandler>();
 builder.Services.AddHealthChecks().AddScsReadiness();
 builder.Services.AddScsJobs(scs);
@@ -65,6 +70,20 @@ if (!scs.IsLocal)
     app.UseForwardedHeaders();
 }
 
+// Every response: never guess a content type, never render inside a frame, send no referrer.
+// Set as the response starts, because error handling clears headers set earlier.
+app.Use((context, next) =>
+{
+    context.Response.OnStarting(() =>
+    {
+        context.Response.Headers.XContentTypeOptions = "nosniff";
+        context.Response.Headers.XFrameOptions = "DENY";
+        context.Response.Headers["Referrer-Policy"] = "no-referrer";
+        return Task.CompletedTask;
+    });
+    return next(context);
+});
+
 app.UseMiddleware<TraceIdMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseExceptionHandler(_ => { });
@@ -90,6 +109,7 @@ if (scs.IsLocal && corsOrigins.Length > 0)
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapScsHealth();
 app.MapScsApiDocs(scs);

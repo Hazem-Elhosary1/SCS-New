@@ -1,10 +1,68 @@
 /*
- * Design tokens for the clinic app. Values come from the Figma file
- * "Smart Clinic OS — Design System & Screens" and are filled in by spec 001, task T098.
+ * Design tokens for the clinic app.
+ * Source: Figma "Smart Clinic OS — Design System & Screens" (fileKey 4HLWEqlna9sbn68276LHYt),
+ * variables read on 2026-10-10. Variable names are the ones the design file uses.
  * Shared components read these variables and nothing else.
  */
 :root {
-  --scs-color-surface: #ffffff;
-  --scs-color-text: #111827;
-  --scs-font-family: system-ui, 'Segoe UI', Tahoma, sans-serif;
+  /* Colour: text */
+  --scs-color-text-primary: #1a2024;
+  --scs-color-text-secondary: #57646d;
+  --scs-color-text-tertiary: #5f6d76;
+  --scs-color-text-inverse: #ffffff;
+  --scs-color-text-link: #0f566c;
+
+  /* Colour: surfaces and borders */
+  --scs-color-bg-surface: #ffffff;
+  --scs-color-bg-surface-secondary: #f1f4f6;
+  --scs-color-border-default: #e3e8ec;
+  --scs-color-icon-default: #414c54;
+
+  /* Colour: brand */
+  --scs-color-brand-default: #1a7f9b;
+  --scs-color-brand-active: #0f566c;
+  --scs-color-brand-on-brand: #ffffff;
+
+  /* Colour: feedback */
+  --scs-color-feedback-info-icon: #1d4ed8;
+  --scs-color-feedback-info-bg: #eff6ff;
+  --scs-color-feedback-info-border: #dbeafe;
+  --scs-color-feedback-danger-icon: #b91c1c;
+  --scs-color-feedback-danger-text: #991b1b;
+  --scs-color-feedback-danger-bg: #fdf2f2;
+  --scs-color-feedback-danger-border: #fda29b;
+  --scs-color-feedback-warning-icon: #b45309;
+  --scs-color-feedback-warning-bg: #fffbeb;
+  --scs-color-feedback-warning-border: #fef3c7;
+
+  /* Type */
+  --scs-font-family: 'Cairo Variable', 'Cairo', system-ui, 'Segoe UI', Tahoma, sans-serif;
+  --scs-text-caption: 11px;
+  --scs-text-label: 12px;
+  --scs-text-body-sm: 13px;
+  --scs-text-body: 14px;
+  --scs-text-body-lg: 15px;
+  --scs-text-heading-sm: 16px;
+  --scs-text-title-sm: 20px;
+  --scs-text-display-sm: 26px;
+  --scs-text-display: 34px;
+
+  /* Spacing */
+  --scs-spacing-2: 2px;
+  --scs-spacing-xs: 4px;
+  --scs-spacing-6: 6px;
+  --scs-spacing-sm: 8px;
+  --scs-spacing-10: 10px;
+  --scs-spacing-12: 12px;
+  --scs-spacing-md: 16px;
+  --scs-spacing-20: 20px;
+  --scs-spacing-lg: 24px;
+  --scs-spacing-40: 40px;
+  --scs-spacing-3xl: 64px;
+
+  /* Shape */
+  --scs-radius-sm: 6px;
+  --scs-radius-md: 10px;
+  --scs-radius-full: 999px;
+  --scs-shadow-subtle: 0 1px 2px 0 #0a0f140f;
 }

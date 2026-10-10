@@ -4,5 +4,9 @@ import { provideScsCore } from 'core';
 import { routes } from './app.routes';
 
 export const appConfig: ApplicationConfig = {
-  providers: [provideBrowserGlobalErrorListeners(), provideScsCore(), provideRouter(routes)],
+  providers: [
+    provideBrowserGlobalErrorListeners(),
+    provideScsCore({ app: 'ops' }),
+    provideRouter(routes),
+  ],
 };

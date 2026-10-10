@@ -1,0 +1,84 @@
+# The gates every change passes before it can be merged (FR-009, constitution: Development
+# Workflow & Quality Gates). All three jobs are required checks on `develop` and `main`
+# (ops/runbooks/repository-settings.md).
+#
+# Spec 002 adds the tenant-isolation guardrail job here, together with the first clinic-owned table.
+name: Pull request
+
+on:
+  pull_request:
+    branches: [develop, main]
+
+concurrency:
+  group: pr-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  server:
+    name: Server
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: src/server/global.json
+      - run: dotnet restore Scs.sln
+      - name: Format
+        run: dotnet format Scs.sln --verify-no-changes --no-restore
+      - name: Build (warnings are errors)
+        run: dotnet build Scs.sln -c Release --no-restore
+      # Unit, architecture and integration tests. The integration tests start a real SQL Server
+      # in a container; the runner provides Docker.
+      - name: Test
+        run: dotnet test Scs.sln -c Release --no-build --logger "trx;LogFileName=results.trx"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: server-test-results
+          path: src/server/tests/**/TestResults/*.trx
+
+  web:
+    name: Web
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: src/web/.nvmrc
+          cache: npm
+          cache-dependency-path: src/web/package-lock.json
+      - run: npm ci
+      - name: Formatting
+        run: npx prettier --check "projects/**/*.{ts,html,css,json}"
+      # Lint, translation check, unit tests and the three production builds.
+      - name: Lint, test, build
+        run: npm run ci
+      # Browser checks of direction, translations, formatting and the six screen states.
+      - name: Install the test browser
+        run: npx playwright install --with-deps chromium
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: "0"
+      - name: Browser tests
+        run: npm run e2e
+        env:
+          CI: "true"
+
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

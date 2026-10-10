@@ -1,0 +1,36 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "clinic",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "src/web", "run", "start:clinic"],
+      "port": 4201
+    },
+    {
+      "name": "patient",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "src/web", "run", "start:patient"],
+      "port": 4202
+    },
+    {
+      "name": "ops",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "src/web", "run", "start:ops"],
+      "port": 4203
+    },
+    {
+      "name": "api",
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "scripts/dev.ps1",
+        "-NoWeb"
+      ],
+      "port": 5080
+    }
+  ]
+}

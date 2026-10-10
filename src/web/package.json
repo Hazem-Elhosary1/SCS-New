@@ -7,11 +7,12 @@
     "start:clinic": "ng serve clinic",
     "start:patient": "ng serve patient",
     "start:ops": "ng serve ops",
-    "build:all": "ng build clinic && ng build patient && ng build ops",
+    "build:all": "ng build clinic && ng build patient && ng build ops && node tools/write-version.mjs",
     "lint": "ng lint",
     "i18n:check": "node tools/i18n-check.mjs",
-    "ci": "npm run lint && npm run test && npm run build:all",
-    "e2e": "playwright test"
+    "ci": "npm run lint && npm run i18n:check && npm run test:tools && npm run test && npm run build:all",
+    "e2e": "playwright test",
+    "test:tools": "node --test tools/i18n-check.spec.mjs"
   },
   "private": true,
   "packageManager": "npm@10.8.3",
@@ -22,6 +23,8 @@
     "@angular/forms": "^22.2.0",
     "@angular/platform-browser": "^22.2.0",
     "@angular/router": "^22.2.0",
+    "@fontsource-variable/cairo": "^5.3.0",
+    "@jsverse/transloco": "^8.4.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
@@ -30,6 +33,7 @@
     "@angular/cli": "^22.2.2",
     "@angular/compiler-cli": "^22.2.0",
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.64.0",
     "@tailwindcss/postcss": "^4.3.3",
     "angular-eslint": "22.5.0",
     "eslint": "^10.9.1",

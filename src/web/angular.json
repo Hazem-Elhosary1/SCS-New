@@ -23,9 +23,16 @@
               {
                 "glob": "**/*",
                 "input": "projects/clinic/public"
+              },
+              {
+                "glob": "*.json",
+                "input": "projects/ui/i18n",
+                "output": "i18n/ui"
               }
             ],
-            "styles": ["projects/clinic/src/styles.css"]
+            "styles": [
+              "projects/clinic/src/styles.css"
+            ]
           },
           "configurations": {
             "production": {
@@ -72,7 +79,10 @@
         "lint": {
           "builder": "@angular-eslint/builder:lint",
           "options": {
-            "lintFilePatterns": ["projects/clinic/**/*.ts", "projects/clinic/**/*.html"],
+            "lintFilePatterns": [
+              "projects/clinic/**/*.ts",
+              "projects/clinic/**/*.html"
+            ],
             "eslintConfig": "projects/clinic/eslint.config.js"
           }
         }
@@ -94,9 +104,16 @@
               {
                 "glob": "**/*",
                 "input": "projects/patient/public"
+              },
+              {
+                "glob": "*.json",
+                "input": "projects/ui/i18n",
+                "output": "i18n/ui"
               }
             ],
-            "styles": ["projects/patient/src/styles.css"]
+            "styles": [
+              "projects/patient/src/styles.css"
+            ]
           },
           "configurations": {
             "production": {
@@ -143,7 +160,10 @@
         "lint": {
           "builder": "@angular-eslint/builder:lint",
           "options": {
-            "lintFilePatterns": ["projects/patient/**/*.ts", "projects/patient/**/*.html"],
+            "lintFilePatterns": [
+              "projects/patient/**/*.ts",
+              "projects/patient/**/*.html"
+            ],
             "eslintConfig": "projects/patient/eslint.config.js"
           }
         }
@@ -165,9 +185,16 @@
               {
                 "glob": "**/*",
                 "input": "projects/ops/public"
+              },
+              {
+                "glob": "*.json",
+                "input": "projects/ui/i18n",
+                "output": "i18n/ui"
               }
             ],
-            "styles": ["projects/ops/src/styles.css"]
+            "styles": [
+              "projects/ops/src/styles.css"
+            ]
           },
           "configurations": {
             "production": {
@@ -214,7 +241,10 @@
         "lint": {
           "builder": "@angular-eslint/builder:lint",
           "options": {
-            "lintFilePatterns": ["projects/ops/**/*.ts", "projects/ops/**/*.html"],
+            "lintFilePatterns": [
+              "projects/ops/**/*.ts",
+              "projects/ops/**/*.html"
+            ],
             "eslintConfig": "projects/ops/eslint.config.js"
           }
         }
@@ -247,7 +277,10 @@
         "lint": {
           "builder": "@angular-eslint/builder:lint",
           "options": {
-            "lintFilePatterns": ["projects/core/**/*.ts", "projects/core/**/*.html"],
+            "lintFilePatterns": [
+              "projects/core/**/*.ts",
+              "projects/core/**/*.html"
+            ],
             "eslintConfig": "projects/core/eslint.config.js"
           }
         }
@@ -280,7 +313,10 @@
         "lint": {
           "builder": "@angular-eslint/builder:lint",
           "options": {
-            "lintFilePatterns": ["projects/ui/**/*.ts", "projects/ui/**/*.html"],
+            "lintFilePatterns": [
+              "projects/ui/**/*.ts",
+              "projects/ui/**/*.html"
+            ],
             "eslintConfig": "projects/ui/eslint.config.js"
           }
         }

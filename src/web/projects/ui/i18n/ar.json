@@ -1,0 +1,64 @@
+{
+  "ui": {
+    "language": {
+      "switch": {
+        "label": "تغيير اللغة",
+        "target": "English"
+      }
+    },
+    "platform": {
+      "status": {
+        "checking": "جارٍ التحقق من الاتصال بالمنصّة…",
+        "reachable": "المنصّة متاحة",
+        "unreachable": "تعذّر الاتصال بالمنصّة"
+      },
+      "detail": {
+        "version": "إصدار المنصّة",
+        "environment": "البيئة",
+        "appVersion": "إصدار الواجهة"
+      }
+    },
+    "sample": {
+      "format": {
+        "date": "التاريخ والوقت",
+        "amount": "المبلغ"
+      }
+    },
+    "state": {
+      "loading": {
+        "title": "جارٍ التحميل…"
+      },
+      "empty": {
+        "title": "لا توجد بيانات"
+      },
+      "error": {
+        "title": "تعذّر إتمام الطلب",
+        "reference": "المرجع",
+        "retry": "إعادة المحاولة"
+      },
+      "offline": {
+        "title": "لا يوجد اتصال بالإنترنت",
+        "detail": "يُستأنف العمل عند عودة الاتصال"
+      },
+      "viewOnly": {
+        "title": "للعرض فقط"
+      },
+      "notInPlan": {
+        "title": "غير مشمولة في باقتك",
+        "action": "ترقية الباقة"
+      }
+    },
+    "demo": {
+      "states": {
+        "title": "حالات الشاشة",
+        "content": "المحتوى",
+        "loading": "التحميل",
+        "empty": "الفارغة",
+        "error": "الخطأ",
+        "offline": "بلا اتصال",
+        "viewOnly": "للعرض فقط",
+        "notInPlan": "غير مشمولة في الباقة"
+      }
+    }
+  }
+}

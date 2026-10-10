@@ -88,14 +88,32 @@ dotnet test src/server/Scs.sln
 ```
 
 ```bash
-npm --prefix src/web run lint
+dotnet format src/server/Scs.sln --verify-no-changes
 ```
 
 ```bash
-npm --prefix src/web test
+npm --prefix src/web run ci
 ```
 
-The server tests start their own SQL Server container, so Docker must be running.
+`ci` runs lint (including the rule against left/right layout utilities), the translation check,
+the unit tests and the three production builds.
+
+The browser tests need a browser once:
+
+```bash
+cd src/web && PLAYWRIGHT_BROWSERS_PATH=0 npx playwright install chromium
+```
+
+```bash
+npm --prefix src/web run e2e
+```
+
+On Windows PowerShell, set the variable first: `$env:PLAYWRIGHT_BROWSERS_PATH = '0'`. The browser
+tests start the three front ends themselves and answer the platform's calls, so the API does not
+need to be running.
+
+The server tests start their own SQL Server container, so Docker must be running. Without
+Docker, the tests that need a database fail and the rest still run.
 
 ## 6. Common problems
 
@@ -111,6 +129,7 @@ The server tests start their own SQL Server container, so Docker must be running
 
 ## 7. Where things are
 
+- Never copy production patient data to your machine: [`ops/runbooks/data-handling.md`](../ops/runbooks/data-handling.md)
 - Rules of the project: [`.specify/memory/constitution.md`](../.specify/memory/constitution.md)
 - What this foundation delivers: [`specs/001-platform-foundation/`](../specs/001-platform-foundation/)
 - Conventions every later feature inherits: [`contracts/`](../specs/001-platform-foundation/contracts/)

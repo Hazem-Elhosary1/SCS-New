@@ -6,7 +6,9 @@
 @source '../../ui/src';
 
 body {
-  background: var(--scs-color-surface);
-  color: var(--scs-color-text);
+  margin: 0;
+  background: var(--scs-color-bg-surface);
+  color: var(--scs-color-text-primary);
   font-family: var(--scs-font-family);
+  font-size: var(--scs-text-body);
 }

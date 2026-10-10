@@ -5,6 +5,6 @@ import { PlaceholderPanelComponent } from 'ui';
   selector: 'app-placeholder-page',
   imports: [PlaceholderPanelComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: '<scs-placeholder-panel appName="واجهات المريض" />',
+  template: '<scs-placeholder-panel appNameKey="app.shell.name" />',
 })
 export class PlaceholderPage {}

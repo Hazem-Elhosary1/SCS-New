@@ -92,3 +92,12 @@ path values, cookies, tokens, connection strings, and any member marked `[Person
 - A job is idempotent: running it twice has the same result as once.
 - Failures retry with back-off up to five times, then are logged at `Error` with `jobId`.
 - A job that works on clinic data sets the clinic context first (delivered by spec 002).
+- Every attempt is logged with `jobId` and `jobName`; a job that has used up its retries gets one
+  `Error` entry, and each failed attempt adds one to the `scs.jobs.failed` counter.
+- The jobs dashboard exists in `local` only until operator sign-in exists (spec 010).
+
+## 7. Traces
+
+Traces follow the same rule as logs. A request span carries the route template (`http.route`)
+and is named `<METHOD> <route template>`. The actual path, the query string, the user agent and
+the caller's address are removed before a span leaves the process.

@@ -1,0 +1,36 @@
+# Platform API. Build from the repository root:
+#   docker build -f deploy/docker/Dockerfile.api \
+#     --build-arg VERSION=0.1.0+3f9c2ab --build-arg COMMIT=<40-char sha> \
+#     --build-arg BUILT_AT=2026-10-10T09:30:00Z -t scs-api .
+#
+# The image is built once per commit and promoted unchanged from test to production.
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /repo
+
+# The analyzer settings live at the repository root and apply to the server code.
+COPY .editorconfig ./
+COPY src/server/ ./src/server/
+
+WORKDIR /repo/src/server
+RUN dotnet restore host/Scs.Api/Scs.Api.csproj
+RUN dotnet publish host/Scs.Api/Scs.Api.csproj -c Release -o /app --no-restore
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+ARG VERSION=0.0.0-dev
+ARG COMMIT=0000000000000000000000000000000000000000
+ARG BUILT_AT=1970-01-01T00:00:00Z
+
+ENV SCS_VERSION=$VERSION \
+    SCS_COMMIT=$COMMIT \
+    SCS_BUILT_AT=$BUILT_AT \
+    ASPNETCORE_HTTP_PORTS=8080 \
+    DOTNET_EnableDiagnostics=0
+
+WORKDIR /app
+COPY --from=build /app ./
+
+# The base image's unprivileged user.
+USER $APP_UID
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "Scs.Api.dll"]

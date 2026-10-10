@@ -1,5 +1,7 @@
 using Hangfire.Common;
 using Hangfire.Server;
+using Hangfire.States;
+using Hangfire.Storage;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -48,8 +50,38 @@ internal sealed partial class RecurringJobRegistrar(
 /// (contracts/conventions.md §5). A job that has used up its retries is logged at Error by the
 /// job server itself.
 /// </summary>
-internal sealed partial class JobLoggingFilter(ILogger<JobLoggingFilter> logger) : JobFilterAttribute, IServerFilter
+internal sealed partial class JobLoggingFilter(ILogger<JobLoggingFilter> logger)
+    : JobFilterAttribute, IServerFilter, IApplyStateFilter
 {
+    /// <summary>A job that has used up its retries: one Error entry carrying its id and name.</summary>
+    public void OnStateApplied(ApplyStateContext context, IWriteOnlyTransaction transaction)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        if (context.NewState is not FailedState failed)
+        {
+            return;
+        }
+
+        var scope = new Dictionary<string, object>
+        {
+            ["jobId"] = context.BackgroundJob.Id,
+            ["jobName"] = context.GetJobParameter<string>("RecurringJobId") ?? context.BackgroundJob.Job.Type.Name,
+        };
+
+        using (logger.BeginScope(scope))
+        {
+            LogGaveUp(logger, failed.Exception);
+        }
+    }
+
+    public void OnStateUnapplied(ApplyStateContext context, IWriteOnlyTransaction transaction)
+    {
+    }
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Background job failed and will not be retried")]
+    private static partial void LogGaveUp(ILogger logger, Exception exception);
+
     private const string ScopeKey = "scs.logScope";
     private const string StartedKey = "scs.started";
 
@@ -75,6 +107,8 @@ internal sealed partial class JobLoggingFilter(ILogger<JobLoggingFilter> logger)
         else
         {
             LogFailed(logger, context.Exception, durationMs);
+            Telemetry.ScsTelemetry.JobsFailed.Add(
+                1, new KeyValuePair<string, object?>("job", context.BackgroundJob.Job.Type.Name));
         }
 
         if (context.Items.TryGetValue(ScopeKey, out var scope))

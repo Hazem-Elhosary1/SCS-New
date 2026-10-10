@@ -1,0 +1,64 @@
+{
+  "ui": {
+    "language": {
+      "switch": {
+        "label": "Change language",
+        "target": "العربية"
+      }
+    },
+    "platform": {
+      "status": {
+        "checking": "Checking the connection to the platform…",
+        "reachable": "Platform is available",
+        "unreachable": "The platform could not be reached"
+      },
+      "detail": {
+        "version": "Platform version",
+        "environment": "Environment",
+        "appVersion": "App version"
+      }
+    },
+    "sample": {
+      "format": {
+        "date": "Date and time",
+        "amount": "Amount"
+      }
+    },
+    "state": {
+      "loading": {
+        "title": "Loading…"
+      },
+      "empty": {
+        "title": "Nothing here yet"
+      },
+      "error": {
+        "title": "The request could not be completed",
+        "reference": "Reference",
+        "retry": "Retry"
+      },
+      "offline": {
+        "title": "No internet connection",
+        "detail": "Work resumes when the connection returns"
+      },
+      "viewOnly": {
+        "title": "View only"
+      },
+      "notInPlan": {
+        "title": "Not included in your plan",
+        "action": "Upgrade plan"
+      }
+    },
+    "demo": {
+      "states": {
+        "title": "Screen states",
+        "content": "Content",
+        "loading": "Loading",
+        "empty": "Empty",
+        "error": "Error",
+        "offline": "Offline",
+        "viewOnly": "View only",
+        "notInPlan": "Not in plan"
+      }
+    }
+  }
+}

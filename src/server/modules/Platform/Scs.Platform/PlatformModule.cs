@@ -31,11 +31,13 @@ public sealed class PlatformModule : IModule, IMigratableModule
         services.AddScoped<IHeartbeatStore, HeartbeatStore>();
         services.AddScoped<HeartbeatJob>();
         services.AddSingleton<IRecurringJobRegistration, PlatformJobs>();
+        services.AddClientErrorRateLimit();
     }
 
     public void MapEndpoints(IEndpointRouteBuilder v1)
     {
         v1.MapVersion();
+        v1.MapClientErrors();
     }
 
     public async Task MigrateAsync(string migrationConnection, CancellationToken cancellation)
