@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\shared\Scs.BuildingBlocks\Scs.BuildingBlocks.csproj" />
     <ProjectReference Include="..\..\modules\Platform\Scs.Platform\Scs.Platform.csproj" />
+    <ProjectReference Include="..\..\modules\Tenancy\Scs.Tenancy\Scs.Tenancy.csproj" />
   </ItemGroup>
 
   <ItemGroup>

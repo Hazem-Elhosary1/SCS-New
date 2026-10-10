@@ -41,6 +41,9 @@ public class LogRedactionTests
                     request.Headers.Add("X-Patient-Email", Leak.Email);
                     request.Headers.Add("X-National-Id", Leak.NationalId);
                     request.Headers.Add("Cookie", $"session={Leak.Token}");
+
+                    // The clinic header of the patient site, carrying data it should never carry.
+                    request.Headers.TryAddWithoutValidation("X-Scs-Clinic", sent % 2 == 0 ? Leak.Email : Leak.NationalId);
                     request.Content = body;
 
                     using var response = await client.SendAsync(request);

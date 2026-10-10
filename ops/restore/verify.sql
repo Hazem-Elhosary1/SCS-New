@@ -75,6 +75,33 @@ BEGIN
     END
 END
 
+-- 5. Clinic isolation came back with the data (spec 002): the function every policy calls
+--    exists, there is at least one policy, and none is switched off. Run as a login that may
+--    see definitions (the administrator or the migrator); otherwise the counts read as zero.
+IF OBJECT_ID(N'tenancy.fn_ClinicAccess', N'IF') IS NULL
+BEGIN
+    PRINT 'FAIL  the isolation function tenancy.fn_ClinicAccess is missing';
+    SET @failures += 1;
+END
+ELSE
+BEGIN
+    DECLARE @policies int = (SELECT COUNT(*) FROM sys.security_policies);
+    DECLARE @switchedOff int = (SELECT COUNT(*) FROM sys.security_policies WHERE is_enabled = 0);
+
+    IF @policies = 0
+    BEGIN
+        PRINT 'FAIL  no isolation policy is present (or this login cannot see definitions)';
+        SET @failures += 1;
+    END
+    ELSE IF @switchedOff > 0
+    BEGIN
+        PRINT CONCAT('FAIL  ', @switchedOff, ' of ', @policies, ' isolation policies are switched off');
+        SET @failures += 1;
+    END
+    ELSE
+        PRINT CONCAT('ok    ', @policies, ' isolation policies present and switched on');
+END
+
 IF @failures > 0
     RAISERROR('Restore verification FAILED (%d check(s)). Treat this as a production incident.', 16, 1, @failures);
 ELSE

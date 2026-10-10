@@ -59,6 +59,9 @@ public static class JobScheduling
                 }));
 
         services.AddSingleton<IJobScheduler, HangfireJobScheduler>();
+        services.AddSingleton<IClinicJobScheduler, ClinicJobScheduler>();
+        services.AddScoped(typeof(ClinicJobRunner<>));
+        services.AddScoped(typeof(ClinicJobFanOut<>));
         services.AddHostedService<RecurringJobRegistrar>();
 
         if (options.RunsWorker)

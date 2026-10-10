@@ -63,11 +63,17 @@ internal sealed partial class JobLoggingFilter(ILogger<JobLoggingFilter> logger)
             return;
         }
 
+        var job = context.BackgroundJob.Job;
         var scope = new Dictionary<string, object>
         {
             ["jobId"] = context.BackgroundJob.Id,
-            ["jobName"] = context.GetJobParameter<string>("RecurringJobId") ?? context.BackgroundJob.Job.Type.Name,
+            ["jobName"] = context.GetJobParameter<string>("RecurringJobId") ?? DisplayName(job.Type),
         };
+
+        if (IsClinicJob(job.Type) && job.Args.Count > 0 && job.Args[0] is Guid clinicId)
+        {
+            scope["clinicId"] = clinicId;
+        }
 
         using (logger.BeginScope(scope))
         {
@@ -87,11 +93,18 @@ internal sealed partial class JobLoggingFilter(ILogger<JobLoggingFilter> logger)
 
     public void OnPerforming(PerformingContext context)
     {
-        var jobName = context.GetJobParameter<string>("RecurringJobId") ?? context.BackgroundJob.Job.Type.Name;
+        var job = context.BackgroundJob.Job;
+        var jobName = context.GetJobParameter<string>("RecurringJobId") ?? DisplayName(job.Type);
         context.Items[StartedKey] = System.Diagnostics.Stopwatch.GetTimestamp();
+
+        // A per-clinic job carries its clinic as its first argument. Putting it on the scope
+        // here means every entry of the attempt has it, including the one written when it fails.
+        var clinicId = IsClinicJob(job.Type) && job.Args.Count > 0 && job.Args[0] is Guid id ? id : (Guid?)null;
+
         context.Items[ScopeKey] = new Scope(
             LogContext.PushProperty("jobId", context.BackgroundJob.Id),
-            LogContext.PushProperty("jobName", jobName));
+            LogContext.PushProperty("jobName", jobName),
+            clinicId is null ? null : LogContext.PushProperty("clinicId", clinicId.Value));
     }
 
     public void OnPerformed(PerformedContext context)
@@ -123,10 +136,18 @@ internal sealed partial class JobLoggingFilter(ILogger<JobLoggingFilter> logger)
     [LoggerMessage(Level = LogLevel.Warning, Message = "Background job attempt failed after {durationMs} ms")]
     private static partial void LogFailed(ILogger logger, Exception exception, long durationMs);
 
-    private sealed class Scope(IDisposable first, IDisposable second) : IDisposable
+    private static bool IsClinicJob(Type type) =>
+        type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ClinicJobRunner<>);
+
+    /// <summary>The job a person would recognise: the clinic job itself, not the runner around it.</summary>
+    private static string DisplayName(Type type) =>
+        type.IsGenericType && type.GetGenericArguments() is [var inner] ? inner.Name : type.Name;
+
+    private sealed class Scope(IDisposable first, IDisposable second, IDisposable? third) : IDisposable
     {
         public void Dispose()
         {
+            third?.Dispose();
             second.Dispose();
             first.Dispose();
         }

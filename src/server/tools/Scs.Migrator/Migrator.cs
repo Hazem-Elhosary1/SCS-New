@@ -1,6 +1,7 @@
 using Scs.BuildingBlocks.Jobs;
 using Scs.BuildingBlocks.Modules;
 using Scs.Platform;
+using Scs.Tenancy;
 
 namespace Scs.Migrator;
 
@@ -14,7 +15,12 @@ public static class Migrator
     public const string ConnectionVariable = "SCS_DB__MIGRATION_CONNECTION";
 
     /// <summary>Modules that own database structure, in the order they are migrated.</summary>
-    private static readonly IMigratableModule[] Modules = [new PlatformModule()];
+    public static IReadOnlyList<IMigratableModule> Modules { get; } =
+    [
+        // First: its first migration creates the function every isolation policy calls.
+        new TenancyModule(),
+        new PlatformModule(),
+    ];
 
     public static async Task<int> RunAsync(
         string? migrationConnection, TextWriter output, TextWriter error, CancellationToken cancellation)

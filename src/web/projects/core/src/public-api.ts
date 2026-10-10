@@ -2,6 +2,7 @@
  * Public API of the `core` library: what every front end shares that is not visual.
  */
 export * from './lib/app-token';
+export * from './lib/clinic/clinic.service';
 export * from './lib/config/runtime-config';
 export * from './lib/http/api.interceptor';
 export * from './lib/http/problem';

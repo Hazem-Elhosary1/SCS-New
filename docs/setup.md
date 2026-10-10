@@ -30,14 +30,16 @@ macOS or Linux:
 ./scripts/dev.sh
 ```
 
-The script does five things, in order:
+The script does six things, in order:
 
 1. creates `deploy/compose/.env` from `.env.example` if it is not there;
-2. starts SQL Server in a container (host port **14333**) and creates the database and the two
-   logins, `scs_app` and `scs_migrator`;
+2. starts SQL Server in a container (host port **14333**) and creates the database and the four
+   logins: `scs_app` (the application), `scs_report` (read-only, for reports), `scs_ops`
+   (operators, the only one that may cross clinics) and `scs_migrator` (structure changes);
 3. applies the database structure with the migrator;
-4. starts the platform API on port 5080;
-5. installs the front-end packages if needed and starts the three apps.
+4. registers two made-up clinics, `noor` and `shifa`, if they are not there;
+5. starts the platform API on port 5080;
+6. installs the front-end packages if needed and starts the three apps.
 
 To start only the database and the API, add `-NoWeb` (PowerShell) or `--no-web` (bash).
 
@@ -49,7 +51,9 @@ To start only the database and the API, add `-NoWeb` (PowerShell) or `--no-web` 
 | <http://localhost:5080/health/ready> | `Healthy`, with checks `database` and `jobs` both `Healthy` |
 | <http://localhost:5080/v1/meta/version> | `"environment":"local"` |
 | <http://localhost:4201> | Clinic console placeholder: «المنصّة متاحة» |
-| <http://localhost:4202> | Patient surfaces placeholder: «المنصّة متاحة» |
+| <http://localhost:4202/noor> | Patient surfaces placeholder for «عيادة النور» / "Al Noor Clinic" |
+| <http://localhost:4202/shifa> | The same for «عيادة الشفاء» / "Al Shifa Clinic" |
+| <http://localhost:4202/nosuch> and <http://localhost:4202> | The "clinic not available" page, the same for every unknown name |
 | <http://localhost:4203> | Operators console placeholder: «المنصّة متاحة» |
 | <http://localhost:5080/jobs> | Background jobs dashboard (local only) |
 | <http://localhost:5080/openapi/v1.json> | Interface description (never served in production) |
@@ -122,7 +126,8 @@ Docker, the tests that need a database fail and the rest still run.
 | `docker: error during connect` | Docker Desktop is not running. Start it and wait until it says it is running. |
 | The database step hangs, then fails | First start downloads the image. Run the script again; it continues where it stopped. |
 | `/health/ready` is 503 with `jobs` unhealthy | The structure was not applied. Run the script again, or run the migrator: `dotnet run --project src/server/tools/Scs.Migrator`. |
-| The API stops at start with "Missing required configuration value SCS_…" | `deploy/compose/.env` is incomplete. Delete it and run the script again to recreate it. |
+| The API stops at start with "Missing required configuration value SCS_…" | `deploy/compose/.env` is incomplete. Delete it and run the script again to recreate it. This is needed once after taking the clinic isolation work (spec 002), which added the report and operator logins. |
+| <http://localhost:4202/noor> shows "clinic not available" | The made-up clinics are not registered. Run `dotnet run --project src/server/tools/Scs.Migrator -- seed`. |
 | A placeholder page shows «تعذّر الاتصال بالمنصّة» | The API is not running, or it is still building. Check <http://localhost:5080/health/live>. |
 | Port already in use | Something else uses 5080, 4201–4203 or 14333. Change `SCS_SQL_PORT` in `.env` for the database; stop the other program for the rest. |
 | A blank page saying the page could not start | `config.json` is missing or wrong in `src/web/projects/<app>/public/`. |

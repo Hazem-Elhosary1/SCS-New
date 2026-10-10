@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
 using Scs.BuildingBlocks.Errors;
 using Scs.BuildingBlocks.Modules;
+using Scs.BuildingBlocks.Tenancy;
 using Scs.IntegrationTests.Fixtures.Domain;
 using Scs.SharedKernel;
 
@@ -43,6 +44,22 @@ public sealed class ProbeEndpoints : IEndpointContributor
         root.MapGet("/probe/missing", () => Results.NotFound()).AllowAnonymous();
 
         root.MapGet("/probe/items/{id}", (string id) => Results.Ok(new { id })).AllowAnonymous();
+
+        // Reports the clinic the work was established for. Not patient-surface: the header is ignored.
+        root.MapGet("/probe/clinic", (IClinicContext clinic) => Results.Ok(new { clinicId = clinic.ClinicId }))
+            .AllowAnonymous();
+
+        // The same on the patient surface, plus how many clinic records the work can see.
+        root.MapGet("/probe/patient-clinic", async (IClinicContext clinic, IClinicConnection connection, CancellationToken cancellation) =>
+            {
+                await using var open = await connection.OpenAsync(cancellation);
+                await using var command = open.CreateCommand();
+                command.CommandText = "SELECT COUNT(*) FROM tenancy.Clinic";
+                var visible = (int)(await command.ExecuteScalarAsync(cancellation))!;
+                return Results.Ok(new { clinicId = clinic.ClinicId, clinicsVisible = visible });
+            })
+            .AllowAnonymous()
+            .ForPatientSurface();
 
         // Logs our own objects every way a developer might, then fails with a message that
         // carries pattern-shaped data. Used by LogRedactionTests.

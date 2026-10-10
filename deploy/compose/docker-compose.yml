@@ -43,6 +43,8 @@ services:
       - -v
       - SCS_DB=${SCS_DB_NAME}
       - SCS_APP_PASSWORD=${SCS_APP_PASSWORD}
+      - SCS_REPORT_PASSWORD=${SCS_REPORT_PASSWORD}
+      - SCS_OPS_PASSWORD=${SCS_OPS_PASSWORD}
       - SCS_MIGRATOR_PASSWORD=${SCS_MIGRATOR_PASSWORD}
       - -i
       - /sql/create-logins.sql

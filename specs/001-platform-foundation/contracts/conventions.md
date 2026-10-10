@@ -60,6 +60,9 @@ Every failure is `application/problem+json`:
 | `RATE_LIMITED` | 429 | Too many requests |
 | `INTERNAL_ERROR` | 500 | Anything unexpected |
 | `SERVICE_UNAVAILABLE` | 503 | A dependency is down |
+| `CLINIC_REQUIRED` | 400 | Work that needs a clinic was started without one (spec 002) |
+| `CLINIC_NOT_AVAILABLE` | 404 | The address names no clinic; same answer for every unknown name (spec 002) |
+| `CLINIC_MISMATCH` | 400 | The work carries two different clinics, or tries to change clinic (spec 002) |
 
 Later specs add codes (for example `FEATURE_NOT_IN_PLAN`, `CLINIC_READ_ONLY`) to this table by
 amending this contract; they do not invent a second shape.
@@ -91,7 +94,11 @@ path values, cookies, tokens, connection strings, and any member marked `[Person
 - A job is registered through the building-block interface, not against Hangfire directly.
 - A job is idempotent: running it twice has the same result as once.
 - Failures retry with back-off up to five times, then are logged at `Error` with `jobId`.
-- A job that works on clinic data sets the clinic context first (delivered by spec 002).
+- A job that works on clinic data implements `IClinicJob` and is scheduled through
+  `IClinicJobScheduler` (`EnqueueForClinic<TJob>(clinicId)`,
+  `AddOrUpdateRecurringPerClinic<TJob>(jobName, cron)`); the clinic is established before the
+  job runs and cannot change, and its log entries carry `clinicId`. A job without a clinic sees
+  no clinic-owned rows (spec 002).
 - Every attempt is logged with `jobId` and `jobName`; a job that has used up its retries gets one
   `Error` entry, and each failed attempt adds one to the `scs.jobs.failed` counter.
 - The jobs dashboard exists in `local` only until operator sign-in exists (spec 010).

@@ -22,6 +22,8 @@ public class ApiFactory : WebApplicationFactory<Program>
     {
         ["Scs:ENVIRONMENT"] = "local",
         ["Scs:DB:CONNECTION"] = FakeConnection,
+        ["Scs:DB:REPORT_CONNECTION"] = FakeConnection,
+        ["Scs:DB:CROSSING_CONNECTION"] = FakeConnection,
         ["Scs:ROLE"] = "api",
     };
 

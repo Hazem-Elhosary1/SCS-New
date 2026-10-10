@@ -30,6 +30,8 @@ public sealed class ScsOptions
 
     public ApiDocsOptions ApiDocs { get; set; } = new();
 
+    public RetentionOptions Retention { get; set; } = new();
+
     /// <summary><c>SCS_VERSION</c>, set at build.</summary>
     public string Version { get; set; } = "0.0.0-dev";
 
@@ -55,6 +57,22 @@ public sealed class DatabaseOptions
     /// <summary><c>SCS_DB__CONNECTION</c>: application login, no structure rights.</summary>
     [Secret]
     public string Connection { get; set; } = "";
+
+    /// <summary>
+    /// <c>SCS_DB__REPORT_CONNECTION</c>: read-only login for hand-written report queries.
+    /// Subject to clinic isolation like the application login.
+    /// </summary>
+    [Secret]
+    [ConfigurationKeyName("REPORT_CONNECTION")]
+    public string ReportConnection { get; set; } = "";
+
+    /// <summary>
+    /// <c>SCS_DB__CROSSING_CONNECTION</c>: operator login, used only by the declared
+    /// cross-clinic operations.
+    /// </summary>
+    [Secret]
+    [ConfigurationKeyName("CROSSING_CONNECTION")]
+    public string CrossingConnection { get; set; } = "";
 }
 
 public sealed class CorsOptions
@@ -73,6 +91,22 @@ public sealed class OtelOptions
 {
     /// <summary><c>SCS_OTEL__ENDPOINT</c>: OTLP collector address; nothing is exported when empty.</summary>
     public string Endpoint { get; set; } = "";
+}
+
+/// <summary>
+/// How long each kind of record is kept. Platform settings (SH-095), held as configuration until
+/// the operators' settings screen exists (spec 024).
+/// </summary>
+public sealed class RetentionOptions
+{
+    public const int MinimumDays = 30;
+
+    /// <summary>
+    /// <c>SCS_RETENTION__CROSS_CLINIC_ACCESS_DAYS</c>: how long cross-clinic access records are
+    /// kept. Five years to start; the lawyer's answer may change it.
+    /// </summary>
+    [ConfigurationKeyName("CROSS_CLINIC_ACCESS_DAYS")]
+    public int CrossClinicAccessDays { get; set; } = 1825;
 }
 
 public sealed class ApiDocsOptions

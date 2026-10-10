@@ -43,6 +43,39 @@ async function platform(page: Page, version: (route: Route) => Promise<void>): P
 
   await page.route('**/v1/meta/version', answer(version));
   await page.route(
+    '**/v1/clinic',
+    answer(async (route) => {
+      const asked = route.request().headers()['x-scs-clinic'] ?? '';
+      if (asked === 'noor' || asked === 'old-noor') {
+        await route.fulfill({
+          status: 200,
+          headers: cors,
+          json: {
+            shortName: 'noor',
+            nameAr: 'عيادة النور',
+            nameEn: 'Al Noor Clinic',
+            state: 'active',
+            renamed: asked !== 'noor',
+          },
+        });
+        return;
+      }
+
+      const english = (route.request().headers()['accept-language'] ?? '') === 'en';
+      await route.fulfill({
+        status: 404,
+        headers: { ...cors, 'content-type': 'application/problem+json' },
+        body: JSON.stringify({
+          type: 'urn:scs:error:clinic-not-available',
+          title: english ? 'This page is not available' : 'هذه الصفحة غير متاحة',
+          status: 404,
+          code: 'CLINIC_NOT_AVAILABLE',
+          traceId: TRACE,
+        }),
+      });
+    }),
+  );
+  await page.route(
     '**/health/ready',
     answer((route) => route.fulfill({ status: 200, headers: cors, json: { status: 'Healthy' } })),
   );

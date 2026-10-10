@@ -1,4 +1,12 @@
 import { Routes } from '@angular/router';
-import { PlaceholderPage } from './placeholder/placeholder.page';
+import { ClinicShellComponent } from './clinic/clinic-shell.component';
+import { NotAvailablePage } from './clinic/not-available.page';
 
-export const routes: Routes = [{ path: '**', component: PlaceholderPage }];
+/**
+ * The patient site is served at `scs-heta.com/<clinic>`: the first part of every address is a
+ * clinic's short name. The bare address names no clinic.
+ */
+export const routes: Routes = [
+  { path: '', pathMatch: 'full', component: NotAvailablePage },
+  { path: ':clinic', children: [{ path: '**', component: ClinicShellComponent }] },
+];

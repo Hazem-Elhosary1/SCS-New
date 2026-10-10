@@ -45,6 +45,12 @@ run, so every developer and the test environment start from the same invented cl
 patients. Names, mobile numbers and national IDs in seeds are invented and must not belong to
 real people.
 
+The seed is the `seed` command of the migrator
+(`dotnet run --project src/server/tools/Scs.Migrator -- seed`); each module adds its records in
+its `SeedAsync`. Spec 002 starts it with two clinics, `noor` («عيادة النور») and `shifa`
+(«عيادة الشفاء»). The command registers only what is missing, so running it again changes
+nothing, and it is never run against production.
+
 ## If it happens anyway
 
 Treat a copy of production patient data outside production as an incident: delete the copy,

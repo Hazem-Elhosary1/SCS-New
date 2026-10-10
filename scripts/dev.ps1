@@ -41,6 +41,9 @@ Invoke-Checked docker compose -f $compose --env-file $envFile --profile init run
 Step 'Structure'
 Invoke-Checked dotnet run --project (Join-Path $root 'src/server/tools/Scs.Migrator') -c Release
 
+Step 'Made-up clinics'
+Invoke-Checked dotnet run --project (Join-Path $root 'src/server/tools/Scs.Migrator') -c Release --no-build -- seed
+
 $children = @()
 try {
     Step 'Platform API'
@@ -68,7 +71,7 @@ Smart Clinic OS is starting. When the builds finish:
   Platform   http://localhost:5080/health/ready
   Version    http://localhost:5080/v1/meta/version
   Clinic     http://localhost:4201
-  Patient    http://localhost:4202
+  Patient    http://localhost:4202/noor   (also /shifa)
   Operators  http://localhost:4203
   Jobs       http://localhost:5080/jobs
   API docs   http://localhost:5080/openapi/v1.json

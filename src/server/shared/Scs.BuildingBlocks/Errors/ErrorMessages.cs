@@ -23,6 +23,9 @@ public static class ErrorMessages
         [ErrorCodes.RateLimited] = ("طلبات كثيرة، تُرجى المحاولة بعد قليل", "Too many requests; try again shortly"),
         [ErrorCodes.InternalError] = ("حدث خطأ غير متوقع", "An unexpected error occurred"),
         [ErrorCodes.ServiceUnavailable] = ("الخدمة غير متاحة مؤقتًا", "The service is temporarily unavailable"),
+        [ErrorCodes.ClinicRequired] = ("يلزم تحديد العيادة", "A clinic must be specified"),
+        [ErrorCodes.ClinicNotAvailable] = ("هذه الصفحة غير متاحة", "This page is not available"),
+        [ErrorCodes.ClinicMismatch] = ("الطلب لا يخصّ هذه العيادة", "The request does not belong to this clinic"),
     };
 
     public static string Title(string code, string language)

@@ -32,6 +32,9 @@ docker compose -f "$compose" --env-file "$env_file" --profile init run --rm sqls
 step "Structure"
 dotnet run --project "$root/src/server/tools/Scs.Migrator" -c Release
 
+step "Made-up clinics"
+dotnet run --project "$root/src/server/tools/Scs.Migrator" -c Release --no-build -- seed
+
 pids=()
 cleanup() { for pid in "${pids[@]}"; do kill "$pid" 2>/dev/null || true; done; }
 trap cleanup EXIT INT TERM
@@ -58,7 +61,7 @@ Smart Clinic OS is starting. When the builds finish:
   Platform   http://localhost:5080/health/ready
   Version    http://localhost:5080/v1/meta/version
   Clinic     http://localhost:4201
-  Patient    http://localhost:4202
+  Patient    http://localhost:4202/noor   (also /shifa)
   Operators  http://localhost:4203
   Jobs       http://localhost:5080/jobs
   API docs   http://localhost:5080/openapi/v1.json

@@ -34,6 +34,21 @@ public sealed class ScsOptionsValidator : IValidateOptions<ScsOptions>
             failures.Add("Missing required configuration value SCS_DB__CONNECTION.");
         }
 
+        if (string.IsNullOrWhiteSpace(options.Db.ReportConnection))
+        {
+            failures.Add("Missing required configuration value SCS_DB__REPORT_CONNECTION.");
+        }
+
+        if (string.IsNullOrWhiteSpace(options.Db.CrossingConnection))
+        {
+            failures.Add("Missing required configuration value SCS_DB__CROSSING_CONNECTION.");
+        }
+
+        if (options.Retention.CrossClinicAccessDays < RetentionOptions.MinimumDays)
+        {
+            failures.Add($"SCS_RETENTION__CROSS_CLINIC_ACCESS_DAYS must be at least {RetentionOptions.MinimumDays}.");
+        }
+
         if (!options.IsLocal && options.Cors.OriginList.Length > 0)
         {
             failures.Add("SCS_CORS__ORIGINS must be empty outside the local environment.");

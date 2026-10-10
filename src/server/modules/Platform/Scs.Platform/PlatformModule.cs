@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -40,16 +42,26 @@ public sealed class PlatformModule : IModule, IMigratableModule
         v1.MapClientErrors();
     }
 
-    public async Task MigrateAsync(string migrationConnection, CancellationToken cancellation)
+    public IReadOnlyList<string> GetMigrations(string migrationConnection)
+    {
+        using var db = CreateForMigration(migrationConnection);
+        return [.. db.Database.GetMigrations()];
+    }
+
+    public async Task MigrateAsync(string migrationConnection, string? targetMigration, CancellationToken cancellation)
+    {
+        var db = CreateForMigration(migrationConnection);
+        await using (db.ConfigureAwait(false))
+        {
+            await db.GetService<IMigrator>().MigrateAsync(targetMigration, cancellation).ConfigureAwait(false);
+        }
+    }
+
+    private static PlatformDbContext CreateForMigration(string migrationConnection)
     {
         var builder = new DbContextOptionsBuilder<PlatformDbContext>();
         PlatformDbContext.Configure(builder, migrationConnection);
-
-        var db = new PlatformDbContext((DbContextOptions<PlatformDbContext>)builder.Options);
-        await using (db.ConfigureAwait(false))
-        {
-            await db.Database.MigrateAsync(cancellation).ConfigureAwait(false);
-        }
+        return new PlatformDbContext((DbContextOptions<PlatformDbContext>)builder.Options);
     }
 
     private sealed class PlatformJobs : IRecurringJobRegistration

@@ -35,6 +35,39 @@ database, no web type.
    alters a table in another module's schema. See [database-changes.md](database-changes.md).
 5. **Run the tests.** The architecture tests pick the new module up by themselves.
 
+## Adding a clinic-owned table
+
+Almost every table a later spec adds belongs to a clinic. Three steps, all in the same change:
+
+1. **The entity** lives in the module's `Domain` folder and implements `IClinicOwned`
+   (`Guid ClinicId { get; }`). Do not assign `ClinicId`: it is stamped from the clinic context
+   when the entity is saved. The module's context derives from `ClinicAwareDbContext` and calls
+   `ApplyClinicIsolation(modelBuilder)` at the end of `OnModelCreating`.
+2. **The migration** that creates the table calls
+   `migrationBuilder.CreateClinicIsolation("<schema>", "<Table>")` right after `CreateTable`,
+   and `DropClinicIsolation` in `Down`. `ClinicId` is `uniqueidentifier NOT NULL`, with a foreign
+   key to `tenancy.Clinic(Id)`, and leads the table's lookup indexes. Unique constraints include
+   `ClinicId` unless the spec says a value is unique across clinics.
+3. **The test project** gets an `IIsolationSample` for the entity
+   (`src/server/tests/Scs.IntegrationTests/Isolation`), which inserts one valid row.
+
+Forget step 2 and `IsolationGuardrailTests` fails naming the table — also when the policy is
+added in a *later* migration, because migrations are checked one at a time. Forget step 3 and
+`IsolationBehaviourTests` fails naming the entity.
+
+**A table that belongs to no clinic** (a list of specialties, say) is declared by name, with a
+reason, in `Scs.BuildingBlocks/Tenancy/PlatformWideTables.cs`. That file is the only place such
+tables are declared. A platform-wide table is visible to every clinic's work and must never hold
+patient data.
+
+**Never** open a `SqlConnection`, call `sp_set_session_context`, or write `CREATE SECURITY
+POLICY` in a module; the architecture tests fail if you do. Report queries written by hand use
+`IClinicConnection`, which is read-only and already carries the clinic.
+
+**Do not edit** `ClinicIsolationSql` once a release has applied a migration that uses it: the
+helpers produce SQL at migration time, so a change there would silently change what an old
+migration does. Change isolation with a new migration.
+
 ## Rules the build enforces
 
 | Rule | Enforced by |
@@ -45,6 +78,10 @@ database, no web type.
 | No module uses the logging or job library directly, or writes to the console | `LoggingRulesTests` |
 | Every route is refused unless it declares who may call it | Fallback policy; `FallbackPolicyTests` |
 | The application login cannot alter structure | `MigrationTests` |
+| Every table is isolated or declared platform-wide, after every migration | `IsolationGuardrailTests` |
+| One clinic cannot read or change another's rows; no clinic means nothing | `IsolationBehaviourTests` (every `IClinicOwned` entity, found by reflection) |
+| The application login cannot switch isolation off or widen its own access | `LoginPermissionTests` |
+| No module opens a connection or sets the clinic on one | `TenancyRulesTests` |
 | No personal data or secret reaches the logs | `LogRedactionTests` (covers every mapped endpoint, including new ones) |
 
 ## Conventions to follow
@@ -59,8 +96,14 @@ a module.
   string. Log ids, not people. Mark members that hold personal data or secrets with
   `[PersonalData]` or `[Secret]`.
 - **Background work**: register jobs through `IJobScheduler` with an `IRecurringJobRegistration`.
-  A job is idempotent. A job that works on a clinic's data sets that clinic's context first
-  (spec 002).
+  A job is idempotent.
+- **Background work for a clinic**: implement `IClinicJob` and schedule it through
+  `IClinicJobScheduler`: `EnqueueForClinic<TJob>(clinicId)` for one clinic, or
+  `AddOrUpdateRecurringPerClinic<TJob>(jobName, cron)` for every clinic on a schedule. The clinic
+  is established before the job is created, so the job sees that clinic's rows only, exactly as
+  a request does; each clinic's turn is its own job with its own retries, so one clinic's
+  failure does not stop the others. A job never sets or changes the clinic itself, and a job
+  scheduled through `IJobScheduler` has no clinic and sees no clinic-owned rows.
 - **Reaching another module**: call the interface it publishes in its `.Contracts` project.
   Never read or write its tables.
 - **Clinic-owned tables** (from spec 002 on): the isolation policy is in the same migration that

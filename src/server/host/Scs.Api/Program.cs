@@ -9,6 +9,7 @@ using Scs.BuildingBlocks.Logging;
 using Scs.BuildingBlocks.Modules;
 using Scs.BuildingBlocks.Security;
 using Scs.BuildingBlocks.Telemetry;
+using Scs.BuildingBlocks.Tenancy;
 using Scs.BuildingBlocks.Tracing;
 using Scs.SharedKernel;
 
@@ -24,6 +25,7 @@ builder.Services.AddRateLimiter(options => options.OnRejected = async (rejected,
 builder.Services.AddExceptionHandler<ProblemDetailsExceptionHandler>();
 builder.Services.AddHealthChecks().AddScsReadiness();
 builder.Services.AddScsJobs(scs);
+builder.Services.AddScsTenancy();
 builder.Services.AddScsDenyByDefault();
 builder.Services.AddScsApiDocs(scs);
 
@@ -110,6 +112,7 @@ if (scs.IsLocal && corsOrigins.Length > 0)
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
+app.UseScsPatientSurface();
 
 app.MapScsHealth();
 app.MapScsApiDocs(scs);

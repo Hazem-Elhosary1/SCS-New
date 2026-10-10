@@ -33,6 +33,11 @@ jobs:
         run: dotnet format Scs.sln --verify-no-changes --no-restore
       - name: Build (warnings are errors)
         run: dotnet build Scs.sln -c Release --no-restore
+      # Constitution Principle II, named so it is visible as its own gate: every table is
+      # isolated or declared platform-wide after every migration, and one clinic cannot reach
+      # another's rows. Runs against a real SQL Server in a container.
+      - name: Tenant isolation
+        run: dotnet test Scs.sln -c Release --no-build --filter Category=Isolation
       # Unit, architecture and integration tests. The integration tests start a real SQL Server
       # in a container; the runner provides Docker.
       - name: Test

@@ -10,7 +10,12 @@ public class ScsOptionsValidatorTests
         {
             Environment = "local",
             Role = "all",
-            Db = new DatabaseOptions { Connection = "Server=db;Database=scs;User Id=scs_app;Password=Sup3rS3cret" },
+            Db = new DatabaseOptions
+            {
+                Connection = "Server=db;Database=scs;User Id=scs_app;Password=Sup3rS3cret",
+                ReportConnection = "Server=db;Database=scs;User Id=scs_report;Password=Sup3rS3cret",
+                CrossingConnection = "Server=db;Database=scs;User Id=scs_ops;Password=Sup3rS3cret",
+            },
         };
         change?.Invoke(options);
         return options;
@@ -63,6 +68,13 @@ public class ScsOptionsValidatorTests
     public void Missing_connection_is_refused_by_name()
     {
         Assert.Contains(Failures(Valid(o => o.Db.Connection = " ")), f => f.Contains("SCS_DB__CONNECTION", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Missing_report_or_crossing_connection_is_refused_by_name()
+    {
+        Assert.Contains(Failures(Valid(o => o.Db.ReportConnection = "")), f => f.Contains("SCS_DB__REPORT_CONNECTION", StringComparison.Ordinal));
+        Assert.Contains(Failures(Valid(o => o.Db.CrossingConnection = " ")), f => f.Contains("SCS_DB__CROSSING_CONNECTION", StringComparison.Ordinal));
     }
 
     [Fact]

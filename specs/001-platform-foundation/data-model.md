@@ -53,6 +53,8 @@ Read from environment variables, bound to typed options, validated at start-up (
 | `SCS_ENVIRONMENT` | yes | no | Environment name |
 | `SCS_ROLE` | no (default `all`) | no | `api`, `worker` or `all` |
 | `SCS_DB__CONNECTION` | yes | yes | Application database login (no structure rights) |
+| `SCS_DB__REPORT_CONNECTION` | yes | yes | Read-only login for hand-written report queries, under clinic isolation (added by spec 002) |
+| `SCS_DB__CROSSING_CONNECTION` | yes | yes | Operator login for the declared cross-clinic operations (added by spec 002) |
 | `SCS_DB__MIGRATION_CONNECTION` | migration task only | yes | Login that may alter structure |
 | `SCS_CORS__ORIGINS` | `local` only | no | Allowed front-end origins for local development; must be empty in test and production, where calls are same-origin |
 | `SCS_OTEL__ENDPOINT` | no | no | OTLP collector address |
