@@ -25,6 +25,10 @@ public class AuditActionsTests
 
         // Spec 008: who turned the email of a notification on or off.
         ("settings.notification-email-changed", "changes"),
+
+        // Spec 009: a file leaving the system, and a file the check refused.
+        ("file.downloaded", "records"),
+        ("file.scan-refused", "security"),
     ];
 
     [Fact]

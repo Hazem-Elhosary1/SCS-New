@@ -200,6 +200,45 @@ PUT http://localhost:5080/v1/settings/notification-emails/{event}  «إدارة 
 A change of a switch is in the audit trail. Notifications older than ninety days are removed
 every night, with the record of their emails.
 
+### Files and attachments (spec 009)
+
+No page of the product holds files yet. For people building it, signed in at
+<http://localhost:4201>, the page <http://localhost:4201/dev/files> shows every state of the
+upload zone and the file card, and one live field: choose a file, save, download it, remove it
+and put it back.
+
+- **Where files are kept locally**: the folder `scs-files` under the system's temporary files,
+  one folder for each clinic, unless `SCS_FILES__ROOT` names another (a full path).
+- **The scanner**: with `SCS_SCAN__HOST` empty the platform scans for the standard malware test
+  signature only — enough to see a file refused. A PDF protected by a password is refused as
+  "could not be checked" either way. To use ClamAV itself (a large image):
+
+  ```powershell
+  docker compose -f deploy/compose/docker-compose.yml --profile scan up -d clamav
+  ```
+
+  then set `SCS_SCAN__HOST=localhost` in `deploy/compose/.env` and restart the API. With the
+  scanner stopped, files are still taken and read «قيد الفحص» until it returns.
+- **A file is scanned by the API's background worker**, within a minute of its upload; with the
+  worker stopped it stays «قيد الفحص».
+
+The addresses:
+
+```text
+POST   http://localhost:5080/v1/files?kind=dev.sample      multipart, one file
+DELETE http://localhost:5080/v1/files/{id}                  a file not saved with anything yet
+POST   http://localhost:5080/v1/files/{id}/access           a way in, for five minutes, recorded in the audit trail
+GET    http://localhost:5080/v1/files/content/{token}       the file, for the account the way in was given to
+GET    http://localhost:5080/v1/public/files/{id}           a file of a public kind, with no session
+```
+
+After changing the table of kinds (`src/server/shared/Scs.SharedKernel/Files`), write the file
+the web sites read, or `FileKindsFileTests` fails:
+
+```powershell
+dotnet run --project src/server/tools/Scs.Migrator -- file-kinds src/web/projects/core/src/lib/files/file-kinds.json
+```
+
 ### Check the "not ready" behaviour
 
 ```bash

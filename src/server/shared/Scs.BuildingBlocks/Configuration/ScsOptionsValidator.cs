@@ -69,6 +69,28 @@ public sealed class ScsOptionsValidator : IValidateOptions<ScsOptions>
 
         Range(options.Mail.TimeoutSeconds, 1, 60, "SCS_MAIL__TIMEOUT_SECONDS", failures);
 
+        if (!options.IsLocal && string.IsNullOrWhiteSpace(options.Files.Root))
+        {
+            failures.Add("Missing required configuration value SCS_FILES__ROOT.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(options.Files.Root) && !Path.IsPathFullyQualified(options.Files.Root.Trim()))
+        {
+            failures.Add("SCS_FILES__ROOT must be a full path, outside anything the web server serves.");
+        }
+
+        if (!options.IsLocal && !options.Scan.HasScanner)
+        {
+            failures.Add("Missing required configuration value SCS_SCAN__HOST: files are not accepted without a malware scanner.");
+        }
+
+        if (options.Scan.Port is < 1 or > 65535)
+        {
+            failures.Add("SCS_SCAN__PORT must be between 1 and 65535.");
+        }
+
+        Range(options.Scan.TimeoutSeconds, 5, 120, "SCS_SCAN__TIMEOUT_SECONDS", failures);
+
         if (!options.IsLocal && options.Cors.OriginList.Length > 0)
         {
             failures.Add("SCS_CORS__ORIGINS must be empty outside the local environment.");

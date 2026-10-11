@@ -19,6 +19,7 @@ public static class PlatformWideTables
         ("tenancy.ClinicDirectory", "Clinic short names, which already appear in public addresses."),
         ("crossing.CrossClinicAccess", "Who used a cross-clinic operation; identifiers only, hidden from clinics."),
         ("platform.DataProtectionKey", "The key ring that protects session cookies; one for the whole platform."),
+        ("files.RetentionPeriod", "How long each class of file is kept (SH-095): four classes and a number of days; no clinic data."),
         ("security.AnonymousSignInAttempt", "Sign-in attempts on emails that match no account; a keyed hash, never the email; insert-only for the application."),
     ];
 

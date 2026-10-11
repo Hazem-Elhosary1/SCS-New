@@ -40,6 +40,10 @@ public sealed class ScsOptions
 
     public SeedOptions Seed { get; set; } = new();
 
+    public FilesOptions Files { get; set; } = new();
+
+    public ScanOptions Scan { get; set; } = new();
+
     /// <summary><c>SCS_VERSION</c>, set at build.</summary>
     public string Version { get; set; } = "0.0.0-dev";
 
@@ -277,6 +281,39 @@ public sealed class MailOptions
     /// <summary><c>SCS_MAIL__TIMEOUT_SECONDS</c>: how long a request waits for the mail server.</summary>
     [ConfigurationKeyName("TIMEOUT_SECONDS")]
     public int TimeoutSeconds { get; set; } = 10;
+}
+
+/// <summary>Where file content is kept (spec 009).</summary>
+public sealed class FilesOptions
+{
+    /// <summary>
+    /// <c>SCS_FILES__ROOT</c>: the folder of the local store. Required outside a developer's
+    /// machine; there it falls back to a folder under the system's temporary files.
+    /// </summary>
+    public string Root { get; set; } = "";
+
+    /// <summary>The folder in use: the configured one, or the developer's fallback.</summary>
+    public string RootOrLocal() =>
+        string.IsNullOrWhiteSpace(Root) ? Path.Combine(Path.GetTempPath(), "scs-files") : Root.Trim();
+}
+
+/// <summary>The malware scanner (spec 009, FR-014).</summary>
+public sealed class ScanOptions
+{
+    /// <summary>
+    /// <c>SCS_SCAN__HOST</c>: the ClamAV daemon. Required outside a developer's machine; with
+    /// none, a developer's machine uses a scanner that knows the standard test signature only.
+    /// </summary>
+    public string Host { get; set; } = "";
+
+    /// <summary><c>SCS_SCAN__PORT</c>.</summary>
+    public int Port { get; set; } = 3310;
+
+    /// <summary><c>SCS_SCAN__TIMEOUT_SECONDS</c>: how long one scan may take.</summary>
+    [ConfigurationKeyName("TIMEOUT_SECONDS")]
+    public int TimeoutSeconds { get; set; } = 30;
+
+    public bool HasScanner => !string.IsNullOrWhiteSpace(Host);
 }
 
 /// <summary>What the help window on the sign-in screens shows. Nothing here is private.</summary>

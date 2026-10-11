@@ -48,7 +48,11 @@ export type ScsIconName =
   | 'clipboard'
   | 'file'
   | 'clock'
-  | 'menu';
+  | 'menu'
+  | 'upload'
+  | 'download'
+  | 'image'
+  | 'paperclip';
 
 /**
  * The line icons of the design system, drawn inline so they take the colour of the text around
@@ -333,6 +337,26 @@ export type ScsIconName =
         @case ('clock') {
           <circle cx="12" cy="12" r="10" />
           <path d="M12 6v6l4 2" />
+        }
+        @case ('upload') {
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <path d="m17 8-5-5-5 5" />
+          <path d="M12 3v12" />
+        }
+        @case ('download') {
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <path d="m7 10 5 5 5-5" />
+          <path d="M12 15V3" />
+        }
+        @case ('image') {
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <circle cx="9" cy="9" r="2" />
+          <path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21" />
+        }
+        @case ('paperclip') {
+          <path
+            d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"
+          />
         }
         @case ('file') {
           <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />

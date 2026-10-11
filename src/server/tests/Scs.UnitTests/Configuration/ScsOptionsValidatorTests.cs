@@ -18,6 +18,8 @@ public class ScsOptionsValidatorTests
             },
             Auth = new AuthOptions { CodeKey = Convert.ToBase64String(new byte[32]), StaffAppUrl = "https://app.scs.test" },
             Mail = new MailOptions { Host = "mail", Port = 587, From = "no-reply@scs.test" },
+            Files = new FilesOptions { Root = OperatingSystem.IsWindows() ? @"D:\scs\files" : "/var/scs/files" },
+            Scan = new ScanOptions { Host = "scanner.internal" },
         };
         change?.Invoke(options);
         return options;
@@ -237,6 +239,52 @@ public class ScsOptionsValidatorTests
             }));
             Assert.Contains(failures, f => f.Contains("SCS_CORS__ORIGINS", StringComparison.Ordinal));
         }
+    }
+
+    [Theory]
+    [InlineData("local", "", "", true)]
+    [InlineData("test", "", "scanner.internal", false)]
+    [InlineData("production", "", "scanner.internal", false)]
+    [InlineData("production", "files", "scanner.internal", false)]
+    [InlineData("local", "relative/files", "", false)]
+    [InlineData("test", null, "", false)]
+    [InlineData("production", null, "", false)]
+    [InlineData("production", null, "scanner.internal", true)]
+    public void Files_need_a_folder_and_a_scanner_everywhere_but_on_a_developers_machine(
+        string environment, string? root, string scanner, bool valid)
+    {
+        var failures = Failures(Valid(o =>
+        {
+            o.Environment = environment;
+            o.Files.Root = root ?? o.Files.Root;
+            o.Scan.Host = scanner;
+        }));
+
+        Assert.Equal(valid, failures.Count == 0);
+        if (!valid)
+        {
+            Assert.All(failures, failure => Assert.Matches("SCS_(FILES__ROOT|SCAN__HOST)", failure));
+        }
+    }
+
+    [Theory]
+    [InlineData(4, false)]
+    [InlineData(5, true)]
+    [InlineData(120, true)]
+    [InlineData(121, false)]
+    public void A_scan_may_take_five_seconds_to_two_minutes(int seconds, bool valid)
+    {
+        var failures = Failures(Valid(o => o.Scan.TimeoutSeconds = seconds));
+
+        Assert.Equal(valid, failures.Count == 0);
+    }
+
+    [Fact]
+    public void A_developer_with_no_folder_set_keeps_files_under_the_temporary_ones()
+    {
+        var options = Valid(o => o.Files.Root = "");
+
+        Assert.StartsWith(Path.GetTempPath(), options.Files.RootOrLocal(), StringComparison.Ordinal);
     }
 
     [Fact]

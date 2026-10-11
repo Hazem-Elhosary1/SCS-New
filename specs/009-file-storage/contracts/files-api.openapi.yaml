@@ -1,0 +1,167 @@
+openapi: 3.1.0
+info:
+  title: SCS — Files and attachments
+  version: 0.9.0
+  description: >
+    The addresses of spec 009. Errors are problem documents with a `code`, as everywhere in the
+    platform. Words follow `Accept-Language`.
+paths:
+  /v1/files:
+    post:
+      summary: Upload one file, as it is chosen. It is the uploader's alone until attached.
+      parameters:
+        - { name: kind, in: query, required: true, schema: { type: string, maxLength: 64 } }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        '201':
+          description: Stored, unattached, being checked.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UploadedFile' }
+        '400': { description: '`FILE_EMPTY` · `FILE_TYPE_NOT_ACCEPTED` (with `accepted`) · `VALIDATION_FAILED` (no file, or more than one)' }
+        '401': { description: '`UNAUTHENTICATED`' }
+        '403': { description: '`PERMISSION_REQUIRED` · `FORBIDDEN` (unknown kind, or a kind with no owner) · the read-only refusal' }
+        '413': { description: '`FILE_TOO_LARGE` with `sizeBytes` and `maxBytes`' }
+        '429': { description: '`FILE_LIMIT_REACHED` with `retryAfterSeconds` — thirty waiting, or sixty in ten minutes' }
+        '503': { description: '`FILE_NOT_STORED` — try again' }
+  /v1/files/{id}:
+    delete:
+      summary: Remove a file the caller uploaded and has not attached yet.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Gone. Again answers 204. }
+        '401': { description: '`UNAUTHENTICATED`' }
+        '404': { description: '`NOT_FOUND` — not theirs, attached already, or not there' }
+  /v1/files/{id}/access:
+    post:
+      summary: Ask for a way in to download one file. Checked every time; recorded in the audit trail.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: A way in for this account, for five minutes.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url, expiresAt, name, sizeBytes, type]
+                properties:
+                  url: { type: string, description: 'A path of this platform that holds a token: /v1/files/content/{token}.' }
+                  expiresAt: { type: string, format: date-time }
+                  name: { type: string }
+                  sizeBytes: { type: integer, format: int64 }
+                  type: { type: string, enum: [pdf, png, jpeg] }
+        '401': { description: '`UNAUTHENTICATED`' }
+        '403': { description: '`PERMISSION_REQUIRED` — the kind''s owner says no' }
+        '404': { description: '`NOT_FOUND`' }
+        '409': { description: '`FILE_BEING_CHECKED`' }
+        '410': { description: '`FILE_REFUSED` (with `reason`: `infected` or `unreadable`) · `FILE_NOT_KEPT`' }
+  /v1/files/content/{token}:
+    get:
+      summary: The bytes, for the account the way in was issued to, under the uploaded name.
+      parameters:
+        - { name: token, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: >
+            The file as an attachment. `Content-Type` is the type the platform read;
+            `X-Content-Type-Options: nosniff`; `Content-Security-Policy: sandbox`;
+            `Cache-Control: private, no-store`.
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+        '401': { description: '`UNAUTHENTICATED`' }
+        '404': { description: '`NOT_FOUND` — expired, another account''s, altered, or the file is no longer available' }
+  /v1/public/files/{id}:
+    get:
+      summary: A file of a public kind, attached and clean. No session.
+      security: []
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: The image, shown in place, cacheable.
+          content:
+            image/png: { schema: { type: string, format: binary } }
+            image/jpeg: { schema: { type: string, format: binary } }
+        '404': { description: '`NOT_FOUND` — anything that is not a public, attached, clean file' }
+  /v1/dev/files/sample:
+    description: A developer's machine and tests only. The builders' kind, dev.sample; a "record" is the caller's own account.
+    post:
+      summary: Attach uploaded files to the caller's account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fileIds]
+              properties:
+                fileIds: { type: array, items: { type: string, format: uuid } }
+      responses:
+        '204': { description: Attached. }
+        '400': { description: 'A file code of the engine: `FILE_COUNT_REACHED`, or `VALIDATION_FAILED`' }
+    get:
+      summary: The caller's sample files, removed ones included.
+      responses:
+        '200':
+          description: The files as the engine lists them for a record.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [files]
+                properties:
+                  files:
+                    type: array
+                    items: { $ref: '#/components/schemas/RecordFile' }
+  /v1/dev/files/sample/{id}/remove:
+    post:
+      summary: Remove one of the caller's sample files.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Removed; restorable for thirty days. }
+        '404': { description: '`NOT_FOUND`' }
+  /v1/dev/files/sample/{id}/restore:
+    post:
+      summary: Restore one of the caller's removed sample files.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Back on the record. }
+        '404': { description: '`NOT_FOUND`' }
+        '409': { description: '`FILE_COUNT_REACHED`' }
+        '410': { description: '`FILE_NOT_KEPT`' }
+components:
+  schemas:
+    RecordFile:
+      type: object
+      required: [id, name, sizeBytes, type, state, uploadedAt]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        sizeBytes: { type: integer, format: int64 }
+        type: { type: string, enum: [pdf, png, jpeg] }
+        state: { type: string, enum: [available, being-checked, refused, removed, not-kept] }
+        uploadedAt: { type: string, format: date-time }
+        uploadedBy: { type: string, description: The uploader's name of the moment. }
+        restorableUntil: { type: [string, 'null'], format: date-time }
+    UploadedFile:
+      type: object
+      required: [id, name, sizeBytes, type, state]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        sizeBytes: { type: integer, format: int64 }
+        type: { type: string, enum: [pdf, png, jpeg] }
+        state: { type: string, enum: [being-checked, available, refused] }

@@ -46,6 +46,16 @@ public static class ErrorMessages
         [ErrorCodes.RoleInUse] = ("لا يُحذف دور يحمله مستخدمون", "A role that users hold is not deleted"),
         [ErrorCodes.LastOwner] = ("لا تبقى العيادة بلا مالك", "A clinic is not left without an owner"),
         [ErrorCodes.OwnRole] = ("لا يغيّر أحد دور حسابه", "Nobody changes the role of their own account"),
+        [ErrorCodes.FileEmpty] = ("الملف فارغ", "The file is empty"),
+        [ErrorCodes.FileTooLarge] = ("حجم الملف أكبر من الحد المسموح", "The file is larger than the limit"),
+        [ErrorCodes.FileTypeNotAccepted] = ("نوع الملف غير مدعوم", "This type of file is not accepted"),
+        [ErrorCodes.FileNotStored] = ("تعذّر حفظ الملف. تُرجى المحاولة مرة أخرى.", "The file could not be stored. Try again."),
+        [ErrorCodes.FileLimitReached] = ("ملفات كثيرة في وقت قصير. تُرجى المحاولة بعد قليل.", "Too many files in a short time. Try again shortly."),
+        [ErrorCodes.FileCountReached] = ("بلغ عدد الملفات الحد المسموح", "The limit on the number of files is reached"),
+        [ErrorCodes.FileNotAttachable] = ("تعذّر إرفاق الملف", "The file could not be attached"),
+        [ErrorCodes.FileBeingChecked] = ("الملف قيد الفحص", "The file is still being checked"),
+        [ErrorCodes.FileRefused] = ("الملف مرفوض: لم يجتز الفحص الأمني", "The file was refused: it did not pass the security check"),
+        [ErrorCodes.FileNotKept] = ("الملف لم يعد محفوظًا", "The file is no longer kept"),
     };
 
     public static string Title(string code, string language)

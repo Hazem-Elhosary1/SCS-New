@@ -57,5 +57,21 @@ services:
       - "${SCS_MAIL_SMTP_PORT:-1025}:1025"
       - "${SCS_MAIL_INBOX_PORT:-8025}:8025"
 
+  # The malware scanner (spec 009). Not started by default: its image and its signatures are
+  # large, and without it the platform scans for the standard test signature only.
+  #   docker compose --profile scan up -d clamav      then set SCS_SCAN__HOST=localhost
+  # The daemon's own settings are its defaults here. A real environment turns on its alerts
+  # for encrypted documents and broken files (clamd.conf: AlertEncrypted, AlertEncryptedDoc,
+  # AlertBrokenMedia), which the platform reads as "could not be checked"; a PDF that says it is
+  # encrypted is refused by the platform itself either way.
+  clamav:
+    image: clamav/clamav:stable
+    profiles: ["scan"]
+    ports:
+      - "${SCS_SCAN_PORT:-3310}:3310"
+    volumes:
+      - clamav-data:/var/lib/clamav
+
 volumes:
   sqlserver-data:
+  clamav-data:

@@ -49,6 +49,8 @@ public static class DeclaredCrossings
     public const string PurgeAccessRecords = "purge-access-records";
     public const string ReadAuditAsOperator = "read-audit-as-operator";
     public const string ListClinicsWithEmailWaiting = "list-clinics-with-email-waiting";
+    public const string ListClinicsWithFilesToScan = "list-clinics-with-files-to-scan";
+    public const string ReadPublicFile = "read-public-file";
 
     /// <summary>Operation, the type that performs it, whether each use is recorded, and why it exists.</summary>
     public static IReadOnlyList<(string Operation, string Type, bool Recorded, string Reason)> All { get; } =
@@ -67,6 +69,10 @@ public static class DeclaredCrossings
             "Operators read what operators did, across clinics (spec 007, FR-031). A read; no caller until the operators' console exists."),
         (ListClinicsWithEmailWaiting, "Scs.Notifications.Infrastructure.EmailSweepJob", false,
             "Every minute, which clinics have notification email due (spec 008). Identifiers only; each clinic's email is then sent by its own job."),
+        (ListClinicsWithFilesToScan, "Scs.Files.Infrastructure.ScanSweepJob", false,
+            "Every minute, which clinics have files waiting for their scan (spec 009). Identifiers and a count; each clinic's files are then scanned by its own job."),
+        (ReadPublicFile, "Scs.Files.Infrastructure.PublicFiles", false,
+            "A public image is asked for with no clinic (spec 009, FR-027). Returns one attached, clean file of a public kind and nothing else."),
     ];
 
     /// <summary>The distinct types that may use the operator connection.</summary>

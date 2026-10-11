@@ -43,7 +43,29 @@ public class ApiFactory : WebApplicationFactory<Program>
         ["Scs:SUPPORT:HOTLINE"] = "19999",
         ["Scs:SUPPORT:WHATSAPP"] = "201000000000",
         ["Scs:SUPPORT:EMAIL"] = "support@scs.test",
+
+        // Each host keeps its files in a folder of its own, removed with the host.
+        ["Scs:FILES:ROOT"] = Path.Combine(Path.GetTempPath(), "scs-test-files", Guid.NewGuid().ToString("N")),
     };
+
+    /// <summary>Where this host keeps file content.</summary>
+    public string FilesRoot => _settings["Scs:FILES:ROOT"]!;
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+        try
+        {
+            if (disposing && Directory.Exists(FilesRoot))
+            {
+                Directory.Delete(FilesRoot, recursive: true);
+            }
+        }
+        catch (IOException)
+        {
+            // A file still open somewhere: the folder is under the temporary files and goes with them.
+        }
+    }
 
     public CapturedLogs Logs { get; } = new();
 
@@ -66,6 +88,14 @@ public class ApiFactory : WebApplicationFactory<Program>
     public ApiFactory With(string key, string? value)
     {
         _settings[key] = value;
+
+        // Outside a developer's machine the platform does not start without a malware scanner
+        // (spec 009); a host that names another environment is given one unless it says otherwise.
+        if (string.Equals(key, "Scs:ENVIRONMENT", StringComparison.OrdinalIgnoreCase) && value is not (null or "local"))
+        {
+            _settings.TryAdd("Scs:SCAN:HOST", "scanner.internal");
+        }
+
         return this;
     }
 

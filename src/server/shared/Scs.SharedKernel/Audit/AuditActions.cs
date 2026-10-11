@@ -49,6 +49,8 @@ public static class AuditActions
     public const string PasswordResetCompleted = "password.reset-completed";
     public const string PasswordTemporaryReplaced = "password.temporary-replaced";
     public const string SettingsNotificationEmailChanged = "settings.notification-email-changed";
+    public const string FileDownloaded = "file.downloaded";
+    public const string FileScanRefused = "file.scan-refused";
 
     /// <summary>Fact keys no action may allow: nothing secret and no email address is ever a fact (FR-016, FR-018).</summary>
     public static IReadOnlyList<string> NeverKeys { get; } =
@@ -84,6 +86,13 @@ public static class AuditActions
         new(SettingsNotificationEmailChanged, AuditCategories.Changes, "تغيير بريد تنبيه", "Notification email changed",
             "غُيِّر بريد «{target}» من «{before:enabled}» إلى «{after:enabled}»",
             "Email for “{target}” was changed from “{before:enabled}” to “{after:enabled}”", [], NeedsBeforeAfter: true),
+
+        // Spec 009: a file leaving the system, and a file the check refused.
+        new(FileDownloaded, AuditCategories.Records, "تنزيل ملف", "File downloaded",
+            "نُزِّل الملف «{target}»", "File “{target}” was downloaded", ["kind", "record"], NeedsBeforeAfter: false),
+        new(FileScanRefused, AuditCategories.Security, "رفض ملف", "File refused",
+            "رُفض الملف «{target}» في الفحص الأمني", "File “{target}” was refused by the security check",
+            ["kind", "reason", "record", "recordId", "uploadedBy"], NeedsBeforeAfter: false),
     ];
 
     private static readonly Dictionary<string, AuditAction> ByCode = All.ToDictionary(a => a.Code, StringComparer.Ordinal);
