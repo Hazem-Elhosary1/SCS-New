@@ -54,6 +54,7 @@ public sealed class IdentityModule : IModule, IMigratableModule
         services.AddScoped<IStaffAccounts, StaffAccounts>();
         services.AddScoped<ICurrentStaff, CurrentStaff>();
         services.AddScoped<ReadyRoles>();
+        services.AddScoped<Preferences>();
         services.AddScoped<StaffAccessSource>();
         services.AddScoped<IStaffAccessSource>(provider => provider.GetRequiredService<StaffAccessSource>());
         services.AddScoped<IClinicRoles, ClinicRoles>();
@@ -67,6 +68,7 @@ public sealed class IdentityModule : IModule, IMigratableModule
         v1.MapAuth();
         v1.MapPasswords();
         v1.MapAccess();
+        v1.MapPreferences();
     }
 
     public IReadOnlyList<string> GetMigrations(string migrationConnection)
@@ -88,9 +90,10 @@ public sealed class IdentityModule : IModule, IMigratableModule
     public const string SeedTemporaryAccount = "temp@noor.example";
 
     /// <summary>
-    /// The seeded custom role, held by <c>reception@noor.example</c>. It does not hold «عرض الأدوار
-    /// والصلاحيات» — all three ready roles do — so its holder is the one who sees the
-    /// no-permission state of spec 005.
+    /// The seeded custom role, held by <c>reception@noor.example</c> and
+    /// <c>reception@shifa.example</c>. It does not hold «عرض الأدوار والصلاحيات» — all three
+    /// ready roles do — so its holders are the ones who see the no-permission state of spec 005
+    /// and the short side bar of spec 006.
     /// </summary>
     public const string SeedCustomRole = "فريق العيادة";
 
@@ -102,7 +105,7 @@ public sealed class IdentityModule : IModule, IMigratableModule
 
     /// <summary>
     /// Adds the made-up staff accounts every local and test environment starts with, if they are
-    /// not there: three for each of the two seeded clinics and one holding a temporary password, each with a role. Never run against production
+    /// not there: four for each of the two seeded clinics — one of the Noor clinic's holding a temporary password — each with a role. Never run against production
     /// (ops/runbooks/data-handling.md). Returns the emails it added.
     /// </summary>
     /// <param name="appConnection">The application login: accounts are created under isolation, clinic by clinic.</param>
@@ -123,6 +126,7 @@ public sealed class IdentityModule : IModule, IMigratableModule
             ("shifa", "owner@shifa.example", AccountStates.Active, ReadyRoleKeys.Owner),
             ("shifa", "doctor@shifa.example", AccountStates.Active, ReadyRoleKeys.Doctor),
             ("shifa", "new@shifa.example", AccountStates.Invited, ReadyRoleKeys.Manager),
+            ("shifa", "reception@shifa.example", AccountStates.Active, SeedCustomRole),
         ];
 
         var problems = PasswordRules.Check(password);
@@ -180,7 +184,7 @@ public sealed class IdentityModule : IModule, IMigratableModule
                     .ConfigureAwait(false);
 
                 await SeedRolesAsync(
-                    db, clinic, perClinic.Key, [.. perClinic.Select(a => (a.Email, a.Role))], cancellation).ConfigureAwait(false);
+                    db, clinic, [.. perClinic.Select(a => (a.Email, a.Role))], cancellation).ConfigureAwait(false);
             }
         }
 
@@ -188,18 +192,17 @@ public sealed class IdentityModule : IModule, IMigratableModule
     }
 
     /// <summary>
-    /// Gives the seeded clinic its ready roles, one custom role in the Noor clinic, and each
+    /// Gives the seeded clinic its ready roles, one custom role, and each
     /// seeded account that has no role the one written beside it. An account that already has a
     /// role is left alone, so a developer's own changes are kept.
     /// </summary>
     private static async Task SeedRolesAsync(
-        IdentityDbContext db, ClinicContext clinic, string clinicName, (string Email, string Role)[] accounts,
+        IdentityDbContext db, ClinicContext clinic, (string Email, string Role)[] accounts,
         CancellationToken cancellation)
     {
         await new ReadyRoles(db, clinic, TimeProvider.System).EnsureAsync(cancellation).ConfigureAwait(false);
 
-        if (clinicName == "noor"
-            && !await db.Roles.AnyAsync(r => r.Name == SeedCustomRole, cancellation).ConfigureAwait(false))
+        if (!await db.Roles.AnyAsync(r => r.Name == SeedCustomRole, cancellation).ConfigureAwait(false))
         {
             var custom = Role.Custom(SeedCustomRole, "مكتب المواعيد والخزنة في وظيفة واحدة", null, TimeProvider.System.GetUtcNow());
             custom.Hold(SeedCustomRoleCodes);

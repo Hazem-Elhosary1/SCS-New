@@ -1,198 +1,233 @@
-import { NgTemplateOutlet } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
-import { AccessService, ScsDatePipe } from 'core';
-import { catchError, map, of } from 'rxjs';
-import { ScsNoAccessComponent, ScsStateComponent } from 'ui';
+import { AccessService, LanguageService, PERMISSIONS } from 'core';
+import {
+  ScsButtonDirective,
+  ScsCardComponent,
+  ScsEmptyStateComponent,
+  ScsPageHeaderComponent,
+  ScsSkeletonComponent,
+  ScsStateComponent,
+  ScsTableDirective,
+} from 'ui';
 
 export const ROLES_VIEW = 'admin.roles.view';
 export const ROLES_MANAGE = 'admin.roles.manage';
 
-/**
- * The head of a page of the administration group, as the design draws it: where the page sits,
- * its title, and one line under it. The console's bars around it arrive with spec 006.
- */
-@Component({
-  selector: 'app-admin-page-head',
-  imports: [TranslocoPipe, ScsDatePipe],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  styles: `
-    nav {
-      display: flex;
-      align-items: center;
-      gap: var(--scs-spacing-sm);
-      font-size: var(--scs-text-body-sm);
-      color: var(--scs-color-text-tertiary);
-    }
-    nav [aria-current] {
-      color: var(--scs-color-text-primary);
-      font-weight: 500;
-    }
-    .chevron {
-      inline-size: 6px;
-      block-size: 6px;
-      border-top: 1.5px solid currentColor;
-      border-right: 1.5px solid currentColor;
-      /* Points onward: to the right in English, to the left in Arabic. */
-      transform: rotate(45deg);
-    }
-    :host-context([dir='rtl']) .chevron {
-      transform: rotate(-135deg);
-    }
-    h1 {
-      margin: 14px 0 0;
-      font-size: var(--scs-text-title);
-      font-weight: 700;
-      line-height: 1.5;
-      color: var(--scs-color-text-primary);
-    }
-    p {
-      margin: var(--scs-spacing-sm) 0 18px;
-      font-size: var(--scs-text-body-sm);
-      color: var(--scs-color-text-secondary);
-    }
-  `,
-  template: `
-    <nav [attr.aria-label]="'app.administration.breadcrumb' | transloco">
-      <span>{{ 'app.administration.breadcrumb' | transloco }}</span>
-      <span class="chevron" aria-hidden="true"></span>
-      <span aria-current="page">{{ title() }}</span>
-    </nav>
-    <h1 data-testid="page-title">{{ title() }}</h1>
-    <p data-testid="page-note">
-      {{ now | scsDate: 'long' }}
-      @if (note()) {
-        — {{ note() }}
-      }
-    </p>
-  `,
-})
-export class AdminPageHeadComponent {
-  /** Already translated. */
-  readonly title = input.required<string>();
-
-  /** Already translated; what the page is showing, after the date. */
-  readonly note = input('');
-
-  protected readonly now = new Date();
+/** A role as `GET /v1/roles` lists it. */
+export interface RoleRow {
+  readonly id: string;
+  readonly name: string;
+  readonly readyKey: string | null;
+  readonly description: string | null;
+  readonly category: 'ready' | 'custom';
+  readonly fixed: boolean;
+  readonly permissionCount: number;
+  readonly holders: number;
 }
 
-/** The canvas a page of the console sits on, until the console's own frame exists (spec 006). */
-const PAGE = `
-  :host {
-    display: block;
-    min-block-size: 100dvh;
-    padding: var(--scs-spacing-xl);
-    background: var(--scs-color-bg-canvas);
-  }
-`;
-
 /**
- * «الأدوار والصلاحيات», until its pages are built (spec 027). It is here now so that the two
- * things spec 005 delivers can be seen: a person who may read roles and not change them gets
- * the «للعرض فقط» notice, and a person who may not read them never reaches this page at all.
- * It asks the platform for the clinic's roles, so the platform's own answer is part of the page.
+ * «الأدوار والصلاحيات», for reading (spec 006, FR-038; design: page "Roles", "Roles / Roles
+ * List" and "Roles List Read Only"). Two short lists — the roles that ship with the platform
+ * and the clinic's own — each row with the role, how many accounts hold it and how much of the
+ * catalogue it carries. Creating, editing, deleting and a role's detail are spec 027.
  */
 @Component({
   selector: 'app-roles-page',
-  imports: [NgTemplateOutlet, TranslocoPipe, AdminPageHeadComponent, ScsStateComponent],
+  imports: [
+    TranslocoPipe,
+    ScsPageHeaderComponent,
+    ScsCardComponent,
+    ScsTableDirective,
+    ScsSkeletonComponent,
+    ScsEmptyStateComponent,
+    ScsStateComponent,
+    ScsButtonDirective,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
-    ${PAGE}
-
-    .not-yet {
-      padding: var(--scs-spacing-3xl) var(--scs-spacing-lg);
-      border: 1px solid var(--scs-color-border-default);
-      border-radius: var(--scs-radius-md);
-      background: var(--scs-color-bg-surface);
-      color: var(--scs-color-text-secondary);
-      font-size: var(--scs-text-body);
-      text-align: center;
+    .notice {
+      display: block;
+      margin-block-end: var(--scs-spacing-md);
+    }
+    scs-card + scs-card {
+      display: block;
+      margin-block-start: var(--scs-spacing-md);
+    }
+    .name {
+      font-weight: 500;
     }
   `,
   template: `
-    <app-admin-page-head [title]="'app.administration.roles.title' | transloco" />
-
-    <ng-template #page>
-      <section class="not-yet" data-testid="roles-not-yet" [attr.data-roles]="roles()">
-        {{ 'ui.page.notYet.title' | transloco }}
-      </section>
-    </ng-template>
+    <scs-page-header
+      [title]="'app.administration.roles.title' | transloco"
+      [parent]="'app.nav.administration' | transloco"
+      [note]="
+        state() === 'ready'
+          ? ('app.administration.roles.note'
+            | transloco
+              : {
+                  roles: ('app.administration.roles.count.' + form() | transloco: { count: digits(count()) }),
+                  permissions: digits(all),
+                })
+          : '—'
+      "
+    />
 
     @if (viewOnly()) {
       <scs-state
+        class="notice"
         state="view-only"
         [message]="'app.administration.roles.viewOnly' | transloco: { permission: manageName() }"
-      >
-        <ng-container [ngTemplateOutlet]="page" />
-      </scs-state>
-    } @else {
-      <ng-container [ngTemplateOutlet]="page" />
+      />
+    }
+
+    @switch (state()) {
+      @case ('loading') {
+        <!-- Design: "Roles / Roles List Loading" — both cards with their names, grey rows inside. -->
+        <div data-testid="roles-loading">
+          @for (category of categories; track category) {
+            <scs-card
+              [heading]="'app.administration.roles.' + category + '.heading' | transloco"
+              [note]="'app.administration.roles.' + category + '.note' | transloco"
+            >
+              <scs-skeleton [rows]="3" [label]="'ui.state.loading.title' | transloco" />
+            </scs-card>
+          }
+        </div>
+      }
+      @case ('failed') {
+        <scs-card data-testid="roles-failed" [heading]="'app.administration.roles.heading' | transloco">
+          <scs-empty-state
+            context="error"
+            [title]="'app.administration.roles.failedTitle' | transloco"
+            [text]="'app.administration.roles.failedText' | transloco"
+          >
+            <button type="button" scsButton="secondary" data-testid="roles-retry" (click)="load()">
+              {{ 'ui.state.error.retry' | transloco }}
+            </button>
+          </scs-empty-state>
+        </scs-card>
+      }
+      @default {
+        @for (list of lists(); track list.category) {
+          <scs-card
+            [attr.data-testid]="'roles-' + list.category"
+            [heading]="'app.administration.roles.' + list.category + '.heading' | transloco"
+            [note]="'app.administration.roles.' + list.category + '.note' | transloco"
+          >
+            @if (list.rows.length === 0) {
+              <scs-empty-state
+                data-testid="roles-custom-empty"
+                mark="people"
+                [title]="'app.administration.roles.custom.emptyTitle' | transloco"
+                [text]="'app.administration.roles.custom.emptyText' | transloco"
+              />
+            } @else {
+              <table scsTable>
+                <thead>
+                  <tr>
+                    <th scope="col">{{ 'app.administration.roles.column.role' | transloco }}</th>
+                    <th scope="col" data-kind="number">
+                      {{ 'app.administration.roles.column.holders' | transloco }}
+                    </th>
+                    <th scope="col" data-kind="number">
+                      {{ 'app.administration.roles.column.permissions' | transloco }}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (role of list.rows; track role.id) {
+                    <tr data-testid="role-row" [attr.data-role]="role.readyKey ?? role.id">
+                      <td>
+                        <span class="name" data-testid="role-name"
+                          ><bdi>{{
+                            role.readyKey ? ('ui.access.role.' + role.readyKey | transloco) : role.name
+                          }}</bdi></span
+                        >
+                        <!-- A ready role still under its own name is described in the page's
+                             language; what the clinic wrote is shown as written. -->
+                        @if (role.readyKey) {
+                          <span class="sub" data-testid="role-description">{{
+                            'app.administration.roles.readyDescription.' + role.readyKey | transloco
+                          }}</span>
+                        } @else if (role.description) {
+                          <span class="sub" data-testid="role-description"
+                            ><bdi>{{ role.description }}</bdi></span
+                          >
+                        }
+                      </td>
+                      <td data-kind="number" data-testid="role-holders">{{ digits(role.holders) }}</td>
+                      <td data-kind="number" data-testid="role-permissions">
+                        {{
+                          'app.administration.roles.ofAll'
+                            | transloco: { held: digits(role.permissionCount), all: digits(all) }
+                        }}
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
+          </scs-card>
+        }
+      }
     }
   `,
 })
 export class RolesPage {
+  private readonly http = inject(HttpClient);
   private readonly access = inject(AccessService);
+  private readonly language = inject(LanguageService);
+
+  /** How many permissions the catalogue has: what "of N" is counted against. */
+  protected readonly all = PERMISSIONS.length;
+
+  protected readonly state = signal<'loading' | 'failed' | 'ready'>('loading');
+  private readonly roles = signal<readonly RoleRow[]>([]);
 
   protected readonly viewOnly = computed(() => !this.access.holds(ROLES_MANAGE));
   protected readonly manageName = computed(() => this.access.nameOf(ROLES_MANAGE));
 
-  /**
-   * How many roles the platform listed; null until it answers, and when it refuses. A refusal
-   * for a missing permission is handled where every refusal is: the list of what the person
-   * may do is read again and this address is matched again.
-   */
-  protected readonly roles = toSignal(
-    inject(HttpClient)
-      .get<{ roles: unknown[] }>('/v1/roles')
-      .pipe(
-        map((answer) => answer.roles.length),
-        catchError(() => of(null)),
-      ),
-    { initialValue: null },
+  protected readonly categories = ['ready', 'custom'] as const;
+
+  protected readonly lists = computed(() =>
+    this.categories.map((category) => ({
+      category,
+      rows: this.roles().filter((role) => role.category === category),
+    })),
   );
-}
 
-/**
- * What a destination shows to a person whose role does not open it (spec 005, FR-029). The
- * route says which permission the destination needs and what it is called; nothing of the
- * destination is loaded and nothing is asked of the platform.
- */
-@Component({
-  selector: 'app-no-access-page',
-  imports: [TranslocoPipe, AdminPageHeadComponent, ScsNoAccessComponent],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  styles: PAGE,
-  template: `
-    <app-admin-page-head
-      [title]="titleKey | transloco"
-      [note]="
-        (roleName() ? 'app.administration.roles.noAccessNote' : 'app.administration.roles.noRoleNote')
-          | transloco: { permission: permissionName() }
-      "
-    />
-    <scs-no-access
-      [permissionName]="permissionName()"
-      [roleName]="roleKey() ? (roleKey()! | transloco) : roleName()"
-    />
-  `,
-})
-export class NoAccessPage {
-  private readonly access = inject(AccessService);
-  private readonly data = inject(ActivatedRoute).snapshot.data as {
-    permission: string;
-    titleKey: string;
-  };
+  /** Which form the noun after the number of roles takes in the page's language. */
+  protected readonly form = computed(() =>
+    new Intl.PluralRules(this.language.language()).select(this.roles().length),
+  );
 
-  protected readonly titleKey = this.data.titleKey;
-  protected readonly permissionName = computed(() => this.access.nameOf(this.data.permission));
+  protected readonly count = computed(() => this.roles().length);
 
-  /** Set for a ready role that still has its original name: shown in the page's language. */
-  protected readonly roleKey = this.access.roleNameKey;
+  constructor() {
+    this.load();
+  }
 
-  /** The name the clinic wrote; empty when the account holds no role. */
-  protected readonly roleName = computed(() => this.access.role()?.name ?? '');
+  /**
+   * A refusal for a missing permission is handled where every refusal is: the list of what the
+   * person may do is read again and this address is matched again.
+   */
+  protected load(): void {
+    this.state.set('loading');
+    this.http.get<{ roles: RoleRow[] }>('/v1/roles').subscribe({
+      next: (answer) => {
+        this.roles.set(answer.roles);
+        this.state.set('ready');
+      },
+      error: () => this.state.set('failed'),
+    });
+  }
+
+  protected digits(value: number): string {
+    return new Intl.NumberFormat(
+      this.language.language() === 'ar' ? 'ar-EG-u-nu-arab' : 'en-GB',
+    ).format(value);
+  }
 }

@@ -1,0 +1,93 @@
+/*
+ * The look of a table (design: Table Header Row, Table Row). Put `scsTable` on a real <table>;
+ * each app's styles.css imports this file. Appearance comes only from the app's tokens.
+ */
+.scs-table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: var(--scs-text-body);
+}
+
+.scs-table th {
+  padding: var(--scs-spacing-12);
+  background: var(--scs-color-bg-muted, var(--scs-color-bg-surface-secondary));
+  color: var(--scs-color-text-secondary);
+  font-size: var(--scs-text-body-sm);
+  font-weight: 500;
+  text-align: start;
+  white-space: nowrap;
+}
+
+.scs-table td {
+  padding: var(--scs-spacing-10) var(--scs-spacing-12);
+  border-block-end: 1px solid var(--scs-color-border-subtle, var(--scs-color-border-default));
+  color: var(--scs-color-text-primary);
+  vertical-align: middle;
+}
+
+.scs-table td .sub {
+  display: block;
+  margin-block-start: var(--scs-spacing-2);
+  color: var(--scs-color-text-secondary);
+  font-size: var(--scs-text-label);
+}
+
+.scs-table [data-kind='number'] {
+  inline-size: 140px;
+  white-space: nowrap;
+}
+
+/* Design: the roles tables — the last column of numbers is the wider one (204). */
+.scs-table [data-kind='number']:last-child {
+  inline-size: 204px;
+}
+
+.scs-table [data-kind='menu'] {
+  inline-size: 48px;
+  text-align: end;
+}
+
+.scs-table tr[data-opens='true'] {
+  cursor: pointer;
+}
+
+.scs-table tr[data-opens='true']:hover td,
+.scs-table tr[data-marked='true'] td {
+  background: var(--scs-color-bg-surface-secondary);
+}
+
+.scs-row-menu {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 32px;
+  block-size: 32px;
+  border: 0;
+  border-radius: var(--scs-radius-sm);
+  background: none;
+  color: var(--scs-color-icon-default);
+  cursor: pointer;
+}
+
+.scs-row-menu:hover,
+.scs-row-menu[aria-expanded='true'] {
+  background: var(--scs-color-bg-surface-secondary);
+}
+
+.scs-row-menu:focus-visible {
+  outline: 2px solid var(--scs-color-brand-default);
+  outline-offset: 1px;
+}
+
+/*
+ * Buttons in the console's pages, panels and windows are 40 high with 16 at the sides (design:
+ * Page Header, Filter Popover, Modal). The taller button is the sign-in form's.
+ */
+scs-page-header .scs-button,
+scs-filter-popover .scs-button,
+scs-confirm .scs-button,
+scs-empty-state .scs-button {
+  min-block-size: 40px;
+  padding-block: 0;
+  padding-inline: var(--scs-spacing-md);
+  font-size: var(--scs-text-body);
+}

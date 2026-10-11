@@ -130,7 +130,7 @@ describe('PlaceholderPanelComponent', () => {
     backend.expectOne(READY).flush({ status: 'Healthy' });
     await settle();
 
-    expect(text('state-message')).toBe('حدث خطأ غير متوقع');
+    expect(text('empty-title')).toBe('حدث خطأ غير متوقع');
     expect(text('state-reference')).toBe('4bf92f3577b34da6a3ce929d0e0e4736');
   });
 

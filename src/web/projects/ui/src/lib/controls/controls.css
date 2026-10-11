@@ -96,3 +96,33 @@
   outline: 2px solid var(--scs-color-brand-default);
   outline-offset: 2px;
 }
+
+/*
+ * A small button that is only an icon. A hairline and a faint shadow say it is a button, not a
+ * mark. Give it an aria-label.
+ */
+.scs-icon-button {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  inline-size: 32px;
+  block-size: 32px;
+  padding: 0;
+  border: 1px solid var(--scs-color-border-default);
+  border-radius: var(--scs-radius-sm);
+  background: var(--scs-color-bg-surface);
+  box-shadow: var(--scs-shadow-subtle);
+  color: var(--scs-color-icon-default);
+  cursor: pointer;
+}
+
+.scs-icon-button:hover {
+  border-color: var(--scs-color-brand-default);
+  background: var(--scs-color-bg-surface-secondary);
+  color: var(--scs-color-brand-active);
+}
+
+.scs-icon-button:focus-visible {
+  outline: 2px solid var(--scs-color-brand-default);
+  outline-offset: 1px;
+}

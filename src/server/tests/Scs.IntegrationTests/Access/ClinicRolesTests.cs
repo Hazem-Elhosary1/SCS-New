@@ -27,7 +27,7 @@ public sealed class ClinicRolesTests(SqlServerFixture sql)
             "  الاستقبال  ", "  مكتب المواعيد  ", [Permissions.BookingsView, Permissions.BookingsManage], default));
         var role = (await world.Factory.RolesAsync(world.Clinic, r => r.ListAsync(default))).Single(r => r.Id == id);
 
-        Assert.Equal(new RoleSummary(id, "الاستقبال", null, "مكتب المواعيد", "custom", false, 2), role);
+        Assert.Equal(new RoleSummary(id, "الاستقبال", null, "مكتب المواعيد", "custom", false, 2, 0), role);
     }
 
     [Fact]

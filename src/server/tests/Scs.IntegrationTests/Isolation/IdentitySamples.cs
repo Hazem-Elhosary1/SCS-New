@@ -216,3 +216,23 @@ public sealed class RolePermissionSample : IIsolationSample
         await command.ExecuteNonQueryAsync();
     }
 }
+
+public sealed class StaffPreferenceSample : IIsolationSample
+{
+    public Type EntityType => typeof(StaffPreference);
+
+    public string Table => "[identity].StaffPreference";
+
+    public string HarmlessChange => "Language = Language";
+
+    public async Task InsertAsync(SqlConnection connection, Guid clinicId)
+    {
+        var account = await IdentityRows.InsertAccountAsync(connection, clinicId);
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            "INSERT INTO [identity].StaffPreference (AccountId, ClinicId, Language, UpdatedAtUtc) VALUES (@account, @clinic, 'en', SYSDATETIMEOFFSET())";
+        command.Parameters.AddWithValue("@account", account);
+        command.Parameters.AddWithValue("@clinic", clinicId);
+        await command.ExecuteNonQueryAsync();
+    }
+}

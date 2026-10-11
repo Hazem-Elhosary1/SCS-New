@@ -46,7 +46,12 @@ describe('ScsStateComponent', () => {
     for (const state of SCS_STATES) {
       const { element } = render(state);
       expect(element.querySelector('scs-state')?.getAttribute('data-state')).toBe(state);
-      expect(element.querySelector('.title')?.textContent?.trim().length).toBeGreaterThan(0);
+      // Loading, empty and error are the shared parts of lists: one look per state (spec 006, FR-025).
+      const shown =
+        state === 'loading'
+          ? element.querySelector('scs-skeleton')?.getAttribute('aria-label')
+          : element.querySelector('.title, [data-testid="empty-title"], [data-testid="offline-alert"]')?.textContent;
+      expect(shown?.trim().length, state).toBeGreaterThan(0);
       TestBed.resetTestingModule();
     }
   });
@@ -58,7 +63,7 @@ describe('ScsStateComponent', () => {
     });
 
     expect(element.querySelector('[role="alert"]')).not.toBeNull();
-    expect(element.querySelector('[data-testid="state-message"]')?.textContent).toContain(
+    expect(element.querySelector('[data-testid="empty-title"]')?.textContent).toContain(
       'الخدمة غير متاحة مؤقتًا',
     );
     expect(element.querySelector('[data-testid="state-reference"]')?.textContent?.trim()).toBe(
@@ -72,7 +77,7 @@ describe('ScsStateComponent', () => {
   it('falls back to the default error text and omits the reference when there is none', () => {
     const { element } = render('error');
 
-    expect(element.querySelector('[data-testid="state-message"]')?.textContent?.trim()).toBe(
+    expect(element.querySelector('[data-testid="empty-title"]')?.textContent?.trim()).toBe(
       'تعذّر إتمام الطلب',
     );
     expect(element.querySelector('[data-testid="state-reference"]')).toBeNull();
@@ -81,7 +86,10 @@ describe('ScsStateComponent', () => {
   it('shows the plan notice in the BRD wording with the upgrade path', () => {
     const { element } = render('not-in-plan');
 
-    expect(element.querySelector('.title')?.textContent?.trim()).toBe('غير مشمولة في باقتك');
+    expect(element.querySelector('[data-testid="empty-title"]')?.textContent?.trim()).toBe(
+      'غير مشمولة في باقتك',
+    );
+    expect(element.querySelector('scs-empty-state')?.getAttribute('data-context')).toBe('not-in-plan');
     expect(element.querySelector('[data-testid="upgrade"]')).not.toBeNull();
     expect(element.querySelector('[data-testid="content"]')).toBeNull();
   });
@@ -121,14 +129,18 @@ describe('ScsStateComponent', () => {
   it('says that work resumes when offline', () => {
     const { element } = render('offline');
 
-    expect(element.querySelector('.detail')?.textContent?.trim()).toBe(
-      'يُستأنف العمل عند عودة الاتصال',
+    expect(element.querySelector('scs-banner')?.getAttribute('data-tone')).toBe('warning');
+    expect(element.querySelector('[data-testid="offline-alert"]')?.textContent?.trim()).toBe(
+      'انقطع الاتصال بالإنترنت — ما تراه آخر نسخة محمَّلة، وما يغيّر البيانات معطَّل حتى يعود الاتصال.',
     );
   });
 
   it('renders in English when English is active', () => {
     const { element } = render('empty', {}, 'en');
 
-    expect(element.querySelector('.title')?.textContent?.trim()).toBe('Nothing here yet');
+    expect(element.querySelector('[data-testid="empty-title"]')?.textContent?.trim()).toBe(
+      'Nothing here yet',
+    );
+    expect(element.querySelector('scs-empty-state')).not.toBeNull();
   });
 });

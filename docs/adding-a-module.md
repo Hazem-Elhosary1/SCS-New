@@ -159,3 +159,39 @@ two apps need goes into `core` (not visual) or `ui` (visual), never copied.
 - Dates and money go through `scsDate` and `scsMoney`.
 - Loading, empty, error, offline, view-only and not-in-plan are shown with `<scs-state>`.
 - Calls to the platform are written as `/v1/...` and go through the `core` HTTP layer.
+
+### A page in the clinic console (spec 006)
+
+Every page after sign-in is shown inside the console's frame. The frame, the side bar and the
+routes are all drawn from one table, `src/web/projects/clinic/src/app/shell/destinations.ts`.
+
+- **Give a destination its page**: add one line to `app.routes.ts` —
+  `registerDestinationPage('<key>', YourPage)`. Until then the destination shows "not available
+  yet". The side bar, the address, the permission check, "not in your role" and "not in your
+  plan" are already there; nothing in the frame changes.
+- **Start the page with `<scs-page-header>`** (title, the group before it, one line under it,
+  header buttons projected into it). It is not optional: while there is no connection the
+  frame's warning is shown by the page header, under the title — a page without one would not
+  show it.
+- **Fill a part of the frame that waits for your data** — the bell, the branch switch, the
+  subscription banner, what the plan leaves out, the inbox count, a dental clinic, an account
+  linked to a doctor — by providing the source from `core` (`projects/core/src/lib/shell/sources.ts`):
+  `{ provide: NotificationsSource, useClass: YourNotifications }`. The frame's components do
+  not change.
+- **Every control that changes data carries `scsWrite`**: `[scsWrite]="online.online()"`. It is
+  disabled, with its reason, while there is no connection. A control guarded by a permission is
+  absent (`*scsCan`), not disabled.
+- **Tell the person something happened** with `ToastService.show(title)`; where it appears is
+  decided once, by the frame.
+- **Build a list from the shared parts** — `scs-card`, `scs-tabs`, `scs-list-toolbar`,
+  `scs-applied-chips`, `table[scsTable]`, `scs-table-footer`, `scs-skeleton`, `scs-empty-state`,
+  `scs-filter-popover` (the filter panel's body, with «تطبيق» and «مسح الكل»), `scs-confirm` (a
+  confirmation whose button names the action and waits for `ready`), `scs-dialog`, the `scsMenu`
+  directives — and keep the 23 rules of
+  `specs/006-app-shell/contracts/list-contract.md`. `/dev/sample-list` shows every one of them
+  working; `e2e/sample-list.spec.ts` is one test per rule.
+- **Something that opens over the page** (a menu, a popover) is built on `@angular/cdk`
+  (`cdkMenuTriggerFor`, `cdkConnectedOverlay`) with the looks in `ui/src/lib/overlay/overlay.css`.
+- **In a browser test**, sample data for the frame's sources is given with
+  `sampleSources(page, { … })` from `e2e/staff-platform.ts`
+  (`projects/clinic/src/app/dev/sample-sources.ts` reads it — never in production).

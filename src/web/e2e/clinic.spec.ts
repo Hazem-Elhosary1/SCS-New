@@ -214,7 +214,7 @@ test('the staff and operators sites never send a clinic name', async ({ page }) 
     }),
   );
 
-  await page.goto('http://localhost:4201/noor');
+  await page.goto('http://localhost:4201/dev/platform');
   await expect(page.getByTestId('placeholder')).toBeVisible();
   await page.goto('http://localhost:4203/noor');
   await expect(page.getByTestId('placeholder')).toBeVisible();

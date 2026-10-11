@@ -135,6 +135,7 @@ internal sealed class ClinicRoles(
                 r.Category,
                 r.HoldsEverything,
                 Count = r.Permissions.Count,
+                Holders = db.Accounts.Count(a => a.RoleId == r.Id),
             })
             .ToListAsync(cancellation).ConfigureAwait(false);
 
@@ -150,7 +151,8 @@ internal sealed class ClinicRoles(
                     r.Description,
                     r.Category,
                     r.HoldsEverything,
-                    r.HoldsEverything ? PermissionCatalogue.Count : r.Count)),
+                    r.HoldsEverything ? PermissionCatalogue.Count : r.Count,
+                    r.Holders)),
         ];
     }
 

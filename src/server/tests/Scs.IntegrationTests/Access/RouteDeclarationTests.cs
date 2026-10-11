@@ -21,7 +21,8 @@ public sealed class RouteDeclarationTests(SqlServerFixture sql)
     /// The whole list of routes open to any signed-in person: what a person does to their own
     /// account. Adding to it means changing this list and contracts/access-engine.md §1, in review.
     /// </summary>
-    private static readonly string[] OwnAccountRoutes = ["POST /v1/auth/password/change", "GET /v1/auth/session"];
+    private static readonly string[] OwnAccountRoutes =
+        ["PUT /v1/account/preferences", "POST /v1/auth/password/change", "GET /v1/auth/session"];
 
     private static string Describe(RouteEndpoint endpoint)
     {

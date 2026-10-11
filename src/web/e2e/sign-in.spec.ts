@@ -3,6 +3,7 @@ import {
   CLINIC,
   problem,
   session,
+  signOut,
   staffPlatform,
   submitSignIn,
   typeCode,
@@ -367,7 +368,7 @@ test.describe('sessions', () => {
     await page.goto(`${CLINIC}/`);
     await expect(page.getByTestId('signed-in')).toBeVisible();
 
-    await page.getByTestId('sign-out').click();
+    await signOut(page);
 
     await expect(page).toHaveURL(`${CLINIC}/sign-in`);
     await expect(page.locator('scs-banner')).toHaveCount(0);
@@ -422,7 +423,7 @@ test.describe('sessions', () => {
       });
     });
 
-    await page.goto(`${CLINIC}/`);
+    await page.goto(`${CLINIC}/dev/platform`);
     await expect(page.getByTestId('signed-in-email')).toHaveText(session.email);
     await expect(page.getByTestId('platform-unreachable')).toBeVisible();
 
@@ -511,7 +512,7 @@ test.describe('sessions', () => {
     await second.goto(`${CLINIC}/`);
     await expect(second.getByTestId('signed-in')).toBeVisible();
 
-    await first.getByTestId('sign-out').click();
+    await signOut(first);
 
     await expect(second).toHaveURL(`${CLINIC}/sign-in`);
     await expect(second.getByTestId('signed-in')).toHaveCount(0);

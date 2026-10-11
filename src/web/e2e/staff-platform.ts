@@ -13,7 +13,7 @@ export const cors = {
   'access-control-allow-origin': CLINIC,
   'access-control-allow-credentials': 'true',
   'access-control-allow-headers': 'content-type, traceparent, accept-language, x-scs-request',
-  'access-control-allow-methods': 'GET, POST, OPTIONS',
+  'access-control-allow-methods': 'GET, POST, PUT, OPTIONS',
   'access-control-expose-headers': 'X-Trace-Id, Retry-After',
 };
 
@@ -51,9 +51,9 @@ export const TEAM_PERMISSIONS = [
 export const rolesList = {
   catalogueSize: ALL_PERMISSIONS.length,
   roles: [
-    { ...roles.owner, description: 'كل صلاحيات العيادة', category: 'ready', fixed: true, permissionCount: ALL_PERMISSIONS.length },
-    { ...roles.doctor, description: null, category: 'ready', fixed: false, permissionCount: 40 },
-    { ...roles.team, description: null, category: 'custom', fixed: false, permissionCount: 6 },
+    { ...roles.owner, description: 'كل صلاحيات العيادة', category: 'ready', fixed: true, permissionCount: ALL_PERMISSIONS.length, holders: 1 },
+    { ...roles.doctor, description: null, category: 'ready', fixed: false, permissionCount: 40, holders: 2 },
+    { ...roles.team, description: 'مكتب المواعيد والخزنة في وظيفة واحدة', category: 'custom', fixed: false, permissionCount: 6, holders: 0 },
   ],
 };
 
@@ -127,6 +127,11 @@ export interface StaffPlatform {
   permissions: string[];
   /** What `GET /v1/roles` answers. */
   rolesAnswer: Answer | (() => Answer);
+  /** What the person keeps between sessions (spec 006); a saved choice is merged in. */
+  preferences: { language: string | null; sidebarFolded: boolean | null; dismissedBanner: string | null };
+  /** What `PUT /v1/account/preferences` answers, and every body it was sent. */
+  preferencesAnswer: Answer | (() => Answer);
+  preferencesSent: Record<string, unknown>[];
   /** Overrides the answer of `GET /v1/auth/session` while set. */
   sessionAnswer: Answer | null;
   /** Every call made, as `METHOD path`. */
@@ -182,6 +187,9 @@ export async function staffPlatform(
     role: roles.owner,
     permissions: ALL_PERMISSIONS,
     rolesAnswer: { status: 200, json: rolesList },
+    preferences: { language: null, sidebarFolded: null, dismissedBanner: null },
+    preferencesAnswer: { status: 204 },
+    preferencesSent: [],
     sessionAnswer: null,
     calls: [],
     bodies: [],
@@ -198,6 +206,7 @@ export async function staffPlatform(
     mustChangePassword: state.mustChange,
     role: state.role,
     permissions: state.mustChange ? [] : state.permissions,
+    preferences: state.preferences,
   });
 
   const on = async (pattern: string, handler: (route: Route) => Promise<void>) => {
@@ -286,6 +295,16 @@ export async function staffPlatform(
 
   await on('**/v1/roles', (route) => fulfil(route, pick(state.rolesAnswer)));
 
+  await on('**/v1/account/preferences', async (route) => {
+    const body = route.request().postDataJSON() as Record<string, unknown>;
+    const answer = pick(state.preferencesAnswer);
+    state.preferencesSent.push(body);
+    if (answer.status === 204) {
+      state.preferences = { ...state.preferences, ...body };
+    }
+    await fulfil(route, answer);
+  });
+
   await on('**/v1/auth/sign-out', async (route) => {
     state.signedIn = false;
     await fulfil(route, { status: 204 });
@@ -309,6 +328,22 @@ export async function submitSignIn(
 export async function typeCode(page: Page, code: string): Promise<void> {
   await page.getByTestId('code-box-0').click();
   await page.keyboard.type(code);
+}
+
+/** Signs out the way a person does: from the account menu of the top bar. */
+export async function signOut(page: Page): Promise<void> {
+  await page.getByTestId('account-chip').click();
+  await page.getByTestId('sign-out').click();
+}
+
+/**
+ * Gives the frame's sources sample data before the console starts (see
+ * projects/clinic/src/app/dev/sample-sources.ts). The app reads it outside production only.
+ */
+export async function sampleSources(page: Page, sample: Record<string, unknown>): Promise<void> {
+  await page.addInitScript((given) => {
+    (window as unknown as { __scsSample: unknown }).__scsSample = given;
+  }, sample);
 }
 
 export async function useEnglish(page: Page): Promise<void> {

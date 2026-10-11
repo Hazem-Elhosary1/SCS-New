@@ -38,9 +38,10 @@ internal sealed record SessionRole(Guid Id, string Name, string? ReadyKey);
 /// The codes the person holds at this moment, in catalogue order (spec 005, FR-027). A screen
 /// uses them to leave out what the person may not use; the server decides again on every request.
 /// </param>
+/// <param name="Preferences">What the person keeps between sessions (spec 006).</param>
 internal sealed record SessionResponse(
     Guid AccountId, [property: PersonalData] string Email, SessionClinic Clinic, DateTimeOffset ExpiresAt,
-    bool MustChangePassword, SessionRole? Role, IReadOnlyList<string> Permissions)
+    bool MustChangePassword, SessionRole? Role, IReadOnlyList<string> Permissions, PreferencesView Preferences)
 {
     public override string ToString() => nameof(SessionResponse);
 }
@@ -113,7 +114,7 @@ internal static class AuthEndpoints
 
     private static async Task SignInAsync(
         SignInRequest? request, HttpContext context, SignInService signIn, SessionCookies cookies,
-        IdentityDbContext db, IClinicProfile profile, StaffAccessSource access, TimeProvider clock, IOptions<ScsOptions> options,
+        IdentityDbContext db, IClinicProfile profile, StaffAccessSource access, Preferences preferences, TimeProvider clock, IOptions<ScsOptions> options,
         CancellationToken cancellation)
     {
         var errors = new Dictionary<string, string[]>(StringComparer.Ordinal);
@@ -151,27 +152,27 @@ internal static class AuthEndpoints
             }
         }
 
-        await WriteAsync(outcome, context, cookies, db, profile, access, clock, options.Value.Auth, cancellation);
+        await WriteAsync(outcome, context, cookies, db, profile, access, preferences, clock, options.Value.Auth, cancellation);
     }
 
     private static async Task ConfirmCodeAsync(
         ConfirmCodeRequest? request, HttpContext context, SignInService signIn, SessionCookies cookies,
-        IdentityDbContext db, IClinicProfile profile, StaffAccessSource access, TimeProvider clock, IOptions<ScsOptions> options,
+        IdentityDbContext db, IClinicProfile profile, StaffAccessSource access, Preferences preferences, TimeProvider clock, IOptions<ScsOptions> options,
         CancellationToken cancellation)
     {
         var ticket = ReadChallenge(context, cookies, clock);
         var outcome = await signIn.ConfirmCodeAsync(ticket, request?.Code, Origin(context), cancellation);
-        await WriteAsync(outcome, context, cookies, db, profile, access, clock, options.Value.Auth, cancellation);
+        await WriteAsync(outcome, context, cookies, db, profile, access, preferences, clock, options.Value.Auth, cancellation);
     }
 
     private static async Task ResendCodeAsync(
         HttpContext context, SignInService signIn, SessionCookies cookies,
-        IdentityDbContext db, IClinicProfile profile, StaffAccessSource access, TimeProvider clock, IOptions<ScsOptions> options,
+        IdentityDbContext db, IClinicProfile profile, StaffAccessSource access, Preferences preferences, TimeProvider clock, IOptions<ScsOptions> options,
         CancellationToken cancellation)
     {
         var ticket = ReadChallenge(context, cookies, clock);
         var outcome = await signIn.ResendAsync(ticket, Origin(context), cancellation);
-        await WriteAsync(outcome, context, cookies, db, profile, access, clock, options.Value.Auth, cancellation);
+        await WriteAsync(outcome, context, cookies, db, profile, access, preferences, clock, options.Value.Auth, cancellation);
     }
 
     private static async Task RenewAsync(
@@ -219,9 +220,9 @@ internal static class AuthEndpoints
 
     private static async Task<IResult> GetSessionAsync(
         ICurrentStaff staff, IdentityDbContext db, IClinicProfile profile, StaffAccessSource access,
-        CancellationToken cancellation)
+        Preferences preferences, CancellationToken cancellation)
     {
-        var response = await DescribeAsync(staff.AccountId, staff.SessionId, db, profile, access, cancellation);
+        var response = await DescribeAsync(staff.AccountId, staff.SessionId, db, profile, access, preferences, cancellation);
         return response is null
             ? throw new ScsProblemException(StatusCodes.Status401Unauthorized, ErrorCodes.SessionEnded)
             : TypedResults.Ok(response);
@@ -231,7 +232,8 @@ internal static class AuthEndpoints
 
     private static async Task WriteAsync(
         SignInOutcome outcome, HttpContext context, SessionCookies cookies, IdentityDbContext db,
-        IClinicProfile profile, StaffAccessSource access, TimeProvider clock, AuthOptions auth, CancellationToken cancellation)
+        IClinicProfile profile, StaffAccessSource access, Preferences preferences, TimeProvider clock, AuthOptions auth,
+        CancellationToken cancellation)
     {
         switch (outcome)
         {
@@ -245,7 +247,7 @@ internal static class AuthEndpoints
                 cookies.ClearChallenge(context.Response);
                 WriteSessionCookies(signedIn.Session, context, cookies, clock, auth);
                 var described = await DescribeAsync(
-                    signedIn.Session.AccountId, signedIn.Session.SessionId, db, profile, access, cancellation);
+                    signedIn.Session.AccountId, signedIn.Session.SessionId, db, profile, access, preferences, cancellation);
                 await context.Response.WriteAsJsonAsync(described, cancellation);
                 break;
 
@@ -298,7 +300,7 @@ internal static class AuthEndpoints
 
     private static async Task<SessionResponse?> DescribeAsync(
         Guid accountId, Guid sessionId, IdentityDbContext db, IClinicProfile profile, StaffAccessSource access,
-        CancellationToken cancellation)
+        Preferences preferences, CancellationToken cancellation)
     {
         var found = await (
             from session in db.Sessions.AsNoTracking()
@@ -319,7 +321,8 @@ internal static class AuthEndpoints
             accountId, found.Email, new SessionClinic(clinic.NameAr, clinic.NameEn, clinic.State), found.ExpiresAtUtc,
             found.MustChangePassword,
             grant.RoleId is { } roleId ? new SessionRole(roleId, grant.RoleName!, grant.ReadyKey) : null,
-            found.MustChangePassword ? [] : PermissionCatalogue.InOrder(grant.Codes));
+            found.MustChangePassword ? [] : PermissionCatalogue.InOrder(grant.Codes),
+            await preferences.ReadAsync(accountId, cancellation));
     }
 
     /// <summary>The pending sign-in of this browser, unless its ten minutes are over.</summary>

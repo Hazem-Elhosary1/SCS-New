@@ -1,0 +1,100 @@
+openapi: 3.1.0
+info:
+  title: Smart Clinic OS — console frame (spec 006)
+  version: 1.0.0
+  description: >
+    One new endpoint and two changed answers. Errors use the uniform problem shape of
+    specs/001-platform-foundation/contracts/conventions.md.
+paths:
+  /v1/account/preferences:
+    put:
+      operationId: SavePreferences
+      summary: Save what the signed-in person keeps between sessions
+      description: >
+        Own account: open to any signed-in person, and added to the written list of such routes
+        (specs/005-permissions-engine/contracts/access-engine.md §1). Only the members sent are
+        changed. The day a banner was closed is taken by the server, in Cairo time.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                language: { type: string, enum: [ar, en] }
+                sidebarFolded: { type: boolean }
+                dismissedBanner:
+                  type: string
+                  enum: [trial, expiring, grace]
+                  description: The banner state being closed for today. `readonly` cannot be closed.
+      responses:
+        '200':
+          description: The preferences as they now are.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preferences'
+        '400':
+          description: >
+            VALIDATION_FAILED. Field codes — `language`: `INVALID`; `sidebarFolded`: `INVALID`;
+            `dismissedBanner`: `INVALID`; `body`: `REQUIRED` when nothing is sent.
+        '401':
+          description: No session (spec 003).
+        '403':
+          description: PASSWORD_CHANGE_REQUIRED for a temporary password (spec 004).
+  /v1/auth/session:
+    get:
+      operationId: GetSession
+      summary: Who is signed in — now with what they keep
+      description: As specs 003 to 005, plus `preferences`.
+      responses:
+        '200':
+          description: The signed-in person.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [preferences]
+                properties:
+                  preferences:
+                    $ref: '#/components/schemas/Preferences'
+  /v1/roles:
+    get:
+      operationId: ListRoles
+      summary: The clinic's roles — now with how many accounts hold each
+      description: As spec 005 (needs `admin.roles.view`), plus `holders` on every role.
+      responses:
+        '200':
+          description: The roles.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  roles:
+                    type: array
+                    items:
+                      type: object
+                      required: [holders]
+                      properties:
+                        holders:
+                          type: integer
+                          description: Accounts of the clinic that hold the role, in any state.
+components:
+  schemas:
+    Preferences:
+      type: object
+      required: [language, sidebarFolded, dismissedBanner]
+      properties:
+        language:
+          type: [string, 'null']
+          enum: [ar, en, null]
+          description: Null when the person never chose.
+        sidebarFolded:
+          type: [boolean, 'null']
+          description: Null when the person never chose; the screen's width then decides.
+        dismissedBanner:
+          type: [string, 'null']
+          enum: [trial, expiring, grace, null]
+          description: The banner state the person closed today (Cairo time); null otherwise.
