@@ -15,3 +15,6 @@ export * from './lib/no-access/no-access.component';
 export * from './lib/overlay/overlay';
 export * from './lib/overlay/overlay-direction';
 export * from './lib/list/list';
+export * from './lib/files/file-upload.component';
+export * from './lib/files/file-card.component';
+export * from './lib/files/file-field.component';

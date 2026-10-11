@@ -105,6 +105,11 @@ export const SHELL_ROUTES: Routes = [
         canMatch: [notProduction],
       },
       {
+        path: 'dev/files',
+        loadComponent: () => import('../dev/files.page').then((file) => file.DevFilesPage),
+        canMatch: [notProduction],
+      },
+      {
         path: 'dev/platform',
         loadComponent: () => import('../dev/platform.page').then((file) => file.PlatformPage),
         canMatch: [notProduction],

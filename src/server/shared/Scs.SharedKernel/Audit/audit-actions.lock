@@ -15,3 +15,5 @@ sessions.ended security
 password.reset-completed security
 password.temporary-replaced security
 settings.notification-email-changed changes
+file.downloaded records
+file.scan-refused security

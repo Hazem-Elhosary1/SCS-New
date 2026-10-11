@@ -94,6 +94,38 @@ production data like any other and follows the rule above.
   in from, to tell a new device from a known one. It holds no address and no user agent, and a
   browser not seen for four hundred days is forgotten.
 
+## Files
+
+Uploaded files (spec 009) are the most sensitive data the product holds: X-rays, lab reports,
+signed consents. They are production data and follow the rule above.
+
+- **`files.StoredFile`** — one row for each file: its kind, its name as uploaded, its size and
+  type, who uploaded it and when, the result of its scan, the record it belongs to, and who
+  removed it. **A file's name may itself be personal data** (a patient's name in it); it is
+  never written to the operational logs, and neither is a way in.
+- **The content** is kept apart from the rows, under the clinic and the file's id — never under
+  its name. A private file is kept exactly as it was uploaded and is never altered. An image of
+  a public kind (a doctor's photo) has its hidden details — place, device — removed when it is
+  taken in.
+- **Nothing is given out before its scan is clean.** A file with malware in it, or one the
+  scanner could not look inside, has its content erased at once; its row stays.
+- **What is erased, and when**: a file never saved with a record, after a day, row and content;
+  a removed file's content, thirty days after its removal; a file past the retention period of
+  its class, once a period is set (SH-095) and the owner of its record has started it. A row
+  stays after its content is erased: it says a file was there, and no more.
+- **A hold** on a record stops all erasing of its files until it is lifted. Do not erase by
+  hand what is on hold.
+- **Backups**: an erased file may survive in a backup until that backup expires. Do not restore
+  an erased file from one.
+- **Retention periods** are in `files.RetentionPeriod`, one row for each class, empty until the
+  lawyer's values are entered through the operators' settings. Do not set them by hand.
+- The health check `files-scan-backlog` reads "degraded", with the count of files and of
+  clinics, while any file has waited more than an hour; it is not one of the checks of
+  readiness, and the alarm on it is wired with the platform's monitoring.
+- A line in the logs at error level, "Files have waited more than an hour for their malware
+  scan", means the scanner is down or slow: files are still taken, and none is given out until
+  it returns.
+
 ## If it happens anyway
 
 Treat a copy of production patient data outside production as an incident: delete the copy,

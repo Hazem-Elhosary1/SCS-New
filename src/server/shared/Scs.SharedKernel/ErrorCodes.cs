@@ -91,6 +91,36 @@ public static class ErrorCodes
     /// <summary>Nobody changes the role of their own account (SH-053).</summary>
     public const string OwnRole = "OWN_ROLE";
 
+    /// <summary>A file of no bytes (spec 009).</summary>
+    public const string FileEmpty = "FILE_EMPTY";
+
+    /// <summary>Larger than its kind allows; carries <c>sizeBytes</c> and <c>maxBytes</c>.</summary>
+    public const string FileTooLarge = "FILE_TOO_LARGE";
+
+    /// <summary>Its content is none of the types its kind takes; carries <c>accepted</c>.</summary>
+    public const string FileTypeNotAccepted = "FILE_TYPE_NOT_ACCEPTED";
+
+    /// <summary>The store could not keep it; nothing of it was kept. Try again.</summary>
+    public const string FileNotStored = "FILE_NOT_STORED";
+
+    /// <summary>Too many files waiting unsaved, or too many uploads at once; carries <c>retryAfterSeconds</c>.</summary>
+    public const string FileLimitReached = "FILE_LIMIT_REACHED";
+
+    /// <summary>The record already holds as many files as its kind allows; carries <c>max</c>.</summary>
+    public const string FileCountReached = "FILE_COUNT_REACHED";
+
+    /// <summary>A file named for a record cannot be attached to it; never says which or why.</summary>
+    public const string FileNotAttachable = "FILE_NOT_ATTACHABLE";
+
+    /// <summary>Not scanned yet: it cannot be given out.</summary>
+    public const string FileBeingChecked = "FILE_BEING_CHECKED";
+
+    /// <summary>Refused by the check; carries <c>reason</c>: <c>infected</c> or <c>unreadable</c>.</summary>
+    public const string FileRefused = "FILE_REFUSED";
+
+    /// <summary>Removed, or past the time it is kept for.</summary>
+    public const string FileNotKept = "FILE_NOT_KEPT";
+
     public static IReadOnlyList<string> All { get; } =
     [
         ValidationFailed, MalformedRequest, Unauthenticated, Forbidden, NotFound,
@@ -101,5 +131,7 @@ public static class ErrorCodes
         ResendTooEarly, ResendLimitReached, SignInCodeNotSent, SignInCodeNotResent,
         LinkInvalid, PasswordChangeRequired, PasswordChangeNotRequired,
         PermissionRequired, RoleFixed, RoleInUse, LastOwner, OwnRole,
+        FileEmpty, FileTooLarge, FileTypeNotAccepted, FileNotStored, FileLimitReached,
+        FileCountReached, FileNotAttachable, FileBeingChecked, FileRefused, FileNotKept,
     ];
 }

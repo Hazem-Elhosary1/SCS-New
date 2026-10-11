@@ -44,8 +44,17 @@ public partial class NotificationEventsTests
     [Fact]
     public void The_table_holds_exactly_the_twenty_events_of_the_BRD_with_who_is_told_and_how()
     {
+        // And the two a later spec added the way the table says to: spec 009's, for a file
+        // its uploader sent that the check refused.
+        (string, string, RecipientRuleKind, string?, NotificationEmail, string)[] added =
+        [
+            ("file.scan-refused", "accounts", RecipientRuleKind.Owner, null, NotificationEmail.Never, "warning"),
+            ("file.unreadable", "accounts", RecipientRuleKind.Owner, null, NotificationEmail.Never, "warning"),
+        ];
+
+        Assert.Equal(20, Expected.Length);
         Assert.Equal(
-            Expected.OrderBy(e => e.Key, StringComparer.Ordinal),
+            Expected.Concat(added).OrderBy(e => e.Item1, StringComparer.Ordinal),
             NotificationEvents.All
                 .Select(e => (e.Key, e.Group, e.Recipients.Kind, e.Recipients.Permission, e.Email, e.Mark))
                 .OrderBy(e => e.Key, StringComparer.Ordinal));
@@ -95,8 +104,10 @@ public partial class NotificationEventsTests
         Assert.All(NotificationEvents.All, e =>
             Assert.Equal(string.IsNullOrWhiteSpace(e.LineAr), string.IsNullOrWhiteSpace(e.LineEn)));
 
-        // Only the event this spec raises has its line; the others get theirs with their cause.
-        Assert.Equal(["account.new-device"], NotificationEvents.All.Where(e => e.HasLine).Select(e => e.Key));
+        // Only the events that have a cause have a line; the others get theirs with their cause.
+        Assert.Equal(
+            ["account.new-device", "file.scan-refused", "file.unreadable"],
+            NotificationEvents.All.Where(e => e.HasLine).Select(e => e.Key));
     }
 
     [Fact]

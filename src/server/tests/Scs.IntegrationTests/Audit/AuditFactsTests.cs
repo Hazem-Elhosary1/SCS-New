@@ -315,9 +315,10 @@ public sealed class AuditFactsTests(SqlServerFixture sql)
 
         var entries = await sql.Main.EntriesAsync(world.Clinic);
 
-        // Every action of the catalogue was written while all of that was in reach …
+        // Every action of the catalogue was written while all of that was in reach — but those
+        // of files, which pass nothing of sign-in and have their own secrets test (spec 009) …
         Assert.Equal(
-            AuditActions.All.Select(a => a.Code).Order(StringComparer.Ordinal),
+            AuditActions.All.Select(a => a.Code).Where(code => !code.StartsWith("file.", StringComparison.Ordinal)).Order(StringComparer.Ordinal),
             entries.Select(e => e.ActionCode).Distinct().Order(StringComparer.Ordinal));
 
         // … and none of what was typed or issued is in any column of it.

@@ -192,6 +192,64 @@ code, a link or an email address in a fact; never read or write the `notify` tab
 `SaveChangesAsync`, since the synchronous save refuses a pending event. The contract is
 `specs/008-notifications-engine/contracts/notifications-engine.md`.
 
+## Holding files (spec 009)
+
+A record that holds files — a ticket's attachments, a patient's documents — does not store them
+itself. The files engine takes the file in, checks it, scans it, gives it out and erases it;
+the module that owns the record says three things: which kind of file, who may upload and see,
+and which files the record holds.
+
+1. **The kind is in the table** — `src/server/shared/Scs.SharedKernel/Files/FileKinds.cs`: its
+   key, the types it takes (PDF, PNG, JPEG), the largest size, how many one record holds,
+   private or public, and its retention class. The five kinds of the BRD are there already. A
+   new one also goes in `file-kinds.lock`, and the web's copy is written again:
+
+   ```powershell
+   dotnet run --project src/server/tools/Scs.Migrator -- file-kinds src/web/projects/core/src/lib/files/file-kinds.json
+   ```
+
+2. **Own the kind** — one class in your module, registered with `services.AddFileKindOwner<T>()`:
+
+   ```csharp
+   internal sealed class TicketAttachmentOwner(ITicketAccess tickets) : IFileKindOwner
+   {
+       public string Kind => FileKinds.TicketAttachment;
+       public Task<bool> MayUploadAsync(CancellationToken ct) => tickets.MayWriteAsync(ct);
+       public Task<bool> MaySeeAsync(FileRecord record, CancellationToken ct) => tickets.MaySeeMessageAsync(record.Id, ct);
+   }
+   ```
+
+   Both are asked on the server at every upload and every download. A kind with no owner is
+   refused for everyone, and `FileRulesTests` lists the kinds still waiting for their spec.
+3. **Attach with the save of the record**, on your own context, and record your own audit action:
+
+   ```csharp
+   db.AttachFiles(FileKinds.TicketAttachment, new FileRecord("ticket-message", message.Id), request.FileIds);
+   db.Record(new AuditRecord(AuditActions.TicketReplied, …));
+   await db.SaveChangesAsync(cancellation);
+   ```
+
+   The file and the record take effect together or not at all. The same goes for
+   `db.RemoveFile(kind, id)` and `db.RestoreFile(kind, id)` (a removed file can be put back for
+   thirty days), `db.StartFileRetention(record, moment)` and `db.StopFileRetention(record)` (the
+   retention period of a record's files starts when you say — a ticket closed, a clinic
+   cancelled — never at upload), and `db.HoldFiles(record)` and `db.ReleaseFiles(record)`
+   (nothing of a held record's files is erased).
+4. **Show them** with `IRecordFiles.ListAsync(recordKind, recordId, includeRemoved)` in your own
+   answer; the browser downloads through `POST /v1/files/{id}/access`.
+5. **On the page**: `createFileUploads('ticket.attachment')` in the component,
+   `<scs-file-field [uploads]="uploads" />` in the template, `uploads.ids()` with the save, and
+   the save disabled while `uploads.busy()`. Saved files are drawn with `<scs-file-card>`.
+
+Rules the engine enforces: the type is read from the content; size and count are the kind's;
+nothing is given out before its scan is clean; a file that is not the saver's own, of another
+kind, or already attached, fails the save; a person has at most thirty files waiting and sixty
+uploads in ten minutes. Rules you keep: never read or write `files.StoredFile` or the store
+yourself (`FileRulesTests`); never put a file's name or a way in into a log; a public kind is
+for what everyone may see, never anything about a patient; whether a file may be removed at all
+is your rule; a private file is a download — a page that previews one does so from the
+downloaded bytes. The contract is `specs/009-file-storage/contracts/files-engine.md`.
+
 ## Conventions to follow
 
 These are decided once in `specs/001-platform-foundation/contracts/` and are not re-decided in

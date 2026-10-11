@@ -26,6 +26,13 @@ public sealed class RouteDeclarationTests(SqlServerFixture sql)
         "PUT /v1/account/preferences", "POST /v1/auth/password/change", "GET /v1/auth/session",
         "GET /v1/notifications", "GET /v1/notifications/state", "POST /v1/notifications/{id:guid}/read",
         "POST /v1/notifications/read-all",
+
+        // Spec 009: decided by the kind's owner, the uploader's identity and the token.
+        "POST /v1/files", "DELETE /v1/files/{id:guid}", "POST /v1/files/{id:guid}/access", "GET /v1/files/content/{token}",
+
+        // The builders' kind, on a developer's machine only.
+        "GET /v1/dev/files/sample", "POST /v1/dev/files/sample",
+        "POST /v1/dev/files/sample/{id:guid}/remove", "POST /v1/dev/files/sample/{id:guid}/restore",
     ];
 
     private static string Describe(RouteEndpoint endpoint)

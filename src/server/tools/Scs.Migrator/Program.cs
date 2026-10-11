@@ -19,6 +19,16 @@ internal static class EntryPoint
             return 0;
         }
 
+        if (args is ["file-kinds", var kindsPath])
+        {
+            // The kinds of file as the web sites read them (spec 009). Run after any change to
+            // the table; a test fails while the checked-in file is out of date.
+            await File.WriteAllTextAsync(kindsPath, Scs.SharedKernel.Files.FileKindsFile.Write()).ConfigureAwait(false);
+            await Console.Out.WriteLineAsync($"Wrote {Scs.SharedKernel.Files.FileKinds.All.Count} kinds of file to {kindsPath}.")
+                .ConfigureAwait(false);
+            return 0;
+        }
+
         using var cancellation = new CancellationTokenSource();
         Console.CancelKeyPress += (_, e) =>
         {

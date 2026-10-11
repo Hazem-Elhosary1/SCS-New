@@ -309,3 +309,42 @@ test.describe('panels after the language is switched without a reload', () => {
     expect(menu.x + menu.width).toBeLessThanOrEqual(1440);
   });
 });
+
+/**
+ * Reported by the owner on 11 Oct 2026: in a window narrower than the console's least width
+ * the page scrolls sideways, and the strip that says the data is not real stopped at the
+ * window's edge instead of reaching across the top bar.
+ */
+test.describe('the environment strip in a narrow window', () => {
+  for (const language of ['ar', 'en'] as const) {
+    test(`reaches across the whole console (${language})`, async ({ page }) => {
+      if (language === 'en') {
+        await page.addInitScript(() => localStorage.setItem('scs.language', 'en'));
+      }
+      await staffPlatform(page, { signedIn: true });
+      await page.setViewportSize({ width: 800, height: 700 });
+      await page.goto(`${CLINIC}/`);
+      await expect(page.getByTestId('shell')).toBeVisible();
+
+      const strip = (await page.getByTestId('env-strip').boundingBox())!;
+      const shell = (await page.getByTestId('shell').boundingBox())!;
+      expect(shell.width).toBe(1024);
+      expect(strip.width).toBe(shell.width);
+      expect(strip.x).toBe(shell.x);
+
+      // At an ordinary width nothing changes: the strip is the window's width.
+      await page.setViewportSize({ width: 1440, height: 900 });
+      expect((await page.getByTestId('env-strip').boundingBox())!.width).toBe(1440);
+    });
+  }
+
+  test('the sign-in screen does not grow wider than a narrow window', async ({ page }) => {
+    await staffPlatform(page);
+    await page.setViewportSize({ width: 800, height: 700 });
+    await page.goto(`${CLINIC}/sign-in`);
+    await expect(page.getByTestId('email')).toBeVisible();
+
+    expect((await page.getByTestId('env-strip').boundingBox())!.width).toBe(800);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(800);
+  });
+});
