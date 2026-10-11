@@ -4,6 +4,7 @@ using Scs.Notifications.Infrastructure;
 using Scs.SharedKernel.Access;
 using Scs.SharedKernel.Audit;
 using Scs.SharedKernel.Notifications;
+using Scs.SharedKernel.Wording;
 
 namespace Scs.UnitTests.Notifications;
 
@@ -198,6 +199,29 @@ public partial class NotificationWordsTests
 
         Assert.Equal("الدخول من جهاز جديد", NotificationWords.Title(NewDevice, NewDevice.Key, "ar"));
         Assert.Equal("Sign-in from a new device", NotificationWords.Title(NewDevice, NewDevice.Key, "en"));
+    }
+
+    [Theory]
+    [InlineData("2026-10-11T12:04:00Z", "١١ أكتوبر ٢٠٢٦، ٣:٠٤ م", "11 October 2026, 3:04 PM")]
+    [InlineData("2026-01-31T22:30:00Z", "١ فبراير ٢٠٢٦، ١٢:٣٠ ص", "1 February 2026, 12:30 AM")]
+    [InlineData("2026-12-05T10:00:00Z", "٥ ديسمبر ٢٠٢٦، ١٢:٠٠ م", "5 December 2026, 12:00 PM")]
+    public void A_moment_is_written_in_cairo_time_as_each_language_writes_it(string instant, string arabic, string english)
+    {
+        var moment = DateTimeOffset.Parse(instant, System.Globalization.CultureInfo.InvariantCulture);
+
+        Assert.Equal(arabic, Words.Moment(moment, english: false));
+        Assert.Equal(english, Words.Moment(moment, english: true));
+    }
+
+    [Fact]
+    public void An_email_says_when_between_the_line_and_the_way_in()
+    {
+        var email = NotificationEmails.Build("a@b.example", "en", "Title", "Line", "https://app.scs.test/", "11 October 2026, 3:04 PM");
+
+        Assert.Equal(
+            ["Title", "Line", "11 October 2026, 3:04 PM", "Open in Smart Clinic OS: https://app.scs.test/"],
+            email.TextBody.Split("\n\n").Take(4));
+        Assert.Contains("11 October 2026, 3:04 PM", email.HtmlBody, StringComparison.Ordinal);
     }
 
     [Fact]

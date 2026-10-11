@@ -154,18 +154,20 @@ describe('the bell’s source, from the platform', () => {
     world.state(true, 't1');
     await settle();
     world.source.setOpen(true);
-    world.http.expectOne(LIST).flush({ items: [item('n-1')], unread: true, next: null });
+    world.http.expectOne(LIST).flush({ items: [item('n-1', { read: true })], unread: false, next: null });
     await settle();
 
     vi.advanceTimersByTime(NOTIFICATIONS_POLL_MS);
-    world.state(true, 't1');
+    world.state(false, 't1');
     await settle();
     world.http.expectNone(LIST);
 
     vi.advanceTimersByTime(NOTIFICATIONS_POLL_MS);
     world.state(true, 't2');
     await settle();
-    world.http.expectOne(LIST).flush({ items: [item('n-2'), item('n-1')], unread: true, next: null });
+    world.http
+      .expectOne(LIST)
+      .flush({ items: [item('n-2', { read: true }), item('n-1', { read: true })], unread: false, next: null });
     await settle();
 
     // No skeleton over a list that is already there.
@@ -174,6 +176,41 @@ describe('the bell’s source, from the platform', () => {
     world.source.setOpen(false);
     vi.advanceTimersByTime(NOTIFICATIONS_POLL_MS);
     world.state(true, 't3');
+    await settle();
+    world.http.expectNone(LIST);
+  });
+
+  it('an open panel shows what was read on the person’s other browser', async () => {
+    const world = start();
+    world.state(true, 't1');
+    await settle();
+    world.source.setOpen(true);
+    world.http.expectOne(LIST).flush({ items: [item('n-2'), item('n-1')], unread: true, next: null });
+    await settle();
+
+    // Read elsewhere: nothing new arrived, and the open panel still asks.
+    vi.advanceTimersByTime(NOTIFICATIONS_POLL_MS);
+    world.state(true, 't1');
+    await settle();
+    world.http
+      .expectOne(LIST)
+      .flush({ items: [item('n-2', { read: true }), item('n-1')], unread: true, next: null });
+    await settle();
+    expect(world.source.items().map((each) => each.read)).toEqual([true, false]);
+
+    // A turn that fails leaves the list as it is, with no error over it.
+    vi.advanceTimersByTime(NOTIFICATIONS_POLL_MS);
+    world.state(true, 't1');
+    await settle();
+    world.http.expectOne(LIST).flush(null, { status: 503, statusText: 'Unavailable' });
+    await settle();
+    expect(world.source.state()).toBe('ready');
+    expect(world.source.items()).toHaveLength(2);
+
+    // A closed panel asks for no list.
+    world.source.setOpen(false);
+    vi.advanceTimersByTime(NOTIFICATIONS_POLL_MS);
+    world.state(true, 't1');
     await settle();
     world.http.expectNone(LIST);
   });
@@ -230,6 +267,12 @@ describe('the bell’s source, from the platform', () => {
     world.http.expectOne(`${LIST}/n-1/read`).flush(null);
     await settle();
     world.state(true, 't1');
+    await settle();
+
+    // The panel is open and one is still unread: it is kept true.
+    world.http
+      .expectOne(LIST)
+      .flush({ items: [item('n-1', { read: true }), item('n-2')], unread: true, next: null });
   });
 
   it('one already read is not marked again', async () => {
@@ -354,5 +397,7 @@ describe('the bell’s source, from the platform', () => {
     world.online.set(true);
     TestBed.tick();
     world.state(true, 't1');
+    await settle();
+    world.http.expectOne(LIST).flush({ items: [unread], unread: true, next: 'c1' });
   });
 });

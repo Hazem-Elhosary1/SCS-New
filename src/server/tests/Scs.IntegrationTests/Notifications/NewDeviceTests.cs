@@ -7,6 +7,7 @@ using Scs.Identity.Infrastructure;
 using Scs.IntegrationTests.Fixtures;
 using Scs.IntegrationTests.Identity;
 using Scs.SharedKernel.Notifications;
+using Scs.SharedKernel.Wording;
 
 namespace Scs.IntegrationTests.Notifications;
 
@@ -123,6 +124,7 @@ public sealed class NewDeviceTests(SqlServerFixture sql)
         await world.Factory.SendNotificationEmailsAsync(world.Clinic);
         var message = Assert.Single(world.Factory.Mail.To(email).Skip(mailBefore), m => m.Subject == "الدخول من جهاز جديد");
         Assert.Contains("متصفح Safari على iOS", message.TextBody, StringComparison.Ordinal);
+        Assert.Contains(Words.Moment(told.RaisedAtUtc, english: false), message.TextBody, StringComparison.Ordinal);
         Assert.DoesNotContain(SignIn.Password, message.TextBody + message.HtmlBody, StringComparison.Ordinal);
         Assert.Equal("sent", Assert.Single(await ToldAsync(world, account)).EmailState);
 

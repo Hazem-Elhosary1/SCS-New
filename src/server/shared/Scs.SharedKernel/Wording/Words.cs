@@ -14,6 +14,33 @@ public static class Words
     /// <summary><c>en</c> stays English; anything else is Arabic, the platform's first language.</summary>
     public static string Language(string? language) => language == English ? English : Arabic;
 
+    private static readonly TimeZoneInfo Cairo = TimeZoneInfo.FindSystemTimeZoneById("Africa/Cairo");
+
+    private static readonly string[] MonthsAr =
+        ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+
+    private static readonly string[] MonthsEn =
+        ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+    /// <summary>
+    /// A moment in Cairo time, where every clinic's day begins and ends (SH-001), as the design
+    /// writes it: «١١ أكتوبر ٢٠٢٦، ٣:٠٤ م» · "11 October 2026, 3:04 PM".
+    /// </summary>
+    public static string Moment(DateTimeOffset moment, bool english)
+    {
+        var local = TimeZoneInfo.ConvertTime(moment, Cairo);
+        var hour = local.Hour % 12 == 0 ? 12 : local.Hour % 12;
+        var minute = local.Minute.ToString("00", CultureInfo.InvariantCulture);
+        var morning = local.Hour < 12;
+
+        return english
+            ? $"{local.Day} {MonthsEn[local.Month - 1]} {local.Year}, {hour}:{minute} {(morning ? "AM" : "PM")}"
+            : $"{Digits(local.Day)} {MonthsAr[local.Month - 1]} {Digits(local.Year)}، {Digits(hour)}:{Digits(minute)} {(morning ? "ص" : "م")}";
+
+        static string Digits(object value) =>
+            string.Concat(Convert.ToString(value, CultureInfo.InvariantCulture)!.Select(digit => (char)('٠' + (digit - '0'))));
+    }
+
     /// <summary>A whole number as the reader's language writes it: Arabic-Indic digits in Arabic.</summary>
     public static string Number(int value, bool english)
     {

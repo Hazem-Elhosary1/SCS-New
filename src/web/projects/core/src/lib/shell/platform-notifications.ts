@@ -179,8 +179,11 @@ export class PlatformNotifications implements OnDestroy {
         this.dot.set(state.unread);
         const arrived = state.latestAt !== this.latestAt;
         this.latestAt = state.latestAt;
-        // A list already on its way is the newest there is.
-        if (arrived && this.panelOpen && !this.loading) {
+        // An open panel is kept true: something arrived, or something it shows as unread may
+        // have been read on the person's other browser (FR-026). A list already on its way is
+        // the newest there is.
+        const mayBeRead = this.held().some((item) => !item.read);
+        if ((arrived || mayBeRead) && this.panelOpen && !this.loading) {
           this.load();
         }
       },
@@ -213,7 +216,10 @@ export class PlatformNotifications implements OnDestroy {
       () => {
         if (turn === this.turn) {
           this.loading = false;
-          this.loadState.set('failed');
+          // A list already shown stays; only a panel with nothing to show says it failed.
+          if (this.held().length === 0) {
+            this.loadState.set('failed');
+          }
         }
       },
     );

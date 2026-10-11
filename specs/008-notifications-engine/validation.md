@@ -1,21 +1,22 @@
 # Validation: Notifications Engine (spec 008)
 
-**Date**: 11 Oct 2026 · **Branch**: `008-notifications-engine` (not committed) · **Constitution**: v1.2.0, Principle VII
+**Date**: 11 Oct 2026 · **Branch**: `008-notifications-engine`  · **Constitution**: v1.2.0, Principle VII
 
 What was run, what was walked on the real stack, what was measured, what was laid beside the
-design, what was built differently from the plan, and what was not done.
+design, what was built differently from the plan, and what was not done. Second writing, after the
+convergence tasks T039–T040 (section 8).
 
 ## 1. What was run
 
 | Gate | Result |
 |---|---|
-| `dotnet test src/server/Scs.sln` (Debug), with nothing else running | unit **495** · architecture **44** · integration **640** — all passed |
-| `npm --prefix src/web run ci` (lint, translation check, tools, unit tests, build of the three apps) | passed — clinic **68**, core **143**, ui **72**, patient 1, ops 1; clinic's first download **449.97 kB**, no size warning |
-| `npx playwright test` | **377 passed**, 4 skipped (the picture-only tests); with `SCS_SHOTS` set, **381 passed** |
+| `dotnet test src/server/Scs.sln` (Debug), with nothing else running | unit **499** · architecture **44** · integration **640** — all passed |
+| `npm --prefix src/web run ci` (lint, translation check, tools, unit tests, build of the three apps) | passed — clinic **68**, core **144**, ui **72**, patient 1, ops 1; clinic's first download **449.97 kB**, no size warning |
+| `npx playwright test` | **378 passed**, 4 skipped (the picture-only tests) |
 
 Before starting (T001) the three suites were run and matched spec 007's record: 473 · 38 · 557;
-51 · 128 · 68. New since: 22 unit, 6 architecture and 83 integration tests on the server; 17 unit
-tests in clinic, 15 in core and 4 in ui; 14 browser tests.
+51 · 128 · 68. New since: 26 unit, 6 architecture and 83 integration tests on the server; 17 unit
+tests in clinic, 16 in core and 4 in ui; 15 browser tests.
 
 New test files: `Notifications/NotificationIsolationTests`, `RaisingTests`, `RecipientsTests`,
 `BellTests`, `EmailTests`, `EmailSwitchTests`, `NewDeviceTests`, `CleanupAndVolumeTests`
@@ -25,10 +26,9 @@ New test files: `Notifications/NotificationIsolationTests`, `RaisingTests`, `Rec
 `NotificationRulesTests` (architecture); `platform-notifications.spec.ts` (core),
 `ago.spec.ts` (clinic), `overlay-direction.spec.ts` (ui); `e2e/notifications.spec.ts`.
 
-The server suite was run whole twice: once before the walk, and once more after the last
-change on the server (the address in an email, section 3), with the same counts. The web gates
-were run after the last web change. The API of the local stack was running during the last
-server run; nothing else was.
+Every figure above is from the last run, after the convergence tasks, with nothing else
+running. The browser tests were run before two unit tests of `core` were brought in line with
+T039; no source the browser loads changed after that run.
 
 **Existing tests that had to change**, and why:
 
@@ -172,3 +172,18 @@ menu, not only the bell.
 - **Not checked**: the bell on a phone-width screen with real notifications; a mail server that
   is really down on the real stack (the retry waits are tested with a made-up one); two API
   instances sending at once.
+
+## 8. Convergence (T039–T040)
+
+`/speckit-converge` found two partial gaps; both are closed.
+
+- **T039 — FR-026.** A panel left open showed the dot going out but kept its items tinted when
+  they were read on the person's other browser, until it was reopened. An open panel that shows
+  anything unread now fetches its list at each turn; a turn that fails leaves the list as it is.
+  One unit test and one browser test.
+- **T040 — FR-042.** The email of a new device did not say when. Every notification email now
+  carries the moment its event was raised, in Cairo time and the reader's language — «١١ أكتوبر
+  ٢٠٢٦، ٣:٠٤ م» · "11 October 2026, 3:04 PM" — between the line and the way in. Four unit tests
+  and a line in `NewDeviceTests`.
+
+Neither was walked again on the real stack: the walk of section 3 is from before them.

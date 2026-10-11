@@ -25,7 +25,8 @@ internal static class NotificationEmails
 {
     private const string Product = "Smart Clinic OS";
 
-    public static EmailMessage Build(string to, string language, string title, string line, string address)
+    /// <param name="when">When it happened, in words; left out when empty.</param>
+    public static EmailMessage Build(string to, string language, string title, string line, string address, string when = "")
     {
         var english = language == Words.English;
         var open = english ? $"Open in {Product}" : $"فتح في {Product}";
@@ -33,7 +34,7 @@ internal static class NotificationEmails
             ? "This message was sent automatically; replies to it are not read."
             : "أُرسلت هذه الرسالة تلقائيًّا، ولا تُقرأ الردود عليها.";
 
-        var text = string.Join("\n\n", new[] { title, line, $"{open}: {address}", closing }.Where(part => part.Length > 0));
+        var text = string.Join("\n\n", new[] { title, line, when, $"{open}: {address}", closing }.Where(part => part.Length > 0));
 
         var html =
             $"""
@@ -43,6 +44,7 @@ internal static class NotificationEmails
                <div dir="{(english ? "ltr" : "rtl")}" lang="{language}">
                  <h1 style="font-size: 18px;">{WebUtility.HtmlEncode(title)}</h1>
                  <p>{WebUtility.HtmlEncode(line)}</p>
+                 <p style="color: #6b7280;">{WebUtility.HtmlEncode(when)}</p>
                  <p><a href="{WebUtility.HtmlEncode(address)}">{WebUtility.HtmlEncode(open)}</a></p>
                  <p style="color: #6b7280; font-size: 12px;">{WebUtility.HtmlEncode(closing)}</p>
                </div>
@@ -125,7 +127,8 @@ internal sealed partial class NotificationEmailJob(
                     language,
                     NotificationWords.Title(known, notification.EventKey, language),
                     NotificationWords.Line(known, notification.SubjectLabel, notification.Facts, language),
-                    options.Value.Auth.StaffAppBase() + "/" + (notification.Link ?? "").TrimStart('/'));
+                    options.Value.Auth.StaffAppBase() + "/" + (notification.Link ?? "").TrimStart('/'),
+                    Words.Moment(notification.RaisedAtUtc, language == Words.English));
 
                 try
                 {

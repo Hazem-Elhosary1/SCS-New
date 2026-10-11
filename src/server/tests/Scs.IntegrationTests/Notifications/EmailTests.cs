@@ -232,10 +232,10 @@ public sealed class EmailTests(SqlServerFixture sql)
                                                || name.Contains("Address", StringComparison.OrdinalIgnoreCase)
                                                || name.Contains("Body", StringComparison.OrdinalIgnoreCase));
 
-        // And the email itself holds no password: only the title, the line and the way in.
+        // And the email itself holds no password: only the title, the line, the moment and the way in.
         var email = Assert.Single(world.Factory.Mail.Sent, m => m.Subject == "حدث لصاحبه");
         Assert.DoesNotContain(password, email.TextBody + email.HtmlBody, StringComparison.Ordinal);
-        Assert.Equal(4, email.TextBody.Split("\n\n").Length);
+        Assert.Equal(5, email.TextBody.Split("\n\n").Length);
     }
 
     [Fact]

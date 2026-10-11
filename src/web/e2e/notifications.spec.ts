@@ -137,6 +137,21 @@ test.describe('the bell, with notifications from the platform', () => {
     await expect(items(page).locator('.item-title')).toHaveText(['ردّ جديد على تذكرتك', 'تذكرة دعم جديدة']);
   });
 
+  test('what was read on another browser shows as read in an open panel, without a reload', async ({ page }) => {
+    const platform = await inside(page, AR);
+    await page.getByTestId('bell').click();
+    await expect(items(page).nth(0)).toHaveAttribute('data-read', 'false');
+
+    // The person reads them all elsewhere.
+    platform.notifications = platform.notifications.map((each) => ({ ...each, read: true }));
+    await page.clock.fastForward(30_000);
+
+    await expect(items(page).nth(0)).toHaveAttribute('data-read', 'true');
+    await expect(items(page).nth(1)).toHaveAttribute('data-read', 'true');
+    await expect(page.getByTestId('bell-dot')).toHaveCount(0);
+    await expect(page.getByTestId('notification-panel')).toBeVisible();
+  });
+
   test('pressing one marks it read, closes the panel and opens what it is about', async ({ page }) => {
     const platform = await inside(page, AR);
 
