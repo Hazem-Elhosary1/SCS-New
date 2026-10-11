@@ -9,13 +9,24 @@ Requirement IDs below (`SH-nnn`) refer to BRD Volume 0, "Shared Foundation"
 
 ## Core Principles
 
-### I. The BRD Is the Source of Truth
+### I. The BRD and the Design File Are the Source of Truth
 
+- There are two sources and both are required. The BRD says what the product does and what it
+  says: behaviour, rules and wording. The design file (Figma) says what every screen looks like:
+  layout, components, icons, sizes, colours and the look of each state. Neither is enough
+  without the other.
 - Every spec MUST name the BRD chapter and the requirement IDs (`SH-`, `CL-`, `PT-`, `OP-`) it
   implements. A behaviour with no BRD requirement behind it MUST NOT be built until the BRD
   carries it.
-- When sources conflict, precedence is: written owner decisions, then the design file, then
-  code. Within `docs/`, the BRD in `brd/` prevails over everything in `plans/` and `archive/`.
+- Every spec that delivers or changes a screen MUST also name the design file, the page and the
+  frames it implements, and its plan and tasks MUST be written from those frames. A screen MUST
+  NOT be built from the BRD's wording alone. A screen or state the design file does not draw is
+  listed in the spec as undrawn, built from the drawn components, and raised with the owner.
+- When sources conflict, precedence is: written owner decisions, then the BRD for behaviour and
+  wording and the design file for appearance, then code. A conflict between the BRD and the
+  design file, or an owner decision that differs from either, MUST be stated in the spec and
+  recorded as an item for the owner to bring the BRD or the design file into line. Within
+  `docs/`, the BRD in `brd/` prevails over everything in `plans/` and `archive/`.
 - The BRD describes the product required, not the code that exists. The earlier implementation
   (NestJS, React, PostgreSQL) is a reference for behaviour and rules only: no code is ported from
   it and no requirement counts as done because that version has it (SH-103).
@@ -25,8 +36,10 @@ Requirement IDs below (`SH-nnn`) refer to BRD Volume 0, "Shared Foundation"
 - Items the BRD lists as out of scope (BRD §2) MUST NOT be introduced through a spec; they need
   an owner decision and a BRD change first.
 
-Rationale: 92 specs are cut from one document. Traceability is what keeps them consistent with
-each other and keeps the old codebase from silently becoming the requirement.
+Rationale: 92 specs are cut from one document and one design file. Traceability to both is what
+keeps them consistent with each other, keeps the old codebase from silently becoming the
+requirement, and keeps a screen that behaves correctly from shipping looking nothing like its
+design.
 
 ### II. Tenant Isolation Enforced in the Database (NON-NEGOTIABLE)
 
@@ -118,7 +131,7 @@ still open (BRD §12). The defaults must be the safe ones until those are answer
 Rationale: the clinic team works in Arabic all day. A screen that is correct in English but
 broken right to left, or that has no answer for an expired subscription, is not finished.
 
-### VII. Tested Before Merge, Test-First Where It Hurts
+### VII. Tested Before Merge, Test-First Where It Hurts, Verified After Implementation
 
 - Every acceptance criterion in a spec MUST be covered by an automated test before the spec is
   merged. A criterion with no test is not done.
@@ -131,9 +144,20 @@ broken right to left, or that has no answer for an expired subscription, is not 
   the plan, read-only clinic, and limit reached.
 - Tests that touch isolation run against a real SQL Server instance with the application's own
   database identity, never against an in-memory substitute.
+- After implementation, and before a spec is reported as finished, it MUST be verified for real,
+  beyond its automated tests: every automated suite is run in full; the feature's flows are
+  walked against the running local stack; and every screen and state the spec delivers is laid
+  beside its frame in the design file, in Arabic and in English, and the differences are fixed.
+  Automated tests check behaviour and wording; they do not show that a screen matches its
+  design.
+- The result of that verification MUST be written in the spec's `validation.md`: what was run,
+  what was walked, which frames were compared, and what was not checked. A verification step
+  that was skipped is reported as skipped, never left as an open task and passed over.
 
 Rationale: strict test-first on all 92 specs costs more than it returns, but the four risk areas
-are where a mistake leaks data, grants access, gives away paid features or loses money.
+are where a mistake leaks data, grants access, gives away paid features or loses money. And a
+suite that passes proves only what it asserts: the first sign-in screens passed every test with
+their icons missing and their states unlike the design.
 
 ## Technology & Platform Constraints
 
@@ -157,6 +181,7 @@ These are owner decisions of 9 Oct 2026 and are constraints, not preferences.
 | Data access | EF Core with migrations; Dapper only for read-only report queries | Project decision, 10 Oct 2026 |
 | Isolation mechanism | SQL Server Row-Level Security keyed on `SESSION_CONTEXT`, set per request | Project decision, 10 Oct 2026 |
 | UI components | Shared component library on Tailwind CSS and Angular CDK, built to the Figma kit | Project decision, 10 Oct 2026 |
+| Design source | The Figma files "Smart Clinic OS — Design System & Screens" (clinic and patient) and "SCS Ops Console — Admin Design System" (operators), read through the Figma connector | Owner decision, 11 Oct 2026 |
 | Background work | Hangfire with SQL Server storage | Project decision, 10 Oct 2026 |
 | Packaging and hosting | Docker containers on ECS Fargate; SQL Server on RDS; front ends as static files | Project decision, 10 Oct 2026 |
 
@@ -211,6 +236,9 @@ These are owner decisions of 9 Oct 2026 and are constraints, not preferences.
 - A change is mergeable only when all of these pass in CI: build, lint, automated tests,
   architecture tests, and the tenant-isolation guardrail and isolation test required by
   Principle II.
+- A spec is done only when, in addition, the verification after implementation required by
+  Principle VII is recorded in its `validation.md`, including the comparison of each of its
+  screens with the design file. `/speckit-implement` is not complete until that is written.
 - Acceptance criteria in a spec MUST be testable and MUST cover the refusal paths: no permission,
   view-only, not included in the plan, and read-only clinic.
 - A schema change that adds a clinic-owned table and the isolation policy for that table are one
@@ -236,7 +264,7 @@ These are owner decisions of 9 Oct 2026 and are constraints, not preferences.
   discipline, artifact language and the stack choices marked "Project decision" in this document
   are project decisions rather than BRD requirements. They change by amendment here, without a BRD change.
 - **Runtime guidance**: `docs/brd/SCS-BRD-Shared` for shared rules, then the volume for the
-  system being built (`SCS-BRD-Clinic` or `SCS-BRD-Ops`), and `docs/brd/SCS-SpecKit-Phases.md`
-  for the order of work.
+  system being built (`SCS-BRD-Clinic` or `SCS-BRD-Ops`), the design file for the look of its
+  screens, and `docs/brd/SCS-SpecKit-Phases.md` for the order of work.
 
-**Version**: 1.1.0 | **Ratified**: 2026-10-10 | **Last Amended**: 2026-10-10
+**Version**: 1.2.0 | **Ratified**: 2026-10-10 | **Last Amended**: 2026-10-11
