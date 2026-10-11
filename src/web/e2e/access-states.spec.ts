@@ -37,7 +37,7 @@ const STATES: State[] = [
     name: 'no-access',
     platform: { role: roles.team, permissions: TEAM_PERMISSIONS },
     shows: 'no-access',
-    hides: 'roles-not-yet',
+    hides: 'roles-ready',
     says: {
       ar: 'تُفتح لمن يملك «عرض الأدوار والصلاحيات»، ودورك «فريق العيادة» لا يحملها.',
       en: 'It opens for holders of “View roles & permissions”, and your role “فريق العيادة” does not carry it.',
@@ -47,7 +47,7 @@ const STATES: State[] = [
     name: 'no-access-no-role',
     platform: { role: null, permissions: [] },
     shows: 'no-access',
-    hides: 'roles-not-yet',
+    hides: 'roles-ready',
     says: {
       ar: 'وحسابك لا يحمل دورًا بعد.',
       en: 'and your account does not hold a role yet.',
@@ -66,9 +66,9 @@ const STATES: State[] = [
   {
     name: 'full-access',
     platform: {},
-    shows: 'roles-not-yet',
+    shows: 'roles-ready',
     hides: 'view-only',
-    says: { ar: 'هذه الصفحة غير متاحة بعد', en: 'This page is not available yet' },
+    says: { ar: 'أدوار جاهزة', en: 'Ready roles' },
   },
   {
     name: 'no-access-after-refusal',
@@ -80,7 +80,7 @@ const STATES: State[] = [
       };
     },
     shows: 'no-access',
-    hides: 'roles-not-yet',
+    hides: 'roles-ready',
     says: {
       ar: 'ودورك «طبيب» لا يحملها.',
       en: 'and your role “Doctor” does not carry it.',

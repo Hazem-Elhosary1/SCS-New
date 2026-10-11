@@ -1,7 +1,32 @@
 {
   "app": {
     "shell": {
-      "name": "Clinic console"
+      "name": "Clinic console",
+      "environment": "Test environment — data is not real",
+      "signOut": "Sign out",
+      "allBranches": "All branches",
+      "offlineReason": "Disabled until the connection returns",
+      "notYetText": "It will appear here when it is ready.",
+      "notInPlanText": "The clinic's current plan does not include this page. The plan and its upgrade are under “Profile & subscription”.",
+      "notFoundTitle": "Page not found",
+      "notFoundText": "This address does not lead to a page of the clinic console.",
+      "noAccessNote": "a role that does not carry “{{ permission }}”",
+      "noRoleNote": "an account that holds no role",
+      "notifications": {
+        "title": "Notifications",
+        "markAll": "Mark all read",
+        "failed": "Notifications could not be loaded",
+        "emptyTitle": "No new notifications",
+        "emptyText": "Tickets, invoices and subscription updates that concern you will appear here."
+      },
+      "subscription": {
+        "trial": "{{ days }} days left in your trial",
+        "expiring": "Your clinic subscription ends in {{ days }} days",
+        "grace": "Your subscription has ended — {{ days }} days before editing locks",
+        "readonly": "The account is read-only until the subscription is renewed",
+        "choosePlan": "Choose a plan",
+        "renew": "Renew subscription"
+      }
     },
     "signIn": {
       "title": "Staff sign-in",
@@ -60,10 +85,6 @@
       "whatsapp": "WhatsApp",
       "email": "Email"
     },
-    "landing": {
-      "signedInAs": "Signed in as",
-      "signOut": "Sign out"
-    },
     "password": {
       "back": "Back to sign-in",
       "loading": "Opening the link…",
@@ -116,13 +137,136 @@
       "retry": "Try again"
     },
     "administration": {
-      "breadcrumb": "Administration",
       "roles": {
         "title": "Roles & permissions",
         "viewOnly": "Changing roles needs “{{ permission }}”.",
-        "noAccessNote": "a role that does not carry “{{ permission }}”",
-        "noRoleNote": "an account that holds no role"
+        "note": "{{ roles }} · {{ permissions }} permissions",
+        "count": {
+          "zero": "No roles",
+          "one": "{{ count }} role",
+          "two": "{{ count }} roles",
+          "few": "{{ count }} roles",
+          "many": "{{ count }} roles",
+          "other": "{{ count }} roles"
+        },
+        "failedTitle": "Roles could not be loaded",
+        "failedText": "Check the connection, then try again.",
+        "ready": {
+          "heading": "Ready roles",
+          "note": "Three roles ship with the platform: “Clinic owner” is fixed — every permission, never edited, never deleted — and the other two are edited and deleted like any other role"
+        },
+        "custom": {
+          "heading": "Custom roles",
+          "note": "What the clinic created for itself",
+          "emptyTitle": "No custom roles yet",
+          "emptyText": "The three ready roles work as they are; the clinic creates whatever it wants on top of them and names it whatever it wants."
+        },
+        "column": {
+          "role": "Role",
+          "holders": "Holders",
+          "permissions": "Permissions"
+        },
+        "ofAll": "{{ held }} of {{ all }}",
+        "readyDescription": {
+          "owner": "Every clinic permission",
+          "manager": "Running the clinic day to day — not the exam room, the technical settings or the subscription",
+          "doctor": "The exam room, patient files and their own appointments"
+        },
+        "heading": "Roles"
       }
+    },
+    "nav": {
+      "label": "Sections of the clinic console",
+      "fold": "Fold the menu",
+      "unfold": "Unfold the menu",
+      "group": {
+        "main": "Main",
+        "management": "Clinic management"
+      },
+      "home": "Home",
+      "bookings": "Bookings",
+      "patients": "Patients",
+      "invoices": "Invoices & collection",
+      "inbox": "Inbox",
+      "tickets": "Tickets",
+      "reports": "Reports",
+      "reportsFinancial": "Financial reports",
+      "reportsClinical": "Clinical reports",
+      "reportsActivity": "Activity & security log",
+      "reportsWeekly": "Weekly summary",
+      "reportsFeedback": "Patient feedback",
+      "administration": "Administration",
+      "users": "Users",
+      "roles": "Roles & permissions",
+      "licences": "Licences & coverage",
+      "data": "Data management",
+      "doctors": "Doctors",
+      "branches": "Branches",
+      "services": "Services & prices",
+      "consents": "Consent texts",
+      "settings": "Settings",
+      "dentalLab": "Dental lab",
+      "subscription": "Profile & subscription",
+      "doctorProfile": "Doctor profile",
+      "platform": "Platform status"
+    },
+    "sample": {
+      "title": "Sample list",
+      "note": "{{ total }} made-up records for checking the rules of lists — nobody’s data",
+      "heading": "Records",
+      "add": "Add record",
+      "export": "Export",
+      "searchPlaceholder": "Record name",
+      "clearSearch": "Clear search",
+      "filter": "Filter",
+      "apply": "Apply",
+      "clearAll": "Clear all",
+      "remove": "Remove",
+      "opened": "“{{ name }}” opened",
+      "count": "{{ from }}–{{ to }} of {{ total }} records",
+      "previous": "Previous",
+      "next": "Next",
+      "paging": "Pages of the list",
+      "archive": "Archive",
+      "restore": "Restore",
+      "delete": "Delete",
+      "emptyTitle": "No records yet",
+      "emptyText": "Records appear here once they are added.",
+      "noResultsTitle": "No matching results",
+      "noResultsText": "Try fewer words.",
+      "errorTitle": "Records could not be loaded",
+      "errorText": "The list did not arrive from the platform.",
+      "tab": {
+        "all": "All",
+        "active": "Active",
+        "archived": "Archived"
+      },
+      "kind": {
+        "checkup": "Check-up",
+        "followup": "Follow-up",
+        "procedure": "Procedure"
+      },
+      "column": {
+        "name": "Record",
+        "kind": "Kind",
+        "amount": "Amount",
+        "actions": "Record actions"
+      },
+      "confirm": {
+        "title": "Delete record",
+        "text": "“{{ name }}” is deleted for good, and this cannot be undone.",
+        "understood": "I understand that deletion is permanent",
+        "cancel": "Cancel",
+        "action": "Delete record"
+      },
+      "toast": {
+        "added": "Record added",
+        "exported": "Records file downloaded",
+        "archived": "Record archived",
+        "restored": "Record restored",
+        "deleted": "Record deleted"
+      },
+      "filterTitle": "Filter records"
     }
   }
 }

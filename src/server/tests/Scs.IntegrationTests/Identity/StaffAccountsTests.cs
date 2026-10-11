@@ -105,7 +105,7 @@ public sealed class StaffAccountsTests(SqlServerFixture sql)
     }
 
     [Fact]
-    public async Task The_seed_adds_seven_made_up_accounts_once_and_one_holds_a_temporary_password()
+    public async Task The_seed_adds_eight_made_up_accounts_once_and_one_holds_a_temporary_password()
     {
         await sql.EnsureMigratedAsync();
         var noor = await sql.Main.SeedClinicAsync();
@@ -116,10 +116,10 @@ public sealed class StaffAccountsTests(SqlServerFixture sql)
         var first = await Scs.Identity.IdentityModule.SeedAsync(sql.Main.App, clinics, SignIn.Password, default);
         var second = await Scs.Identity.IdentityModule.SeedAsync(sql.Main.App, clinics, SignIn.Password, default);
 
-        Assert.True(first.Count is 0 or 7, $"The first run added {first.Count}.");
+        Assert.True(first.Count is 0 or 8, $"The first run added {first.Count}.");
         Assert.Empty(second);
         Assert.Equal(
-            7,
+            8,
             await TestDatabase.ScalarAsync<int>(
                 sql.Main.Crossing, "SELECT COUNT(*) FROM [identity].StaffAccount WHERE Email LIKE '%@noor.example' OR Email LIKE '%@shifa.example'"));
 
@@ -132,13 +132,13 @@ public sealed class StaffAccountsTests(SqlServerFixture sql)
             return;
         }
 
-        // Spec 005: every seeded account holds a role, and one holds a custom role without the
-        // view of the roles page — the person who sees the no-permission state.
+        // Spec 005: every seeded account holds a role, and one in each clinic holds a custom role
+        // without the view of the roles page — the person who sees the no-permission state.
         Assert.Equal(
             [
                 "doctor@shifa.example=doctor", "former@noor.example=doctor", "new@shifa.example=manager",
                 "owner@noor.example=owner", "owner@shifa.example=owner", "reception@noor.example=فريق العيادة",
-                "temp@noor.example=manager",
+                "reception@shifa.example=فريق العيادة", "temp@noor.example=manager",
             ],
             await TestDatabase.ReadColumnAsync(
                 sql.Main.Crossing,
@@ -154,7 +154,7 @@ public sealed class StaffAccountsTests(SqlServerFixture sql)
         Assert.Equal(6, custom.Count);
         Assert.DoesNotContain("admin.roles.view", custom);
         Assert.Equal(4, await TestDatabase.ScalarAsync<int>(sql.Main.Crossing, $"SELECT COUNT(*) FROM [identity].Role WHERE ClinicId = '{noor}'"));
-        Assert.Equal(3, await TestDatabase.ScalarAsync<int>(sql.Main.Crossing, $"SELECT COUNT(*) FROM [identity].Role WHERE ClinicId = '{shifa}'"));
+        Assert.Equal(4, await TestDatabase.ScalarAsync<int>(sql.Main.Crossing, $"SELECT COUNT(*) FROM [identity].Role WHERE ClinicId = '{shifa}'"));
 
         // Spec 004: one of them holds a temporary password, kept usable by every run of the seed
         // until somebody replaces it — after which the seed leaves that account alone.

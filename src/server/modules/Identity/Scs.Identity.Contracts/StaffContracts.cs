@@ -146,8 +146,9 @@ public interface IAccountHandover
 /// </param>
 /// <param name="Fixed">«مالك العيادة»: holds every permission and is never edited or removed.</param>
 /// <param name="PermissionCount">Counted from the catalogue for the fixed role, from the role's own set otherwise.</param>
+/// <param name="Holders">How many accounts of the clinic hold the role, in any state.</param>
 public sealed record RoleSummary(
-    Guid Id, string Name, string? ReadyKey, string? Description, string Category, bool Fixed, int PermissionCount);
+    Guid Id, string Name, string? ReadyKey, string? Description, string Category, bool Fixed, int PermissionCount, int Holders);
 
 /// <summary>What an edit changed in a role's set, for the record of spec 007.</summary>
 public sealed record RoleChange(Guid RoleId, IReadOnlyList<string> Added, IReadOnlyList<string> Removed);

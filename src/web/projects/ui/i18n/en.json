@@ -34,11 +34,10 @@
       "error": {
         "title": "The request could not be completed",
         "reference": "Reference",
-        "retry": "Retry"
+        "retry": "Try again"
       },
       "offline": {
-        "title": "No internet connection",
-        "detail": "Work resumes when the connection returns"
+        "message": "You are offline — this is the last loaded copy, and anything that changes data is disabled until the connection returns."
       },
       "viewOnly": {
         "title": "View only"

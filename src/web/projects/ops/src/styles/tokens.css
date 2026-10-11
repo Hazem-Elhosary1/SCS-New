@@ -17,11 +17,14 @@
   --scs-color-bg-canvas: #f8fafb;
   --scs-color-bg-surface-secondary: #f3f4f6;
   --scs-color-border-default: #e5e7eb;
+  --scs-color-border-subtle: #f1f4f6;
+  --scs-color-bg-muted: #f1f4f6;
   --scs-color-icon-default: #374151;
 
   --scs-color-brand-default: #374151;
   --scs-color-brand-active: #111827;
   --scs-color-brand-on-brand: #ffffff;
+  --scs-color-brand-subtle: #f3edfe;
 
   --scs-color-feedback-info-icon: #1d4ed8;
   --scs-color-feedback-info-bg: #eff6ff;

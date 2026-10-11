@@ -22,8 +22,8 @@ test('a person who may change roles sees the page with no notice', async ({ page
   await page.goto(ROLES);
 
   await expect(page.getByTestId('page-title')).toHaveText('الأدوار والصلاحيات');
-  await expect(page.getByTestId('roles-not-yet')).toBeVisible();
-  await expect(page.getByTestId('roles-not-yet')).toHaveAttribute('data-roles', '3');
+  await expect(page.getByTestId('roles-ready')).toBeVisible();
+  await expect(page.getByTestId('role-row')).toHaveCount(3);
   await expect(page.getByTestId('view-only')).toHaveCount(0);
   await expect(page.getByTestId('no-access')).toHaveCount(0);
   expect(platform.calls).toContain('GET /v1/roles');
@@ -41,10 +41,10 @@ test('a person who may read roles and not change them sees «للعرض فقط»
   await expect(notice.getByTestId('banner-title')).toHaveText('للعرض فقط');
   await expect(notice).toContainText('التعديل يحتاج صلاحية «إدارة الأدوار والصلاحيات».');
   await expect(notice).toHaveAttribute('role', 'status');
-  await expect(page.getByTestId('roles-not-yet')).toBeVisible();
+  await expect(page.getByTestId('roles-ready')).toBeVisible();
 
   // Nothing on the page changes anything: no button, no link that acts.
-  await expect(page.locator('main button, [data-testid="roles-not-yet"] button')).toHaveCount(0);
+  await expect(page.locator('main button')).toHaveCount(0);
   await expect(page.locator('button:disabled')).toHaveCount(0);
 });
 
@@ -66,7 +66,7 @@ test('a person whose role does not open the page is told so, and nothing of the 
     'تُفتح لمن يملك «عرض الأدوار والصلاحيات»، ودورك «فريق العيادة» لا يحملها. وما يلزم منها يُطلب ممن يدير الأدوار والصلاحيات في العيادة.',
   );
   await expect(page.getByTestId('page-note')).toContainText('دورٌ لا يحمل «عرض الأدوار والصلاحيات»');
-  await expect(page.getByTestId('roles-not-yet')).toHaveCount(0);
+  await expect(page.getByTestId('roles-ready')).toHaveCount(0);
   await expect(page.getByTestId('view-only')).toHaveCount(0);
   expect(platform.calls).not.toContain('GET /v1/roles');
 });
@@ -107,7 +107,7 @@ test('when the platform refuses under a list that has gone stale, the page gives
   await expect(page).toHaveURL(ROLES);
   await expect(page.getByTestId('no-access-text')).toContainText('«عرض الأدوار والصلاحيات»');
   await expect(page.getByTestId('no-access-text')).toContainText('«طبيب»');
-  await expect(page.getByTestId('roles-not-yet')).toHaveCount(0);
+  await expect(page.getByTestId('roles-ready')).toHaveCount(0);
 
   // Asked once for the roles, refused, then asked who is signed in again — and not for the roles again.
   expect(platform.calls.filter((call) => call === 'GET /v1/roles').length).toBe(1);

@@ -3,6 +3,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { LanguageService } from 'core';
 import { ScsLinkDirective } from '../controls/controls';
 import { ScsIconComponent } from '../icon/icon.component';
+import { ScsLanguageToggleComponent } from '../list/list';
 
 /**
  * The frame every sign-in screen shares (BRD B-5; design file, page "Sign in"): the
@@ -14,13 +15,13 @@ import { ScsIconComponent } from '../icon/icon.component';
  */
 @Component({
   selector: 'scs-auth-frame',
-  imports: [TranslocoPipe, ScsLinkDirective, ScsIconComponent],
+  imports: [TranslocoPipe, ScsLinkDirective, ScsIconComponent, ScsLanguageToggleComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
       display: grid;
       grid-template-columns: minmax(0, 820fr) minmax(0, 620fr);
-      min-block-size: 100dvh;
+      min-block-size: calc(100dvh - var(--scs-env-strip, 0px));
       background: var(--scs-color-bg-surface);
     }
     .form-panel {
@@ -32,44 +33,6 @@ import { ScsIconComponent } from '../icon/icon.component';
       display: flex;
       justify-content: flex-start;
       min-block-size: 32px;
-    }
-    .toggle {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--scs-spacing-2, 2px);
-      padding: var(--scs-spacing-2, 2px);
-      border-radius: var(--scs-radius-full);
-      background: var(--scs-color-bg-surface-secondary);
-    }
-    .segment {
-      display: inline-grid;
-      place-items: center;
-      min-inline-size: 40px;
-      block-size: 28px;
-      padding: 0 var(--scs-spacing-10);
-      border: 0;
-      border-radius: var(--scs-radius-full);
-      background: none;
-      color: var(--scs-color-text-secondary);
-      font: inherit;
-      font-size: var(--scs-text-label);
-      font-weight: 600;
-      line-height: 1;
-    }
-    button.segment {
-      cursor: pointer;
-    }
-    button.segment:hover {
-      color: var(--scs-color-text-primary);
-    }
-    button.segment:focus-visible {
-      outline: 2px solid var(--scs-color-brand-default);
-      outline-offset: 1px;
-    }
-    .segment.on {
-      background: var(--scs-color-bg-surface);
-      color: var(--scs-color-text-primary);
-      box-shadow: var(--scs-shadow-subtle);
     }
     .middle {
       flex: 1;
@@ -161,31 +124,11 @@ import { ScsIconComponent } from '../icon/icon.component';
   template: `
     <div class="form-panel" data-testid="auth-form-panel">
       <div class="top">
-        <!-- Each language is named in itself, in the same place whichever is showing. -->
-        <div
-          class="toggle"
-          dir="ltr"
-          role="group"
-          [attr.aria-label]="'ui.language.switch.label' | transloco"
-        >
-          @for (choice of choices; track choice.code) {
-            @if (language.language() === choice.code) {
-              <span class="segment on" aria-current="true" [attr.lang]="choice.code">{{
-                choice.label
-              }}</span>
-            } @else {
-              <button
-                type="button"
-                class="segment"
-                data-testid="language-switch"
-                [attr.lang]="choice.code"
-                (click)="language.toggle()"
-              >
-                {{ choice.label }}
-              </button>
-            }
-          }
-        </div>
+        <scs-language-toggle
+          [current]="language.language()"
+          [label]="'ui.language.switch.label' | transloco"
+          (chosen)="language.use($event)"
+        />
       </div>
 
       <main class="middle">
@@ -219,12 +162,6 @@ export class ScsAuthFrameComponent {
 
   /** The product's mark: the letter the Arabic word for "clinic" begins with. */
   protected readonly mark = 'ع';
-
-  /** Not translated: a language is always named in its own words. */
-  protected readonly choices = [
-    { code: 'ar', label: 'عربي' },
-    { code: 'en', label: 'EN' },
-  ] as const;
 
   /** The help link in the footer was pressed. */
   readonly help = output<void>();

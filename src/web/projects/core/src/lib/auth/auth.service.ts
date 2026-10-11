@@ -17,6 +17,15 @@ export interface StaffSession {
   readonly role?: StaffRole | null;
   /** The codes the person holds at this moment, in catalogue order. The platform decides again on every request. */
   readonly permissions?: readonly string[];
+  /** What the person keeps between sessions (spec 006). */
+  readonly preferences?: StaffPreferences;
+}
+
+export interface StaffPreferences {
+  readonly language: 'ar' | 'en' | null;
+  readonly sidebarFolded: boolean | null;
+  /** The subscription banner state the person closed today, or null. */
+  readonly dismissedBanner: 'trial' | 'expiring' | 'grace' | null;
 }
 
 export interface StaffRole {

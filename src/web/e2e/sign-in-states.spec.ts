@@ -194,7 +194,7 @@ const states: State[] = [
       // Hold the way inside, so the accepted state stays on screen.
       await page.route('**/v1/meta/version', () => undefined);
       await atCode(page);
-      await page.addStyleTag({ content: 'app-landing-page { display: none !important; }' });
+      await page.addStyleTag({ content: 'app-shell { display: none !important; }' });
       await typeCode(page, '123456');
       await page.evaluate(() => {
         const push = history.pushState.bind(history);

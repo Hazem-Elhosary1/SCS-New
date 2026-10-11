@@ -165,6 +165,35 @@ public sealed class ReadyRolesTests(SqlServerFixture sql)
         Assert.Equal(HttpStatusCode.Unauthorized, unauthenticated.StatusCode);
     }
 
+    [Fact]
+    public async Task Every_role_says_how_many_accounts_of_the_clinic_hold_it()
+    {
+        // Spec 006, FR-038: the roles list shows the holders of each role.
+        using var world = await RefusalWorld.CreateAsync(sql);
+        var other = await sql.Main.SeedClinicAsync();
+        var doctor = await world.Factory.ReadyRoleAsync(world.Clinic, "doctor");
+        var theirs = await world.Factory.ReadyRoleAsync(other, "doctor");
+        using var owner = await world.Factory.SignInAsOwnerAsync(world.Clinic);
+
+        var (active, _) = await world.Factory.CreateAccountAsync(world.Clinic);
+        var (disabled, _) = await world.Factory.CreateAccountAsync(world.Clinic, Scs.Identity.Contracts.StaffAccountStates.Disabled);
+        var (stranger, _) = await world.Factory.CreateAccountAsync(other);
+        await world.Factory.RolesAsync(world.Clinic, r => r.AssignAsync(active, doctor, default));
+        await world.Factory.RolesAsync(world.Clinic, r => r.AssignAsync(disabled, doctor, default));
+        await world.Factory.RolesAsync(other, r => r.AssignAsync(stranger, theirs, default));
+
+        using var served = await owner.Browser.GetAsync(new Uri("/v1/roles", UriKind.Relative));
+        var (_, _, body) = await served.ReadAsync();
+        var holders = body.GetProperty("roles").EnumerateArray()
+            .ToDictionary(r => r.GetProperty("readyKey").GetString()!, r => r.GetProperty("holders").GetInt32());
+
+        // The owner who is asking; nobody as manager; two doctors, one of them disabled — and
+        // never the other clinic's doctor.
+        Assert.Equal(1, holders["owner"]);
+        Assert.Equal(0, holders["manager"]);
+        Assert.Equal(2, holders["doctor"]);
+    }
+
     private sealed class FailingOnce : IClinicProvisioner
     {
         private int _calls;

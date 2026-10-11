@@ -23,6 +23,7 @@ gates too; an unknown code also stops the application from starting.
 
 - `GET /v1/auth/session`
 - `POST /v1/auth/password/change`
+- `PUT /v1/account/preferences` (spec 006: what a person keeps between sessions)
 
 ## 2. What a refused person gets
 

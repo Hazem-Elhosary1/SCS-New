@@ -34,6 +34,8 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
 
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
 
+    public DbSet<StaffPreference> Preferences => Set<StaffPreference>();
+
     /// <summary>Platform-wide and insert-only for the application.</summary>
     public DbSet<AnonymousSignInAttempt> AnonymousAttempts => Set<AnonymousSignInAttempt>();
 
@@ -228,6 +230,31 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
             builder.HasIndex(r => r.ClinicId)
                 .HasFilter("[HandledAtUtc] IS NULL")
                 .HasDatabaseName("IX_AccountEmailRequest_Waiting");
+        });
+
+        modelBuilder.Entity<StaffPreference>(builder =>
+        {
+            builder.ToTable("StaffPreference", table =>
+            {
+                table.HasCheckConstraint("CK_StaffPreference_Language", "[Language] IS NULL OR [Language] IN ('ar', 'en')");
+
+                // The read-only banner cannot be closed, so it is never stored as closed.
+                table.HasCheckConstraint(
+                    "CK_StaffPreference_Banner",
+                    "[DismissedBanner] IS NULL OR [DismissedBanner] IN ('trial', 'expiring', 'grace')");
+                table.HasCheckConstraint(
+                    "CK_StaffPreference_BannerWithItsDay",
+                    "([DismissedBanner] IS NULL AND [DismissedOnDay] IS NULL) OR ([DismissedBanner] IS NOT NULL AND [DismissedOnDay] IS NOT NULL)");
+            });
+
+            builder.HasKey(p => p.AccountId);
+            builder.Property(p => p.AccountId).ValueGeneratedNever();
+            builder.Property(p => p.Language).HasMaxLength(2).IsUnicode(false);
+            builder.Property(p => p.DismissedBanner).HasMaxLength(8).IsUnicode(false);
+            builder.Property(p => p.DismissedOnDay).HasColumnType("date");
+            builder.Property(p => p.UpdatedAtUtc).HasColumnType("datetimeoffset").IsRequired();
+            builder.HasOne<StaffAccount>().WithOne().HasForeignKey<StaffPreference>(p => p.AccountId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasIndex(p => p.ClinicId);
         });
 
         modelBuilder.Entity<AnonymousSignInAttempt>(builder =>

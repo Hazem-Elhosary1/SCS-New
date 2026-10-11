@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import {
   CLINIC,
   passwordRefused,
+  signOut,
   staffPlatform,
   submitSignIn,
   typeCode,
@@ -74,7 +75,7 @@ test('both sign-in steps lead to the temporary-password screen, and nowhere else
   await expect(page).toHaveURL(`${CLINIC}/`);
 
   // And the next sign-in asks for nothing.
-  await page.getByTestId('sign-out').click();
+  await signOut(page);
   await submitSignIn(page, 'owner@noor.example', NEW);
   await typeCode(page, '123456');
   await page.getByTestId('code-submit').click();

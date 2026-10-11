@@ -508,6 +508,47 @@ namespace Scs.Identity.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Scs.Identity.Domain.StaffPreference", b =>
+                {
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ClinicId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("DismissedBanner")
+                        .HasMaxLength(8)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(8)");
+
+                    b.Property<DateOnly?>("DismissedOnDay")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Language")
+                        .HasMaxLength(2)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(2)");
+
+                    b.Property<bool?>("SidebarFolded")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("AccountId");
+
+                    b.HasIndex("ClinicId");
+
+                    b.ToTable("StaffPreference", "identity", t =>
+                        {
+                            t.HasCheckConstraint("CK_StaffPreference_Banner", "[DismissedBanner] IS NULL OR [DismissedBanner] IN ('trial', 'expiring', 'grace')");
+
+                            t.HasCheckConstraint("CK_StaffPreference_BannerWithItsDay", "([DismissedBanner] IS NULL AND [DismissedOnDay] IS NULL) OR ([DismissedBanner] IS NOT NULL AND [DismissedOnDay] IS NOT NULL)");
+
+                            t.HasCheckConstraint("CK_StaffPreference_Language", "[Language] IS NULL OR [Language] IN ('ar', 'en')");
+                        });
+                });
+
             modelBuilder.Entity("Scs.Identity.Domain.AccountEmailRequest", b =>
                 {
                     b.HasOne("Scs.Identity.Domain.StaffAccount", null)
@@ -559,6 +600,15 @@ namespace Scs.Identity.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("Scs.Identity.Domain.StaffPreference", b =>
+                {
+                    b.HasOne("Scs.Identity.Domain.StaffAccount", null)
+                        .WithOne()
+                        .HasForeignKey("Scs.Identity.Domain.StaffPreference", "AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Scs.Identity.Domain.Role", b =>

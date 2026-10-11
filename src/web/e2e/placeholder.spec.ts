@@ -6,7 +6,7 @@ import { Page, Route, expect, test } from '@playwright/test';
  * platform's own message and reference when a request fails.
  */
 const apps = [
-  { name: 'clinic', url: 'http://localhost:4201/', ar: 'لوحة العيادة', en: 'Clinic console' },
+  { name: 'clinic', url: 'http://localhost:4201/dev/platform', ar: 'لوحة العيادة', en: 'Clinic console' },
   // The patient site is served under a clinic's path.
   { name: 'patient', url: 'http://localhost:4202/noor', ar: 'واجهات المريض', en: 'Patient pages' },
   { name: 'ops', url: 'http://localhost:4203/', ar: 'لوحة المشغّلين', en: 'Operators console' },
@@ -114,7 +114,7 @@ async function open(page: Page, url: string, language: 'ar' | 'en'): Promise<voi
   await page.goto(url);
   await expect(page.getByTestId('placeholder')).toBeVisible();
   if (language === 'en') {
-    await page.getByTestId('language-switch').click();
+    await page.getByTestId('placeholder').getByTestId('language-switch').click();
   }
   await expect(page.locator('html')).toHaveAttribute('lang', language);
 }
@@ -160,11 +160,16 @@ for (const app of apps) {
           await page.getByTestId(`force-${state}`).click();
           const forced = page.getByTestId('forced-state');
           await expect(forced).toHaveAttribute('data-state', state);
-          await expect(forced.locator('.title')).not.toBeEmpty();
+          // Loading, empty and error are the shared parts of lists (spec 006): one look per state.
+          if (state === 'loading') {
+            await expect(forced.locator('scs-skeleton')).toBeVisible();
+          } else {
+            await expect(forced.locator('.title, [data-testid="empty-title"], [data-testid="offline-alert"]')).not.toBeEmpty();
+          }
         }
 
         await page.getByTestId('force-not-in-plan').click();
-        await expect(page.getByTestId('forced-state').locator('.title')).toHaveText(
+        await expect(page.getByTestId('forced-state').getByTestId('empty-title')).toHaveText(
           language === 'ar' ? 'غير مشمولة في باقتك' : 'Not included in your plan',
         );
       });
@@ -195,7 +200,7 @@ for (const app of apps) {
 
         const error = page.getByTestId('platform-unreachable');
         await expect(error).toHaveAttribute('data-state', 'error');
-        await expect(error.getByTestId('state-message')).toHaveText(title);
+        await expect(error.getByTestId('empty-title')).toHaveText(title);
         await expect(error.getByTestId('state-reference')).toHaveText(TRACE);
         expect(sentLanguage).toBe(language);
       });
@@ -236,9 +241,9 @@ test('switching language keeps the page: no reload', async ({ page }) => {
   await expect(page.getByTestId('platform-reachable')).toBeVisible();
   await page.evaluate(() => ((window as unknown as { marker: string }).marker = 'still here'));
 
-  await page.getByTestId('language-switch').click();
+  await page.getByTestId('placeholder').getByTestId('language-switch').click();
   await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
-  await page.getByTestId('language-switch').click();
+  await page.getByTestId('placeholder').getByTestId('language-switch').click();
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
 
   expect(await page.evaluate(() => (window as unknown as { marker: string }).marker)).toBe(
@@ -249,7 +254,7 @@ test('switching language keeps the page: no reload', async ({ page }) => {
 test('the chosen language is remembered on the next visit', async ({ page }) => {
   await platform(page, healthy);
   await page.goto(apps[0].url);
-  await page.getByTestId('language-switch').click();
+  await page.getByTestId('placeholder').getByTestId('language-switch').click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 
   await page.reload();

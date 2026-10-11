@@ -39,7 +39,7 @@ The script does seven things, in order:
 3. starts a mail catcher in a container: every email the platform sends locally lands in its
    inbox at <http://localhost:8025> and goes nowhere else;
 4. applies the database structure with the migrator;
-5. registers two made-up clinics, `noor` and `shifa`, and six made-up staff accounts, if they
+5. registers two made-up clinics, `noor` and `shifa`, and eight made-up staff accounts, if they
    are not there;
 6. starts the platform API on port 5080;
 7. installs the front-end packages if needed and starts the three apps.
@@ -100,12 +100,41 @@ these to see the three things the address can show:
 |---|---|---|
 | `owner@noor.example`, `owner@shifa.example` | «مالك العيادة» (every permission) | the page, with no notice |
 | `doctor@shifa.example` | «طبيب» (may read roles, not change them) | «للعرض فقط» above the page |
-| `reception@noor.example` | «فريق العيادة», a custom role | «هذه الصفحة ليست في دورك» |
+| `reception@noor.example`, `reception@shifa.example` | «فريق العيادة», a custom role | «هذه الصفحة ليست في دورك» |
 | `temp@noor.example`, `new@shifa.example` | «مدير العيادة» | the page, once the password is their own |
 
-The page itself says "not available yet" until spec 027. A change to what a role holds is seen
+The page lists the clinic's roles for reading — each with its holders and how much of the
+catalogue it carries; creating and editing them is spec 027. A change to what a role holds is seen
 on the holder's next request; no one signs in again. The seed gives a role only to a seeded
 account that has none, so a role you changed by hand is kept.
+
+### The console's frame (spec 006)
+
+After sign-in every page is inside one frame: the top bar (clinic, language, bell, account), the
+side bar, and a strip across the top saying the data is not real (never shown in production).
+
+| Signed in as | The side bar shows |
+|---|---|
+| an owner | every destination: الرئيسية … الإعدادات, with التقارير, الإدارة and إدارة البيانات opening to their pages |
+| `doctor@shifa.example` | what «طبيب» may open |
+| `reception@noor.example`, `reception@shifa.example` | الرئيسية, الحجوزات, المرضى, الفواتير والتحصيل |
+
+A destination whose page is not built yet says "not available yet" inside the frame. The
+language and the folded side bar are kept for the person, on any browser. The chip shows the
+email until accounts have names (spec 026).
+
+Two addresses exist outside production only:
+
+- <http://localhost:4201/dev/sample-list> — a list of made-up rows showing every rule of lists:
+  search, filter, chips, tabs, paging, the row menu, the confirmation and the passing notice.
+  Add `?state=loading`, `?state=empty` or `?state=error` to see a state, `?as=viewer` to see
+  it with the view alone.
+- <http://localhost:4201/dev/platform> — the platform-status panel of spec 001.
+
+The bell, the branch switch and the subscription banner have no data until their specs. Their
+filled states are shown by the browser tests, which give the frame sample data before it starts
+(`sampleSources` in `src/web/e2e/staff-platform.ts`): `SCS_SHOTS=<folder> npx playwright test
+shell-states` saves a picture of every state in both languages.
 
 After changing the permission catalogue (`src/server/shared/Scs.SharedKernel/Access`), write
 the file the web sites read, or `CatalogueFileTests` fails:
