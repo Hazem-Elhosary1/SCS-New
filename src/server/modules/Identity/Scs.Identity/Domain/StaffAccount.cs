@@ -16,8 +16,8 @@ public static class AccountStates
 }
 
 /// <summary>
-/// A member of a clinic's team, as far as signing in is concerned. Name, role and branch arrive
-/// with specs 005 and 026. Clinic-owned: with no clinic established it is invisible, which is
+/// A member of a clinic's team, as far as signing in is concerned, and the role they hold. Name
+/// and branch arrive with spec 026. Clinic-owned: with no clinic established it is invisible, which is
 /// why finding it before sign-in goes through the one declared lookup.
 /// </summary>
 public sealed class StaffAccount : IClinicOwned
@@ -62,6 +62,12 @@ public sealed class StaffAccount : IClinicOwned
 
     /// <summary>Until when a temporary password is accepted at sign-in. Null unless <see cref="MustChangePassword"/>.</summary>
     public DateTimeOffset? TemporaryPasswordExpiresAtUtc { get; private set; }
+
+    /// <summary>
+    /// The one role the account holds (spec 005). Null is "no role": the account then holds no
+    /// permission and reaches only what any signed-in person reaches.
+    /// </summary>
+    public Guid? RoleId { get; private set; }
 
     public DateTimeOffset CreatedAtUtc { get; private set; }
 
@@ -115,6 +121,9 @@ public sealed class StaffAccount : IClinicOwned
     }
 
     public void ReplacePasswordHash(string passwordHash) => PasswordHash = passwordHash;
+
+    /// <summary>Gives the account a role. Ending its sessions is the caller's to do, in the same transaction (SH-045).</summary>
+    public void AssignRole(Guid roleId) => RoleId = roleId;
 
     /// <summary>
     /// Sets a password by any of the routes of spec 004. An invited account becomes active; a

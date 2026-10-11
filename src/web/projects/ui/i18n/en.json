@@ -93,6 +93,18 @@
       "met": "met",
       "unmet": "not met",
       "summary": "Rules not met: {{ count }}"
+    },
+    "access": {
+      "noAccess": {
+        "title": "This page is not in your role",
+        "text": "It opens for holders of “{{ permission }}”, and your role “{{ role }}” does not carry it. Whatever is needed from it is requested from whoever manages roles & permissions in the clinic.",
+        "textNoRole": "It opens for holders of “{{ permission }}”, and your account does not hold a role yet. Whatever is needed from it is requested from whoever manages roles & permissions in the clinic."
+      },
+      "role": {
+        "owner": "Clinic owner",
+        "manager": "Clinic manager",
+        "doctor": "Doctor"
+      }
     }
   }
 }

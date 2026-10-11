@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
+import { ScsBannerComponent } from '../controls/controls';
 
 /** The six non-content states every screen has (SH-097, contracts/frontend-runtime.md §5). */
 export type ScsState = 'loading' | 'empty' | 'error' | 'offline' | 'view-only' | 'not-in-plan';
@@ -20,11 +21,13 @@ export const SCS_STATES: readonly ScsState[] = [
  *
  * - `error`: pass the platform's `title` as `message` and its `traceId` as `reference`.
  * - `view-only`: project the content; it is shown under the notice, without action controls.
+ *   Pass as `message` the line that names the permission changing needs (spec 005, FR-030):
+ *   the notice is the one of the design frame "Roles List Read Only", and the only one.
  * - `not-in-plan`: project the upgrade path with the attribute `scsUpgrade`.
  */
 @Component({
   selector: 'scs-state',
-  imports: [TranslocoPipe],
+  imports: [TranslocoPipe, ScsBannerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[attr.data-state]': 'state()' },
   styles: `
@@ -64,6 +67,9 @@ export const SCS_STATES: readonly ScsState[] = [
     .info {
       border-color: var(--scs-color-feedback-info-border);
       background: var(--scs-color-feedback-info-bg);
+    }
+    .notice {
+      margin-block-end: var(--scs-spacing-md);
     }
     .action {
       padding: var(--scs-spacing-6) var(--scs-spacing-md);
@@ -136,9 +142,16 @@ export const SCS_STATES: readonly ScsState[] = [
         </div>
       }
       @case ('view-only') {
-        <div class="panel info" role="note">
-          <p class="title">{{ 'ui.state.viewOnly.title' | transloco }}</p>
-        </div>
+        <scs-banner
+          tone="info"
+          class="notice"
+          data-testid="view-only"
+          [title]="'ui.state.viewOnly.title' | transloco"
+        >
+          @if (message()) {
+            <span class="line">{{ message() }}</span>
+          }
+        </scs-banner>
         <ng-content />
       }
       @case ('not-in-plan') {
@@ -153,7 +166,10 @@ export const SCS_STATES: readonly ScsState[] = [
 export class ScsStateComponent {
   readonly state = input.required<ScsState>();
 
-  /** Text to show instead of the default; for `error`, the platform's own `title`. */
+  /**
+   * Text to show instead of the default; for `error`, the platform's own `title`; for
+   * `view-only`, the line under the title. Already translated.
+   */
   readonly message = input<string>('');
 
   /** The request reference (`traceId`) shown with an error. */

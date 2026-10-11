@@ -150,6 +150,105 @@ namespace Scs.Identity.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Scs.Identity.Domain.Role", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(8)");
+
+                    b.Property<Guid>("ClinicId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("CreatedByAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("HoldsEverything")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("IsRenamed")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("ReadyKey")
+                        .HasMaxLength(8)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(8)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("UpdatedByAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClinicId", "Name")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Role_NameInClinic");
+
+                    b.HasIndex("ClinicId", "ReadyKey")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Role_OneOfEachReadyRole")
+                        .HasFilter("[ReadyKey] IS NOT NULL");
+
+                    b.ToTable("Role", "identity", t =>
+                        {
+                            t.HasCheckConstraint("CK_Role_Category", "[Category] IN ('ready', 'custom')");
+
+                            t.HasCheckConstraint("CK_Role_NameNotBlank", "LEN(LTRIM(RTRIM([Name]))) > 0");
+
+                            t.HasCheckConstraint("CK_Role_OnlyOwnerHoldsEverything", "([HoldsEverything] = 1 AND [ReadyKey] = 'owner') OR ([HoldsEverything] = 0 AND ([ReadyKey] IS NULL OR [ReadyKey] <> 'owner'))");
+
+                            t.HasCheckConstraint("CK_Role_ReadyKey", "([Category] = 'ready' AND [ReadyKey] IN ('owner', 'manager', 'doctor')) OR ([Category] = 'custom' AND [ReadyKey] IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("Scs.Identity.Domain.RolePermission", b =>
+                {
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<Guid>("ClinicId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("RoleId", "Code");
+
+                    b.HasIndex("ClinicId");
+
+                    b.ToTable("RolePermission", "identity");
+                });
+
             modelBuilder.Entity("Scs.Identity.Domain.Session", b =>
                 {
                     b.Property<Guid>("Id")
@@ -361,6 +460,9 @@ namespace Scs.Identity.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<Guid?>("RoleId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
@@ -388,6 +490,11 @@ namespace Scs.Identity.Infrastructure.Migrations
                     b.HasIndex("Email")
                         .IsUnique()
                         .HasDatabaseName("UX_StaffAccount_Email");
+
+                    b.HasIndex("RoleId");
+
+                    b.HasIndex("ClinicId", "RoleId")
+                        .HasDatabaseName("IX_StaffAccount_Role");
 
                     b.ToTable("StaffAccount", "identity", t =>
                         {
@@ -419,6 +526,15 @@ namespace Scs.Identity.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Scs.Identity.Domain.RolePermission", b =>
+                {
+                    b.HasOne("Scs.Identity.Domain.Role", null)
+                        .WithMany("Permissions")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Scs.Identity.Domain.Session", b =>
                 {
                     b.HasOne("Scs.Identity.Domain.StaffAccount", null)
@@ -435,6 +551,19 @@ namespace Scs.Identity.Infrastructure.Migrations
                         .HasForeignKey("AccountId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Scs.Identity.Domain.StaffAccount", b =>
+                {
+                    b.HasOne("Scs.Identity.Domain.Role", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("Scs.Identity.Domain.Role", b =>
+                {
+                    b.Navigation("Permissions");
                 });
 #pragma warning restore 612, 618
         }

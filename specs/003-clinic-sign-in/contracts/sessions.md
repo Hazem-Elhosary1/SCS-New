@@ -24,7 +24,8 @@ Inject `ICurrentStaff` (`Scs.Identity.Contracts`):
 | `ClinicId` | The same value as the clinic context |
 
 It throws `UNAUTHENTICATED` when used on an anonymous endpoint. Roles and permissions are not
-here; they arrive with spec 005.
+here: what the person may do is asked of `IStaffAccess`
+(specs/005-permissions-engine/contracts/access-engine.md).
 
 ## 3. Operations later specs call
 

@@ -41,6 +41,11 @@ public static class ErrorMessages
         [ErrorCodes.LinkInvalid] = ("انتهت صلاحية الرابط أو استُعمل", "The link has expired or was already used"),
         [ErrorCodes.PasswordChangeRequired] = ("يلزم تغيير كلمة المرور المؤقتة أولًا", "The temporary password must be changed first"),
         [ErrorCodes.PasswordChangeNotRequired] = ("كلمة المرور ليست مؤقتة", "The password is not a temporary one"),
+        [ErrorCodes.PermissionRequired] = ("هذه الصفحة ليست في دورك", "This page is not in your role"),
+        [ErrorCodes.RoleFixed] = ("هذا الدور ثابت ولا يُعدَّل ولا يُحذف", "This role is fixed; it is not edited or deleted"),
+        [ErrorCodes.RoleInUse] = ("لا يُحذف دور يحمله مستخدمون", "A role that users hold is not deleted"),
+        [ErrorCodes.LastOwner] = ("لا تبقى العيادة بلا مالك", "A clinic is not left without an owner"),
+        [ErrorCodes.OwnRole] = ("لا يغيّر أحد دور حسابه", "Nobody changes the role of their own account"),
     };
 
     public static string Title(string code, string language)

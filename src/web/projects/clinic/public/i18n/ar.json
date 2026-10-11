@@ -114,6 +114,15 @@
         "signOut": "تسجيل الخروج"
       },
       "retry": "إعادة المحاولة"
+    },
+    "administration": {
+      "breadcrumb": "الإدارة",
+      "roles": {
+        "title": "الأدوار والصلاحيات",
+        "viewOnly": "التعديل يحتاج صلاحية «{{ permission }}».",
+        "noAccessNote": "دورٌ لا يحمل «{{ permission }}»",
+        "noRoleNote": "حساب لا يحمل دورًا"
+      }
     }
   }
 }

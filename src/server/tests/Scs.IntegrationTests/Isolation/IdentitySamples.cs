@@ -164,3 +164,55 @@ public sealed class AccountEmailRequestSample : IIsolationSample
         await command.ExecuteNonQueryAsync();
     }
 }
+
+/// <summary>Rows for the role tables of spec 005.</summary>
+internal static class RoleRows
+{
+    /// <summary>Inserts a custom role for the clinic and returns its id. The name is unique per call.</summary>
+    public static async Task<Guid> InsertRoleAsync(SqlConnection connection, Guid clinicId)
+    {
+        var id = Guid.CreateVersion7();
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            INSERT INTO [identity].Role (Id, ClinicId, Name, Category, IsRenamed, HoldsEverything, CreatedAtUtc)
+            VALUES (@id, @clinic, @name, 'custom', 1, 0, SYSDATETIMEOFFSET())
+            """;
+        command.Parameters.AddWithValue("@id", id);
+        command.Parameters.AddWithValue("@clinic", clinicId);
+        command.Parameters.AddWithValue("@name", $"sample-{id:N}");
+        await command.ExecuteNonQueryAsync();
+        return id;
+    }
+}
+
+public sealed class RoleSample : IIsolationSample
+{
+    public Type EntityType => typeof(Role);
+
+    public string Table => "[identity].Role";
+
+    public string HarmlessChange => "Description = Description";
+
+    public Task InsertAsync(SqlConnection connection, Guid clinicId) => RoleRows.InsertRoleAsync(connection, clinicId);
+}
+
+public sealed class RolePermissionSample : IIsolationSample
+{
+    public Type EntityType => typeof(RolePermission);
+
+    public string Table => "[identity].RolePermission";
+
+    public string HarmlessChange => "Code = Code";
+
+    public async Task InsertAsync(SqlConnection connection, Guid clinicId)
+    {
+        var role = await RoleRows.InsertRoleAsync(connection, clinicId);
+        await using var command = connection.CreateCommand();
+        command.CommandText =
+            "INSERT INTO [identity].RolePermission (RoleId, Code, ClinicId) VALUES (@role, 'bookings.view', @clinic)";
+        command.Parameters.AddWithValue("@role", role);
+        command.Parameters.AddWithValue("@clinic", clinicId);
+        await command.ExecuteNonQueryAsync();
+    }
+}

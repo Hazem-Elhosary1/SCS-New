@@ -183,6 +183,24 @@ public sealed class TestDatabase(string serverConnection, string name)
         return value is null or DBNull ? default : (T)value;
     }
 
+    /// <summary>The first column of every row, as text.</summary>
+    public static async Task<List<string>> ReadColumnAsync(string connectionString, string sql)
+    {
+        await using var connection = await OpenAsync(connectionString);
+        await using var command = connection.CreateCommand();
+#pragma warning disable CA2100 // Test code with fixed statements.
+        command.CommandText = sql;
+#pragma warning restore CA2100
+        var values = new List<string>();
+        await using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            values.Add(Convert.ToString(reader.GetValue(0), System.Globalization.CultureInfo.InvariantCulture)!);
+        }
+
+        return values;
+    }
+
     /// <summary>Runs a statement and returns the number of rows it affected.</summary>
     public static async Task<int> ExecuteAsync(string connectionString, string sql, Guid? clinicId = null)
     {

@@ -14,6 +14,7 @@
 
   /* Colour: surfaces and borders */
   --scs-color-bg-surface: #ffffff;
+  --scs-color-bg-canvas: #f8fafb;
   --scs-color-bg-surface-secondary: #f1f4f6;
   --scs-color-border-default: #e3e8ec;
   --scs-color-icon-default: #414c54;
@@ -51,6 +52,7 @@
   --scs-text-body-lg: 15px;
   --scs-text-heading-sm: 16px;
   --scs-text-title-sm: 20px;
+  --scs-text-title: 22px;
   --scs-text-display-sm: 26px;
   --scs-text-display: 34px;
 
@@ -64,6 +66,7 @@
   --scs-spacing-md: 16px;
   --scs-spacing-20: 20px;
   --scs-spacing-lg: 24px;
+  --scs-spacing-xl: 32px;
   --scs-spacing-40: 40px;
   --scs-spacing-3xl: 64px;
 

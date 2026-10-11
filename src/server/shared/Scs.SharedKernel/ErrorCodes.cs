@@ -73,6 +73,24 @@ public static class ErrorCodes
     /// <summary>The account holds no temporary password, so there is nothing to replace here.</summary>
     public const string PasswordChangeNotRequired = "PASSWORD_CHANGE_NOT_REQUIRED";
 
+    /// <summary>
+    /// The person's role does not hold the permission the route needs (spec 005). Carries
+    /// <c>permission</c>, the code needed; says nothing about any record.
+    /// </summary>
+    public const string PermissionRequired = "PERMISSION_REQUIRED";
+
+    /// <summary>«مالك العيادة» is never edited, renamed or removed.</summary>
+    public const string RoleFixed = "ROLE_FIXED";
+
+    /// <summary>A role an account holds is not removed; carries <c>holders</c>.</summary>
+    public const string RoleInUse = "ROLE_IN_USE";
+
+    /// <summary>A clinic is never left without an owner (SH-053).</summary>
+    public const string LastOwner = "LAST_OWNER";
+
+    /// <summary>Nobody changes the role of their own account (SH-053).</summary>
+    public const string OwnRole = "OWN_ROLE";
+
     public static IReadOnlyList<string> All { get; } =
     [
         ValidationFailed, MalformedRequest, Unauthenticated, Forbidden, NotFound,
@@ -82,5 +100,6 @@ public static class ErrorCodes
         AccountLocked, AccountDisabled, ClinicSuspended, NetworkBlocked,
         ResendTooEarly, ResendLimitReached, SignInCodeNotSent, SignInCodeNotResent,
         LinkInvalid, PasswordChangeRequired, PasswordChangeNotRequired,
+        PermissionRequired, RoleFixed, RoleInUse, LastOwner, OwnRole,
     ];
 }

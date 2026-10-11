@@ -11,3 +11,4 @@ export * from './lib/dialog/dialog.component';
 export * from './lib/field/text-field.component';
 export * from './lib/password-rules/password-rules.component';
 export * from './lib/icon/icon.component';
+export * from './lib/no-access/no-access.component';

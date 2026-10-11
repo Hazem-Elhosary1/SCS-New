@@ -80,6 +80,75 @@ public class IdentityRulesTests
         Assert.True(offenders.Count == 0, "Log an accountId instead, in: " + string.Join(", ", offenders));
     }
 
+    [Fact]
+    public void Only_the_shared_gate_refuses_for_a_missing_permission()
+    {
+        // Spec 005: the permission is checked in one place, before the handler. A module that
+        // answers PERMISSION_REQUIRED itself has put the decision where it can be forgotten.
+        var modules = FindUp("src", "server", "modules");
+        var offenders = Directory
+            .EnumerateFiles(modules, "*.cs", SearchOption.AllDirectories)
+            .Where(file => !InBuildOutput(file))
+            .Where(file => File.ReadAllText(file).Contains("ErrorCodes.PermissionRequired", StringComparison.Ordinal))
+            .Select(file => Path.GetRelativePath(modules, file))
+            .ToList();
+
+        Assert.True(offenders.Count == 0, "Declare the route with Requires(...) instead, in: " + string.Join(", ", offenders));
+    }
+
+    [Fact]
+    public void Roles_are_reached_through_the_identity_contracts_only()
+    {
+        var others = ScsAssemblies.Modules.Where(a => a.GetName().Name != "Scs.Identity");
+
+        var result = Types.InAssemblies(others)
+            .ShouldNot()
+            .HaveDependencyOnAny("Scs.Identity.Domain", "Scs.Identity.Infrastructure")
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, "Use IClinicRoles and IStaffAccess instead, in: " + string.Join(", ", result.FailingTypeNames ?? []));
+    }
+
+    [Fact]
+    public void Open_to_any_signed_in_person_is_declared_only_where_accounts_live()
+    {
+        // OwnAccountOnly() is for what a person does to their own account (spec 005, FR-021):
+        // a module that is not Identity has no such route.
+        var modules = FindUp("src", "server", "modules");
+        var offenders = Directory
+            .EnumerateFiles(modules, "*.cs", SearchOption.AllDirectories)
+            .Where(file => !InBuildOutput(file))
+            .Where(file => !file.Contains($"{Path.DirectorySeparatorChar}Identity{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .Where(file => File.ReadAllText(file).Contains(".OwnAccountOnly()", StringComparison.Ordinal))
+            .Select(file => Path.GetRelativePath(modules, file))
+            .ToList();
+
+        Assert.True(offenders.Count == 0, "Name the permission the route needs instead, in: " + string.Join(", ", offenders));
+    }
+
+    [Fact]
+    public void Nothing_decides_by_the_name_of_a_role()
+    {
+        // A role is a set of permissions and nothing more (SH-050, ق-30): code asks for a
+        // permission, never for «مالك العيادة» or "owner". The roles code itself is the exception.
+        var modules = FindUp("src", "server", "modules");
+        var offenders = Directory
+            .EnumerateFiles(modules, "*.cs", SearchOption.AllDirectories)
+            .Where(file => !InBuildOutput(file) && !file.Contains("Migrations", StringComparison.Ordinal))
+            .Where(file => Path.GetFileName(file) is not ("ClinicRoles.cs" or "Role.cs" or "IdentityModule.cs" or "IdentityDbContext.cs"))
+            .Where(file =>
+            {
+                var text = File.ReadAllText(file);
+                return text.Contains("ReadyRoleKeys.", StringComparison.Ordinal)
+                       || text.Contains("RoleName ==", StringComparison.Ordinal)
+                       || text.Contains("HoldsEverything", StringComparison.Ordinal);
+            })
+            .Select(file => Path.GetRelativePath(modules, file))
+            .ToList();
+
+        Assert.True(offenders.Count == 0, "Ask IStaffAccess for a permission instead, in: " + string.Join(", ", offenders));
+    }
+
     private static bool InBuildOutput(string file) =>
         file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
         || file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal);

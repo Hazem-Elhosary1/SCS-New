@@ -1,12 +1,15 @@
+using System.Collections.Concurrent;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
 using Scs.BuildingBlocks.Errors;
 using Scs.BuildingBlocks.Modules;
+using Scs.BuildingBlocks.Security;
 using Scs.BuildingBlocks.Tenancy;
 using Scs.IntegrationTests.Fixtures.Domain;
 using Scs.SharedKernel;
+using Scs.SharedKernel.Access;
 
 namespace Scs.IntegrationTests.Fixtures;
 
@@ -16,6 +19,25 @@ public sealed class ProbeEndpoints : IEndpointContributor
     public const string InternalDetail = @"C:\srv\app\Secret.cs SELECT * FROM platform.JobHeartbeat";
 
     public sealed record ProbeBody(string Name, int Count);
+
+    /// <summary>How many times the handler of each <c>/probe/needs/&lt;code&gt;</c> route ran.</summary>
+    public static ConcurrentDictionary<string, int> Runs { get; } = new(StringComparer.Ordinal);
+
+    public static SemaphoreSlim SlowEntered { get; } = new(0);
+
+    public static SemaphoreSlim SlowRelease { get; } = new(0);
+
+    /// <summary>The account named in the route is the record's owner; "missing" names no record.</summary>
+    public sealed class ProbeOwnerCheck : IRecordOwnerCheck
+    {
+        public ValueTask<bool> IsOwnerAsync(HttpContext context, CancellationToken cancellation)
+        {
+            ArgumentNullException.ThrowIfNull(context);
+            var named = context.Request.RouteValues["accountId"] as string;
+            var asking = context.User.FindFirst(StaffClaims.AccountId)?.Value;
+            return ValueTask.FromResult(named is not null && named != "missing" && named == asking);
+        }
+    }
 
     /// <summary>A type with classified members, as an application DTO would have.</summary>
     public sealed record ClassifiedCustomer(
@@ -29,8 +51,64 @@ public sealed class ProbeEndpoints : IEndpointContributor
     {
         root.MapGet("/probe/open", () => Results.Ok(new { ok = true })).AllowAnonymous();
 
-        // No authorization metadata at all: must be refused by the fallback policy.
+        // Declares nothing about who may call it: refused with no session by the fallback
+        // policy, and for every signed-in person by the access gate (spec 005, FR-019).
         root.MapGet("/probe/protected", () => Results.Ok(new { ok = true }));
+
+        // One route per permission of the catalogue, counting how often its handler ran: a
+        // refusal must leave the count as it was.
+        foreach (var permission in PermissionCatalogue.All)
+        {
+            var code = permission.Code;
+            root.MapGet($"/probe/needs/{code}", () =>
+                {
+                    Runs.AddOrUpdate(code, 1, (_, ran) => ran + 1);
+                    return Results.Ok(new { code });
+                })
+                .Requires(code);
+        }
+
+        // Needs a permission and names a record; only record 1 exists.
+        root.MapGet("/probe/needs-record/{id}", (string id) => id == "1" ? Results.Ok(new { id }) : Results.NotFound())
+            .Requires(Permissions.PatientsManage);
+
+        // A record that belongs to an account: its owner reaches it without the permission.
+        root.MapGet("/probe/own-record/{accountId}", (string accountId) => Results.Ok(new { accountId }))
+            .RequiresOrOwner<ProbeOwnerCheck>(Permissions.PatientsRecordsView);
+
+        // Role operations run as the signed-in person, as the pages of specs 026 and 027 will.
+        root.MapPost("/probe/assign/{accountId:guid}/{roleId:guid}", async (
+                Guid accountId, Guid roleId, Scs.Identity.Contracts.IClinicRoles roles, CancellationToken cancellation) =>
+            {
+                await roles.AssignAsync(accountId, roleId, cancellation);
+                return Results.NoContent();
+            })
+            .Requires(Permissions.AdminUsersManage);
+
+        root.MapPost("/probe/role-without-view", async (Scs.Identity.Contracts.IClinicRoles roles, CancellationToken cancellation) =>
+            {
+                await roles.CreateAsync("بلا عرض", null, [Permissions.AdminUsersManage], cancellation);
+                return Results.NoContent();
+            })
+            .Requires(Permissions.AdminRolesManage);
+
+        // Passes the gate, says so, and answers only when released: a request under way while
+        // its role is changed.
+        root.MapGet("/probe/slow-collect", async (CancellationToken cancellation) =>
+            {
+                SlowEntered.Release();
+                await SlowRelease.WaitAsync(TimeSpan.FromSeconds(10), cancellation);
+                return Results.Ok(new { ok = true });
+            })
+            .Requires(Permissions.MoneyCollect);
+
+        // Needs a session and no permission: what a guarded route is timed against.
+        root.MapGet("/probe/reach-free", () => Results.Ok(new { ok = true })).OwnAccountOnly();
+
+        // How wide the person asking may see through a view.
+        root.MapGet("/probe/reach/{view}", async (string view, IStaffAccess access, CancellationToken cancellation) =>
+                Results.Ok(new { reach = (await access.ReachOfAsync(view, cancellation)).ToString() }))
+            .OwnAccountOnly();
 
         root.MapGet("/probe/throws", IResult () => throw new InvalidOperationException(InternalDetail))
             .AllowAnonymous();
@@ -80,10 +158,12 @@ public sealed class ProbeEndpoints : IEndpointContributor
                     source = clinic.Source,
                     clinicsVisible = visible,
                 });
-            });
+            })
+            .OwnAccountOnly();
 
         // The same person, on an endpoint of the patient surface: the header must agree.
         root.MapGet("/probe/whoami-patient", (IClinicContext clinic) => Results.Ok(new { clinicId = clinic.ClinicId }))
+            .OwnAccountOnly()
             .ForPatientSurface();
 
         // Logs our own objects every way a developer might, then fails with a message that

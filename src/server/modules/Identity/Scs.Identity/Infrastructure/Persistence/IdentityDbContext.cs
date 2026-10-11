@@ -6,7 +6,7 @@ using Scs.Identity.Domain;
 namespace Scs.Identity.Infrastructure.Persistence;
 
 /// <summary>
-/// Accounts, sign-in codes, sessions, events, password links and waiting emails. All are clinic-owned: with no
+/// Accounts, sign-in codes, sessions, events, password links, waiting emails and roles. All are clinic-owned: with no
 /// clinic established they are invisible, so a request that has not yet found its account's
 /// clinic can read none of them (spec 003, FR-056).
 /// </summary>
@@ -29,6 +29,10 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
     public DbSet<PasswordLink> PasswordLinks => Set<PasswordLink>();
 
     public DbSet<AccountEmailRequest> EmailRequests => Set<AccountEmailRequest>();
+
+    public DbSet<Role> Roles => Set<Role>();
+
+    public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
 
     /// <summary>Platform-wide and insert-only for the application.</summary>
     public DbSet<AnonymousSignInAttempt> AnonymousAttempts => Set<AnonymousSignInAttempt>();
@@ -74,6 +78,54 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
             // clinics whatever row isolation says (FR-003).
             builder.HasIndex(a => a.Email).IsUnique().HasDatabaseName("UX_StaffAccount_Email");
             builder.HasIndex(a => a.ClinicId);
+
+            // A role an account holds cannot be removed (spec 005, FR-013).
+            builder.HasOne<Role>().WithMany().HasForeignKey(a => a.RoleId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasIndex(a => new { a.ClinicId, a.RoleId }).HasDatabaseName("IX_StaffAccount_Role");
+        });
+
+        modelBuilder.Entity<Role>(builder =>
+        {
+            builder.ToTable("Role", table =>
+            {
+                table.HasCheckConstraint("CK_Role_Category", "[Category] IN ('ready', 'custom')");
+                table.HasCheckConstraint(
+                    "CK_Role_ReadyKey",
+                    "([Category] = 'ready' AND [ReadyKey] IN ('owner', 'manager', 'doctor')) OR ([Category] = 'custom' AND [ReadyKey] IS NULL)");
+
+                // Only the owner role holds everything, and it always does.
+                table.HasCheckConstraint(
+                    "CK_Role_OnlyOwnerHoldsEverything",
+                    "([HoldsEverything] = 1 AND [ReadyKey] = 'owner') OR ([HoldsEverything] = 0 AND ([ReadyKey] IS NULL OR [ReadyKey] <> 'owner'))");
+                table.HasCheckConstraint("CK_Role_NameNotBlank", "LEN(LTRIM(RTRIM([Name]))) > 0");
+            });
+
+            builder.HasKey(r => r.Id);
+            builder.Property(r => r.Id).ValueGeneratedNever();
+            builder.Property(r => r.Name).HasMaxLength(Role.NameMaxLength).IsRequired();
+            builder.Property(r => r.Description).HasMaxLength(Role.DescriptionMaxLength);
+            builder.Property(r => r.Category).HasMaxLength(8).IsUnicode(false).IsRequired();
+            builder.Property(r => r.ReadyKey).HasMaxLength(8).IsUnicode(false);
+            builder.Property(r => r.IsRenamed).HasDefaultValue(false);
+            builder.Property(r => r.HoldsEverything).HasDefaultValue(false);
+            builder.Property(r => r.CreatedAtUtc).HasColumnType("datetimeoffset").IsRequired();
+            builder.Property(r => r.UpdatedAtUtc).HasColumnType("datetimeoffset");
+            builder.Property(r => r.RowVersion).IsRowVersion();
+
+            builder.HasIndex(r => new { r.ClinicId, r.Name }).IsUnique().HasDatabaseName("UX_Role_NameInClinic");
+            builder.HasIndex(r => new { r.ClinicId, r.ReadyKey }).IsUnique()
+                .HasFilter("[ReadyKey] IS NOT NULL")
+                .HasDatabaseName("UX_Role_OneOfEachReadyRole");
+
+            builder.HasMany(r => r.Permissions).WithOne().HasForeignKey(p => p.RoleId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<RolePermission>(builder =>
+        {
+            builder.ToTable("RolePermission");
+            builder.HasKey(p => new { p.RoleId, p.Code });
+            builder.Property(p => p.Code).HasMaxLength(RolePermission.CodeMaxLength).IsUnicode(false).IsRequired();
+            builder.HasIndex(p => p.ClinicId);
         });
 
         modelBuilder.Entity<SignInChallenge>(builder =>

@@ -46,7 +46,7 @@ describe('ScsStateComponent', () => {
     for (const state of SCS_STATES) {
       const { element } = render(state);
       expect(element.querySelector('scs-state')?.getAttribute('data-state')).toBe(state);
-      expect(element.querySelector('.panel .title')?.textContent?.trim().length).toBeGreaterThan(0);
+      expect(element.querySelector('.title')?.textContent?.trim().length).toBeGreaterThan(0);
       TestBed.resetTestingModule();
     }
   });
@@ -92,6 +92,30 @@ describe('ScsStateComponent', () => {
     expect(element.querySelector('.title')?.textContent?.trim()).toBe('للعرض فقط');
     expect(element.querySelector('[data-testid="content"]')).not.toBeNull();
     expect(element.querySelector('button')).toBeNull();
+  });
+
+  it('draws the view-only notice as the design does: the information banner, its title, and what changing needs', () => {
+    // Spec 005, FR-030: one view-only notice in the library, the one of frame "Roles List Read Only".
+    const { element } = render('view-only', {
+      message: 'التعديل يحتاج صلاحية «إدارة الأدوار والصلاحيات».',
+    });
+    const notice = element.querySelector('[data-testid="view-only"]')!;
+
+    expect(notice.tagName.toLowerCase()).toBe('scs-banner');
+    expect(notice.getAttribute('data-tone')).toBe('info');
+    expect(notice.getAttribute('role')).toBe('status');
+    expect(notice.querySelector('scs-icon')?.getAttribute('data-icon')).toBe('info');
+    expect(notice.querySelector('[data-testid="banner-title"]')?.textContent?.trim()).toBe('للعرض فقط');
+    expect(notice.textContent).toContain('التعديل يحتاج صلاحية «إدارة الأدوار والصلاحيات».');
+    expect(element.querySelector('.panel')).toBeNull();
+  });
+
+  it('reads "View only" in English, with the title alone when no line is given', () => {
+    const { element } = render('view-only', {}, 'en');
+    const notice = element.querySelector('[data-testid="view-only"]')!;
+
+    expect(notice.querySelector('[data-testid="banner-title"]')?.textContent?.trim()).toBe('View only');
+    expect(notice.querySelector('.line')).toBeNull();
   });
 
   it('says that work resumes when offline', () => {

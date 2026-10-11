@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { Page, Route } from '@playwright/test';
 
 /**
@@ -21,6 +22,39 @@ export const session = {
   email: 'owner@noor.example',
   clinic: { nameAr: 'عيادة النور', nameEn: 'Al Noor Clinic', state: 'active' },
   expiresAt: '2030-01-01T12:00:00Z',
+};
+
+/** Every code of the platform's catalogue, in its order (spec 005). */
+export const ALL_PERMISSIONS: string[] = (
+  JSON.parse(
+    readFileSync('projects/core/src/lib/access/permission-catalogue.json', 'utf8'),
+  ) as { permissions: { code: string }[] }
+).permissions.map((permission) => permission.code);
+
+/** The roles a person in these tests may hold, as the platform describes them. */
+export const roles = {
+  owner: { id: '0199c0de-0000-7000-8000-0000000000a1', name: 'مالك العيادة', readyKey: 'owner' },
+  doctor: { id: '0199c0de-0000-7000-8000-0000000000a3', name: 'طبيب', readyKey: 'doctor' },
+  team: { id: '0199c0de-0000-7000-8000-0000000000a4', name: 'فريق العيادة', readyKey: null },
+} as const;
+
+export const TEAM_PERMISSIONS = [
+  'bookings.view',
+  'bookings.manage',
+  'bookings.attendance',
+  'patients.view',
+  'money.view',
+  'money.collect',
+];
+
+/** What `GET /v1/roles` answers for the seeded Noor clinic. */
+export const rolesList = {
+  catalogueSize: ALL_PERMISSIONS.length,
+  roles: [
+    { ...roles.owner, description: 'كل صلاحيات العيادة', category: 'ready', fixed: true, permissionCount: ALL_PERMISSIONS.length },
+    { ...roles.doctor, description: null, category: 'ready', fixed: false, permissionCount: 40 },
+    { ...roles.team, description: null, category: 'custom', fixed: false, permissionCount: 6 },
+  ],
 };
 
 /** A token as it travels in an emailed link, after the `#t=`. */
@@ -58,6 +92,7 @@ const TITLES: Record<string, string> = {
   SESSION_ENDED: 'انتهت الجلسة. الدخول من جديد للمتابعة.',
   ACCESS_EXPIRED: 'يلزم تجديد الجلسة',
   LINK_INVALID: 'انتهت صلاحية الرابط أو استُعمل',
+  PERMISSION_REQUIRED: 'هذه الصفحة ليست في دورك',
 };
 
 export interface Answer {
@@ -87,6 +122,11 @@ export interface StaffPlatform {
   change: Answer | (() => Answer);
   /** The signed-in account holds a temporary password. Cleared by a successful change. */
   mustChange: boolean;
+  /** The role the signed-in account holds, and the codes it holds (spec 005). Owner of everything by default. */
+  role: { id: string; name: string; readyKey: string | null } | null;
+  permissions: string[];
+  /** What `GET /v1/roles` answers. */
+  rolesAnswer: Answer | (() => Answer);
   /** Overrides the answer of `GET /v1/auth/session` while set. */
   sessionAnswer: Answer | null;
   /** Every call made, as `METHOD path`. */
@@ -139,6 +179,9 @@ export async function staffPlatform(
     linkSet: { status: 200, json: { kind: 'reset' } },
     change: { status: 204 },
     mustChange: false,
+    role: roles.owner,
+    permissions: ALL_PERMISSIONS,
+    rolesAnswer: { status: 200, json: rolesList },
     sessionAnswer: null,
     calls: [],
     bodies: [],
@@ -148,6 +191,14 @@ export async function staffPlatform(
 
   const pick = (answer: Answer | (() => Answer)) =>
     typeof answer === 'function' ? answer() : answer;
+
+  /** The session as the platform describes it now: a temporary password lists no permission. */
+  const described = () => ({
+    ...session,
+    mustChangePassword: state.mustChange,
+    role: state.role,
+    permissions: state.mustChange ? [] : state.permissions,
+  });
 
   const on = async (pattern: string, handler: (route: Route) => Promise<void>) => {
     await page.route(pattern, async (route) => {
@@ -185,7 +236,7 @@ export async function staffPlatform(
       route,
       state.sessionAnswer ??
         (state.signedIn
-          ? { status: 200, json: { ...session, mustChangePassword: state.mustChange } }
+          ? { status: 200, json: described() }
           : problem(401, 'UNAUTHENTICATED')),
     ),
   );
@@ -204,7 +255,7 @@ export async function staffPlatform(
     await fulfil(
       route,
       answer.json === session
-        ? { ...answer, json: { ...session, mustChangePassword: state.mustChange } }
+        ? { ...answer, json: described() }
         : answer,
     );
   });
@@ -232,6 +283,8 @@ export async function staffPlatform(
       }
     },
   );
+
+  await on('**/v1/roles', (route) => fulfil(route, pick(state.rolesAnswer)));
 
   await on('**/v1/auth/sign-out', async (route) => {
     state.signedIn = false;

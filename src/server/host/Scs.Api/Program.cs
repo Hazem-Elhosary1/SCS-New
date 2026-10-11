@@ -124,6 +124,7 @@ app.UseAuthentication();
 app.UseScsTemporaryPasswordGate();
 app.UseScsStaffLogScope();
 app.UseAuthorization();
+app.UseScsAccessGate();
 app.UseScsBlockedNetworks();
 app.UseRateLimiter();
 app.UseScsPatientSurface();

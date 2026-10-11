@@ -132,6 +132,30 @@ public sealed class StaffAccountsTests(SqlServerFixture sql)
             return;
         }
 
+        // Spec 005: every seeded account holds a role, and one holds a custom role without the
+        // view of the roles page — the person who sees the no-permission state.
+        Assert.Equal(
+            [
+                "doctor@shifa.example=doctor", "former@noor.example=doctor", "new@shifa.example=manager",
+                "owner@noor.example=owner", "owner@shifa.example=owner", "reception@noor.example=فريق العيادة",
+                "temp@noor.example=manager",
+            ],
+            await TestDatabase.ReadColumnAsync(
+                sql.Main.Crossing,
+                """
+                SELECT CONCAT(a.Email, '=', COALESCE(r.ReadyKey, r.Name))
+                FROM [identity].StaffAccount a JOIN [identity].Role r ON r.Id = a.RoleId
+                WHERE a.Email LIKE '%@noor.example' OR a.Email LIKE '%@shifa.example'
+                ORDER BY a.Email
+                """));
+        var custom = await TestDatabase.ReadColumnAsync(
+            sql.Main.Crossing,
+            $"SELECT p.Code FROM [identity].RolePermission p JOIN [identity].Role r ON r.Id = p.RoleId WHERE r.ClinicId = '{noor}' AND r.Name = N'فريق العيادة'");
+        Assert.Equal(6, custom.Count);
+        Assert.DoesNotContain("admin.roles.view", custom);
+        Assert.Equal(4, await TestDatabase.ScalarAsync<int>(sql.Main.Crossing, $"SELECT COUNT(*) FROM [identity].Role WHERE ClinicId = '{noor}'"));
+        Assert.Equal(3, await TestDatabase.ScalarAsync<int>(sql.Main.Crossing, $"SELECT COUNT(*) FROM [identity].Role WHERE ClinicId = '{shifa}'"));
+
         // Spec 004: one of them holds a temporary password, kept usable by every run of the seed
         // until somebody replaces it — after which the seed leaves that account alone.
         const string Temporary = "SELECT CONCAT(MustChangePassword, '|', IIF(TemporaryPasswordExpiresAtUtc > DATEADD(HOUR, 71, SYSDATETIMEOFFSET()), 'fresh', 'stale')) FROM [identity].StaffAccount WHERE Email = 'temp@noor.example'";

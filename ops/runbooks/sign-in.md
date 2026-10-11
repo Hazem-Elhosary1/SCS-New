@@ -98,6 +98,30 @@ The five emails of this area cannot be switched off: reset link, "password chang
 link, "an account was created", "access was reset". A "password changed" email the owner did
 not expect is a security report: end the account's sessions (above) and look at its events.
 
+## A person says a page "is not in their role" (spec 005)
+
+The page names the permission it needs and the role the person holds. Nothing is broken: the
+role does not hold that permission. Until the roles and users screens exist (specs 026, 027)
+there is no way to change it from the product; in a local or test environment:
+
+```sql
+-- What the account holds.
+SELECT a.Email, r.Name, r.ReadyKey, r.HoldsEverything,
+       (SELECT COUNT(*) FROM [identity].RolePermission p WHERE p.RoleId = r.Id) AS Codes
+FROM [identity].StaffAccount a LEFT JOIN [identity].Role r ON r.Id = a.RoleId
+WHERE a.Id = '<account id>';
+```
+
+An account with no role reaches only its own account pages. «مالك العيادة» stores no codes: it
+holds the whole catalogue (`HoldsEverything`). A change to a role's codes is seen on its
+holders' next request. Giving an account a different role must go through `IClinicRoles` — it
+ends the account's sessions and refuses to leave a clinic without an owner; do not update
+`RoleId` by hand outside a local database.
+
+A refused request is in the logs as "Refused {route}: the permission {permission} is not held",
+with the account and the clinic. "…it does not declare who may call it" is a defect: a route
+was shipped without a declaration.
+
 ## See what happened to an account
 
 ```sql

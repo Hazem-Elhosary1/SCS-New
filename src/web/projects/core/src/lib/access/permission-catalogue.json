@@ -1,0 +1,809 @@
+{
+  "catalogue": "clinic",
+  "groups": [
+    {
+      "key": "home",
+      "nameAr": "الرئيسية",
+      "nameEn": "Home"
+    },
+    {
+      "key": "bookings",
+      "nameAr": "الحجوزات",
+      "nameEn": "Bookings"
+    },
+    {
+      "key": "patients",
+      "nameAr": "المرضى",
+      "nameEn": "Patients"
+    },
+    {
+      "key": "money",
+      "nameAr": "الفواتير والتحصيل",
+      "nameEn": "Invoices & collection"
+    },
+    {
+      "key": "inbox",
+      "nameAr": "الصندوق الوارد",
+      "nameEn": "Inbox"
+    },
+    {
+      "key": "tickets",
+      "nameAr": "التذاكر",
+      "nameEn": "Tickets"
+    },
+    {
+      "key": "reports",
+      "nameAr": "التقارير",
+      "nameEn": "Reports"
+    },
+    {
+      "key": "admin",
+      "nameAr": "الإدارة",
+      "nameEn": "Administration"
+    },
+    {
+      "key": "data",
+      "nameAr": "إدارة البيانات",
+      "nameEn": "Data management"
+    },
+    {
+      "key": "settings",
+      "nameAr": "الإعدادات",
+      "nameEn": "Settings"
+    },
+    {
+      "key": "subscription",
+      "nameAr": "الملف والاشتراك",
+      "nameEn": "Profile & subscription"
+    }
+  ],
+  "permissions": [
+    {
+      "number": 1,
+      "code": "bookings.view",
+      "nameAr": "عرض الحجوزات",
+      "nameEn": "View bookings",
+      "group": "bookings",
+      "kind": "view",
+      "requires": null
+    },
+    {
+      "number": 2,
+      "code": "bookings.viewAll",
+      "nameAr": "عرض مواعيد كل الأطباء",
+      "nameEn": "View all doctors' appointments",
+      "group": "bookings",
+      "kind": "scope",
+      "requires": "bookings.view"
+    },
+    {
+      "number": 3,
+      "code": "bookings.manage",
+      "nameAr": "إدارة الحجوزات",
+      "nameEn": "Manage bookings",
+      "group": "bookings",
+      "kind": "write",
+      "requires": "bookings.view"
+    },
+    {
+      "number": 4,
+      "code": "bookings.cancel",
+      "nameAr": "إلغاء المواعيد",
+      "nameEn": "Cancel appointments",
+      "group": "bookings",
+      "kind": "write",
+      "requires": "bookings.view"
+    },
+    {
+      "number": 5,
+      "code": "bookings.attendance",
+      "nameAr": "تسجيل الحضور والغياب",
+      "nameEn": "Check patients in and record no-shows",
+      "group": "bookings",
+      "kind": "write",
+      "requires": "bookings.view"
+    },
+    {
+      "number": 6,
+      "code": "bookings.queue",
+      "nameAr": "إدارة دور اليوم",
+      "nameEn": "Manage today's queue",
+      "group": "bookings",
+      "kind": "write",
+      "requires": "bookings.view"
+    },
+    {
+      "number": 7,
+      "code": "bookings.waitlist",
+      "nameAr": "إدارة قائمة الاستعداد",
+      "nameEn": "Manage the waiting list",
+      "group": "bookings",
+      "kind": "write",
+      "requires": "bookings.view"
+    },
+    {
+      "number": 8,
+      "code": "patients.view",
+      "nameAr": "عرض المرضى",
+      "nameEn": "View patients",
+      "group": "patients",
+      "kind": "view",
+      "requires": null
+    },
+    {
+      "number": 9,
+      "code": "patients.manage",
+      "nameAr": "إدارة ملفات المرضى",
+      "nameEn": "Manage patient files",
+      "group": "patients",
+      "kind": "write",
+      "requires": "patients.view"
+    },
+    {
+      "number": 10,
+      "code": "patients.delete",
+      "nameAr": "حذف ملفات المرضى",
+      "nameEn": "Delete patient files",
+      "group": "patients",
+      "kind": "write",
+      "requires": "patients.view"
+    },
+    {
+      "number": 11,
+      "code": "patients.merge",
+      "nameAr": "دمج ملفات المرضى",
+      "nameEn": "Merge patient files",
+      "group": "patients",
+      "kind": "write",
+      "requires": "patients.view"
+    },
+    {
+      "number": 12,
+      "code": "patients.records.view",
+      "nameAr": "عرض السجل الطبي",
+      "nameEn": "View medical records",
+      "group": "patients",
+      "kind": "read",
+      "requires": "patients.view"
+    },
+    {
+      "number": 13,
+      "code": "patients.exam.edit",
+      "nameAr": "تحرير الكشف",
+      "nameEn": "Edit exams",
+      "group": "patients",
+      "kind": "write",
+      "requires": "patients.view"
+    },
+    {
+      "number": 14,
+      "code": "patients.exam.sign",
+      "nameAr": "توقيع ملاحظات الكشف",
+      "nameEn": "Sign exam notes",
+      "group": "patients",
+      "kind": "write",
+      "requires": "patients.view"
+    },
+    {
+      "number": 15,
+      "code": "patients.documents",
+      "nameAr": "إصدار المستندات الطبية",
+      "nameEn": "Issue clinical documents",
+      "group": "patients",
+      "kind": "write",
+      "requires": "patients.view"
+    },
+    {
+      "number": 16,
+      "code": "patients.orders",
+      "nameAr": "طلب التحاليل والأشعة",
+      "nameEn": "Order tests and imaging",
+      "group": "patients",
+      "kind": "write",
+      "requires": "patients.view"
+    },
+    {
+      "number": 17,
+      "code": "patients.results",
+      "nameAr": "تسجيل النتائج",
+      "nameEn": "Record results",
+      "group": "patients",
+      "kind": "write",
+      "requires": "patients.view"
+    },
+    {
+      "number": 18,
+      "code": "patients.consents.collect",
+      "nameAr": "جمع الموافقات",
+      "nameEn": "Collect consents",
+      "group": "patients",
+      "kind": "write",
+      "requires": "patients.view"
+    },
+    {
+      "number": 19,
+      "code": "patients.consents.withdraw",
+      "nameAr": "سحب الموافقات",
+      "nameEn": "Withdraw consents",
+      "group": "patients",
+      "kind": "write",
+      "requires": "patients.view"
+    },
+    {
+      "number": 20,
+      "code": "patients.plans.create",
+      "nameAr": "إنشاء خطط العلاج",
+      "nameEn": "Create treatment plans",
+      "group": "patients",
+      "kind": "write",
+      "requires": "patients.view"
+    },
+    {
+      "number": 21,
+      "code": "patients.plans.present",
+      "nameAr": "تقديم عروض الأسعار",
+      "nameEn": "Present quotes",
+      "group": "patients",
+      "kind": "write",
+      "requires": "patients.view"
+    },
+    {
+      "number": 22,
+      "code": "patients.plans.accept",
+      "nameAr": "تسجيل قبول المرضى",
+      "nameEn": "Record patient acceptance",
+      "group": "patients",
+      "kind": "write",
+      "requires": "patients.view"
+    },
+    {
+      "number": 23,
+      "code": "patients.plans.execute",
+      "nameAr": "تسجيل إنجاز البنود",
+      "nameEn": "Record items as done",
+      "group": "patients",
+      "kind": "write",
+      "requires": "patients.view"
+    },
+    {
+      "number": 24,
+      "code": "patients.recall.view",
+      "nameAr": "عرض قائمة المتابعة",
+      "nameEn": "View the recall list",
+      "group": "patients",
+      "kind": "read",
+      "requires": "patients.view"
+    },
+    {
+      "number": 25,
+      "code": "patients.recall.log",
+      "nameAr": "تسجيل التواصل مع المرضى",
+      "nameEn": "Log patient contacts",
+      "group": "patients",
+      "kind": "write",
+      "requires": "patients.view"
+    },
+    {
+      "number": 26,
+      "code": "money.view",
+      "nameAr": "عرض الفواتير",
+      "nameEn": "View invoices",
+      "group": "money",
+      "kind": "view",
+      "requires": null
+    },
+    {
+      "number": 27,
+      "code": "money.invoice",
+      "nameAr": "إصدار الفواتير",
+      "nameEn": "Issue invoices",
+      "group": "money",
+      "kind": "write",
+      "requires": "money.view"
+    },
+    {
+      "number": 28,
+      "code": "money.collect",
+      "nameAr": "تحصيل الدفعات",
+      "nameEn": "Collect payments",
+      "group": "money",
+      "kind": "write",
+      "requires": "money.view"
+    },
+    {
+      "number": 29,
+      "code": "money.refund",
+      "nameAr": "إصدار المرتجعات",
+      "nameEn": "Issue refunds",
+      "group": "money",
+      "kind": "write",
+      "requires": "money.view"
+    },
+    {
+      "number": 30,
+      "code": "money.shift",
+      "nameAr": "تقفيل الورديات",
+      "nameEn": "Close shifts",
+      "group": "money",
+      "kind": "write",
+      "requires": "money.view"
+    },
+    {
+      "number": 31,
+      "code": "money.statements.view",
+      "nameAr": "عرض كشوف الأطباء",
+      "nameEn": "View doctor statements",
+      "group": "money",
+      "kind": "read",
+      "requires": "money.view"
+    },
+    {
+      "number": 32,
+      "code": "money.statements.approve",
+      "nameAr": "اعتماد كشوف الأطباء",
+      "nameEn": "Approve doctor statements",
+      "group": "money",
+      "kind": "write",
+      "requires": "money.view"
+    },
+    {
+      "number": 33,
+      "code": "inbox.view",
+      "nameAr": "عرض الصندوق الوارد",
+      "nameEn": "View inbox",
+      "group": "inbox",
+      "kind": "view",
+      "requires": null
+    },
+    {
+      "number": 34,
+      "code": "inbox.reply",
+      "nameAr": "الرد على المحادثات",
+      "nameEn": "Reply to conversations",
+      "group": "inbox",
+      "kind": "write",
+      "requires": "inbox.view"
+    },
+    {
+      "number": 35,
+      "code": "inbox.link",
+      "nameAr": "ربط المحادثات بالمرضى",
+      "nameEn": "Link conversations to patients",
+      "group": "inbox",
+      "kind": "write",
+      "requires": "inbox.view"
+    },
+    {
+      "number": 36,
+      "code": "inbox.block",
+      "nameAr": "حظر جهات الاتصال",
+      "nameEn": "Block contacts",
+      "group": "inbox",
+      "kind": "write",
+      "requires": "inbox.view"
+    },
+    {
+      "number": 37,
+      "code": "tickets.view",
+      "nameAr": "عرض تذاكري",
+      "nameEn": "View my tickets",
+      "group": "tickets",
+      "kind": "view",
+      "requires": null
+    },
+    {
+      "number": 38,
+      "code": "tickets.viewAll",
+      "nameAr": "عرض كل تذاكر العيادة",
+      "nameEn": "View all clinic tickets",
+      "group": "tickets",
+      "kind": "scope",
+      "requires": "tickets.view"
+    },
+    {
+      "number": 39,
+      "code": "tickets.create",
+      "nameAr": "فتح التذاكر",
+      "nameEn": "Open tickets",
+      "group": "tickets",
+      "kind": "write",
+      "requires": "tickets.view"
+    },
+    {
+      "number": 40,
+      "code": "tickets.reply",
+      "nameAr": "الرد على التذاكر",
+      "nameEn": "Reply to tickets",
+      "group": "tickets",
+      "kind": "write",
+      "requires": "tickets.view"
+    },
+    {
+      "number": 41,
+      "code": "reports.financial",
+      "nameAr": "عرض التقارير المالية",
+      "nameEn": "View financial reports",
+      "group": "reports",
+      "kind": "view",
+      "requires": null
+    },
+    {
+      "number": 42,
+      "code": "reports.clinical",
+      "nameAr": "عرض التقارير الطبية",
+      "nameEn": "View clinical reports",
+      "group": "reports",
+      "kind": "view",
+      "requires": null
+    },
+    {
+      "number": 43,
+      "code": "reports.activity",
+      "nameAr": "عرض سجل الأنشطة",
+      "nameEn": "View the activity log",
+      "group": "reports",
+      "kind": "view",
+      "requires": null
+    },
+    {
+      "number": 44,
+      "code": "reports.weekly",
+      "nameAr": "عرض الملخص الأسبوعي",
+      "nameEn": "View the weekly summary",
+      "group": "reports",
+      "kind": "view",
+      "requires": null
+    },
+    {
+      "number": 45,
+      "code": "reports.feedback",
+      "nameAr": "عرض تقييمات المرضى",
+      "nameEn": "View patient feedback",
+      "group": "reports",
+      "kind": "view",
+      "requires": null
+    },
+    {
+      "number": 46,
+      "code": "reports.feedback.followup",
+      "nameAr": "متابعة تقييمات المرضى",
+      "nameEn": "Follow up on patient feedback",
+      "group": "reports",
+      "kind": "write",
+      "requires": "reports.feedback"
+    },
+    {
+      "number": 47,
+      "code": "reports.export",
+      "nameAr": "تصدير التقارير",
+      "nameEn": "Export reports",
+      "group": "reports",
+      "kind": "write",
+      "requires": null
+    },
+    {
+      "number": 48,
+      "code": "admin.users.view",
+      "nameAr": "عرض المستخدمين",
+      "nameEn": "View users",
+      "group": "admin",
+      "kind": "view",
+      "requires": null
+    },
+    {
+      "number": 49,
+      "code": "admin.users.manage",
+      "nameAr": "إدارة المستخدمين",
+      "nameEn": "Manage users",
+      "group": "admin",
+      "kind": "write",
+      "requires": "admin.users.view"
+    },
+    {
+      "number": 50,
+      "code": "admin.roles.view",
+      "nameAr": "عرض الأدوار والصلاحيات",
+      "nameEn": "View roles & permissions",
+      "group": "admin",
+      "kind": "view",
+      "requires": null
+    },
+    {
+      "number": 51,
+      "code": "admin.roles.manage",
+      "nameAr": "إدارة الأدوار والصلاحيات",
+      "nameEn": "Manage roles & permissions",
+      "group": "admin",
+      "kind": "write",
+      "requires": "admin.roles.view"
+    },
+    {
+      "number": 52,
+      "code": "admin.licences.view",
+      "nameAr": "عرض الرخص",
+      "nameEn": "View licences",
+      "group": "admin",
+      "kind": "view",
+      "requires": null
+    },
+    {
+      "number": 53,
+      "code": "admin.licences.manage",
+      "nameAr": "إدارة الرخص",
+      "nameEn": "Manage licences",
+      "group": "admin",
+      "kind": "write",
+      "requires": "admin.licences.view"
+    },
+    {
+      "number": 54,
+      "code": "data.doctors.view",
+      "nameAr": "عرض الأطباء",
+      "nameEn": "View doctors",
+      "group": "data",
+      "kind": "view",
+      "requires": null
+    },
+    {
+      "number": 55,
+      "code": "data.doctors.manage",
+      "nameAr": "إدارة الأطباء",
+      "nameEn": "Manage doctors",
+      "group": "data",
+      "kind": "write",
+      "requires": "data.doctors.view"
+    },
+    {
+      "number": 56,
+      "code": "data.branches.view",
+      "nameAr": "عرض الفروع",
+      "nameEn": "View branches",
+      "group": "data",
+      "kind": "view",
+      "requires": null
+    },
+    {
+      "number": 57,
+      "code": "data.branches.manage",
+      "nameAr": "إدارة الفروع",
+      "nameEn": "Manage branches",
+      "group": "data",
+      "kind": "write",
+      "requires": "data.branches.view"
+    },
+    {
+      "number": 58,
+      "code": "data.services.view",
+      "nameAr": "عرض الخدمات",
+      "nameEn": "View services",
+      "group": "data",
+      "kind": "view",
+      "requires": null
+    },
+    {
+      "number": 59,
+      "code": "data.services.manage",
+      "nameAr": "إدارة الخدمات والأسعار",
+      "nameEn": "Manage services and prices",
+      "group": "data",
+      "kind": "write",
+      "requires": "data.services.view"
+    },
+    {
+      "number": 60,
+      "code": "settings.view",
+      "nameAr": "عرض الإعدادات",
+      "nameEn": "View settings",
+      "group": "settings",
+      "kind": "view",
+      "requires": null
+    },
+    {
+      "number": 61,
+      "code": "settings.hours",
+      "nameAr": "إدارة ساعات العمل",
+      "nameEn": "Manage working hours",
+      "group": "settings",
+      "kind": "write",
+      "requires": "settings.view"
+    },
+    {
+      "number": 62,
+      "code": "settings.myHours",
+      "nameAr": "عرض ساعاتي",
+      "nameEn": "View my hours",
+      "group": "settings",
+      "kind": "read",
+      "requires": null
+    },
+    {
+      "number": 63,
+      "code": "settings.channels",
+      "nameAr": "إدارة القنوات ومساعد الحجز",
+      "nameEn": "Manage channels & booking assistant",
+      "group": "settings",
+      "kind": "write",
+      "requires": "settings.view"
+    },
+    {
+      "number": 64,
+      "code": "settings.policies",
+      "nameAr": "إدارة سياسات الحجز",
+      "nameEn": "Manage booking policies",
+      "group": "settings",
+      "kind": "write",
+      "requires": "settings.view"
+    },
+    {
+      "number": 65,
+      "code": "settings.insurance",
+      "nameAr": "إدارة سياسات التأمين والمرتجعات",
+      "nameEn": "Manage insurance & refund policies",
+      "group": "settings",
+      "kind": "write",
+      "requires": "settings.view"
+    },
+    {
+      "number": 66,
+      "code": "settings.documents",
+      "nameAr": "إدارة المطبوعات",
+      "nameEn": "Manage documents",
+      "group": "settings",
+      "kind": "write",
+      "requires": "settings.view"
+    },
+    {
+      "number": 67,
+      "code": "settings.payments",
+      "nameAr": "إدارة طرق الدفع",
+      "nameEn": "Manage payment methods",
+      "group": "settings",
+      "kind": "write",
+      "requires": "settings.view"
+    },
+    {
+      "number": 68,
+      "code": "settings.teleconsult",
+      "nameAr": "إدارة الكشف عن بُعد",
+      "nameEn": "Manage teleconsult",
+      "group": "settings",
+      "kind": "write",
+      "requires": "settings.view"
+    },
+    {
+      "number": 69,
+      "code": "settings.bookingPage",
+      "nameAr": "إدارة صفحة الحجز العامة",
+      "nameEn": "Manage the public booking page",
+      "group": "settings",
+      "kind": "write",
+      "requires": "settings.view"
+    },
+    {
+      "number": 70,
+      "code": "settings.notifications",
+      "nameAr": "إدارة التنبيهات",
+      "nameEn": "Manage notifications",
+      "group": "settings",
+      "kind": "write",
+      "requires": "settings.view"
+    },
+    {
+      "number": 71,
+      "code": "settings.security",
+      "nameAr": "إدارة إجراءات الأمان",
+      "nameEn": "Manage security actions",
+      "group": "settings",
+      "kind": "write",
+      "requires": "settings.view"
+    },
+    {
+      "number": 72,
+      "code": "settings.ai",
+      "nameAr": "إدارة ميزات الذكاء الاصطناعي",
+      "nameEn": "Manage AI features",
+      "group": "settings",
+      "kind": "write",
+      "requires": "settings.view"
+    },
+    {
+      "number": 73,
+      "code": "subscription.view",
+      "nameAr": "عرض الاشتراك",
+      "nameEn": "View the subscription",
+      "group": "subscription",
+      "kind": "view",
+      "requires": null
+    },
+    {
+      "number": 74,
+      "code": "subscription.invoices.view",
+      "nameAr": "عرض فواتير الاشتراك",
+      "nameEn": "View subscription invoices",
+      "group": "subscription",
+      "kind": "read",
+      "requires": "subscription.view"
+    },
+    {
+      "number": 75,
+      "code": "subscription.pay",
+      "nameAr": "دفع فواتير الاشتراك",
+      "nameEn": "Pay subscription invoices",
+      "group": "subscription",
+      "kind": "write",
+      "requires": "subscription.invoices.view"
+    },
+    {
+      "number": 76,
+      "code": "subscription.plan",
+      "nameAr": "تغيير الباقة",
+      "nameEn": "Change the plan",
+      "group": "subscription",
+      "kind": "write",
+      "requires": "subscription.view"
+    },
+    {
+      "number": 77,
+      "code": "subscription.units",
+      "nameAr": "شراء الوحدات الإضافية",
+      "nameEn": "Buy extra units",
+      "group": "subscription",
+      "kind": "write",
+      "requires": "subscription.view"
+    },
+    {
+      "number": 78,
+      "code": "subscription.clinic",
+      "nameAr": "تعديل بيانات العيادة",
+      "nameEn": "Edit clinic details",
+      "group": "subscription",
+      "kind": "write",
+      "requires": "subscription.view"
+    },
+    {
+      "number": 79,
+      "code": "subscription.tax",
+      "nameAr": "تعديل البيانات الضريبية",
+      "nameEn": "Edit tax details",
+      "group": "subscription",
+      "kind": "write",
+      "requires": "subscription.view"
+    },
+    {
+      "number": 80,
+      "code": "data.consents.view",
+      "nameAr": "عرض نصوص الموافقة",
+      "nameEn": "View consent texts",
+      "group": "data",
+      "kind": "view",
+      "requires": null
+    },
+    {
+      "number": 81,
+      "code": "data.consents.manage",
+      "nameAr": "إدارة نصوص الموافقة",
+      "nameEn": "Manage consent texts",
+      "group": "data",
+      "kind": "write",
+      "requires": "data.consents.view"
+    },
+    {
+      "number": 82,
+      "code": "patients.lab.view",
+      "nameAr": "عرض حالات المعمل",
+      "nameEn": "View lab cases",
+      "group": "patients",
+      "kind": "view",
+      "requires": null
+    },
+    {
+      "number": 83,
+      "code": "patients.lab.manage",
+      "nameAr": "إدارة حالات المعمل",
+      "nameEn": "Manage lab cases",
+      "group": "patients",
+      "kind": "write",
+      "requires": "patients.lab.view"
+    }
+  ]
+}

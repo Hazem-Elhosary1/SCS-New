@@ -76,7 +76,12 @@ migration does. Change isolation with a new migration.
 | `Application` does not depend on `Infrastructure` or `Api` | `LayeringTests` |
 | A module references another module only through its `.Contracts` project | `ModuleBoundaryTests` |
 | No module uses the logging or job library directly, or writes to the console | `LoggingRulesTests` |
-| Every route is refused unless it declares who may call it | Fallback policy; `FallbackPolicyTests` |
+| Every route declares who may call it — `AllowAnonymous()`, `OwnAccountOnly()`, `Requires(Permissions.X)` or `RequiresOrOwner<TCheck>(Permissions.X)` — and exactly one of them; a route that declares nothing is refused for everyone | The access gate; `RouteDeclarationTests`, `FallbackPolicyTests` |
+| A code a route names is a permission of the catalogue | Compile time (`Permissions` constants); `RouteDeclarationTests` |
+| Only the shared gate refuses for a missing permission; a module never answers `PERMISSION_REQUIRED` itself | `IdentityRulesTests` |
+| `OwnAccountOnly()` is used only for what a person does to their own account, and the list of such routes is written down | `RouteDeclarationTests`, `IdentityRulesTests` |
+| Nothing decides by the name of a role | `IdentityRulesTests` |
+| The web sites' permission catalogue is the server's | `CatalogueFileTests` (regenerate with `Scs.Migrator catalogue`) |
 | The application login cannot alter structure | `MigrationTests` |
 | Every table is isolated or declared platform-wide, after every migration | `IsolationGuardrailTests` |
 | One clinic cannot read or change another's rows; no clinic means nothing | `IsolationBehaviourTests` (every `IClinicOwned` entity, found by reflection) |
@@ -84,6 +89,29 @@ migration does. Change isolation with a new migration.
 | No module opens a connection or sets the clinic on one | `TenancyRulesTests` |
 | No personal data or secret reaches the logs | `LogRedactionTests` (covers every mapped endpoint, including new ones) |
 | An endpoint behaves for a signed-in person of a clinic | `factory.SignInAsAsync(clinicId)` gives an `HttpClient` that carries a real session |
+
+## Who may call a route (spec 005)
+
+Every route says who may call it, where it is mapped:
+
+```csharp
+v1.MapGet("/patients", ListAsync).Requires(Permissions.PatientsView);
+v1.MapPost("/patients", CreateAsync).Requires(Permissions.PatientsManage);
+```
+
+The permission is checked before the handler runs, so the handler never checks it again, and a
+refused request has read nothing. Inside a handler, ask `IStaffAccess`:
+
+- `HasAsync(Permissions.X)` — for a part of an answer that needs a further permission;
+- `ReachOfAsync(Permissions.BookingsView)` — `Own` or `All`, for a list that a scope permission
+  widens. Never compare role names: a role is whatever set of permissions a clinic gave it.
+
+For a record its owner may always reach, declare `RequiresOrOwner<TCheck>(Permissions.X)` and
+implement `IRecordOwnerCheck`. On the front end, guard a destination with `canMatch:
+[holds('code')]` followed by the no-access page on the same path, and leave a control out of the
+page with `*scsCan="'code'"`. Plan entitlements, the read-only clinic and a record's state are
+not permissions; they have their own answers. The full contract is
+`specs/005-permissions-engine/contracts/access-engine.md`.
 
 ## Conventions to follow
 

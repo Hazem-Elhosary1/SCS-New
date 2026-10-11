@@ -9,19 +9,23 @@ import {
   output,
 } from '@angular/core';
 
-export type ScsBannerTone = 'danger' | 'warning' | 'neutral' | 'success';
+export type ScsBannerTone = 'danger' | 'warning' | 'neutral' | 'success' | 'info';
 
 const BANNER_ICONS: Record<ScsBannerTone, ScsIconName> = {
   danger: 'alert-circle',
   warning: 'alert-triangle',
   success: 'check-circle',
   neutral: 'info',
+  info: 'info',
 };
 
 /**
  * A message above a form: what happened, and what to do next. Refusals and warnings are
  * announced at once (`role="alert"`); neutral notices and successes politely (`role="status"`).
  * One optional action sits inside the banner.
+ *
+ * With a `title` the banner is a notice in two lines — the «للعرض فقط» notice of a page a
+ * person may read and not change is `tone="info"` with that title (spec 005, FR-030).
  */
 @Component({
   selector: 'scs-banner',
@@ -89,6 +93,23 @@ const BANNER_ICONS: Record<ScsBannerTone, ScsIconName> = {
     :host([data-tone='success']) scs-icon {
       color: var(--scs-color-feedback-success-icon);
     }
+    :host([data-tone='info']) {
+      padding: var(--scs-spacing-md);
+      border-color: var(--scs-color-feedback-info-border);
+      background: var(--scs-color-feedback-info-bg);
+      font-weight: 400;
+      line-height: 1.5;
+    }
+    :host([data-tone='info']) scs-icon {
+      color: var(--scs-color-feedback-info-icon);
+    }
+    .title {
+      margin: 0;
+      color: var(--scs-color-text-primary);
+      font-size: var(--scs-text-body);
+      font-weight: 600;
+      line-height: 1.5;
+    }
     button {
       padding: 0;
       border: 0;
@@ -103,6 +124,9 @@ const BANNER_ICONS: Record<ScsBannerTone, ScsIconName> = {
   template: `
     <scs-icon [name]="icon()" [size]="20" />
     <div class="body">
+      @if (title(); as title) {
+        <p class="title" data-testid="banner-title">{{ title }}</p>
+      }
       <div><ng-content /></div>
       @if (actionLabel(); as label) {
         <button type="button" data-testid="banner-action" (click)="action.emit()">
@@ -114,6 +138,9 @@ const BANNER_ICONS: Record<ScsBannerTone, ScsIconName> = {
 })
 export class ScsBannerComponent {
   readonly tone = input<ScsBannerTone>('neutral');
+
+  /** Already translated. A line above the banner's words, in the weight of a heading. */
+  readonly title = input<string>('');
 
   /** Already translated. When set, the banner offers this one action. */
   readonly actionLabel = input<string>('');

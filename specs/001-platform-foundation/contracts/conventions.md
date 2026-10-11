@@ -78,6 +78,11 @@ Every failure is `application/problem+json`:
 | `LINK_INVALID` | 410 | A password link that cannot be used; carries `kind` (spec 004) |
 | `PASSWORD_CHANGE_REQUIRED` | 403 | The session holds a temporary password; only changing it is allowed (spec 004) |
 | `PASSWORD_CHANGE_NOT_REQUIRED` | 409 | The account holds no temporary password (spec 004) |
+| `PERMISSION_REQUIRED` | 403 | The person's role does not hold the permission the route needs; carries `permission` (spec 005) |
+| `ROLE_FIXED` | 409 | «مالك العيادة» is never edited, renamed or removed (spec 005) |
+| `ROLE_IN_USE` | 409 | A role an account holds is not removed; carries `holders` (spec 005) |
+| `LAST_OWNER` | 409 | A clinic is never left without an owner (spec 005) |
+| `OWN_ROLE` | 409 | Nobody changes the role of their own account (spec 005) |
 
 Later specs add codes (for example `FEATURE_NOT_IN_PLAN`, `CLINIC_READ_ONLY`) to this table by
 amending this contract; they do not invent a second shape.

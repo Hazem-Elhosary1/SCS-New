@@ -19,3 +19,4 @@ export * from './lib/network/online.service';
 export * from './lib/auth/auth.service';
 export * from './lib/auth/support.service';
 export * from './lib/auth/password-rules';
+export * from './lib/access/access.service';

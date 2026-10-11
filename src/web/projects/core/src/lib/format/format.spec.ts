@@ -35,6 +35,17 @@ describe('formatting', () => {
       expect(date.transform('2026-01-15T10:00:00Z', 'time')).toBe('12:00');
     });
 
+    it('writes the line under a page title as the design does, in each language', () => {
+      // 21 August 2026 at 12:04 UTC is a Friday afternoon in Cairo.
+      expect(setup('en').date.transform('2026-08-21T12:04:00Z', 'long')).toBe(
+        'Friday 21 August 2026, 3:04 PM',
+      );
+      TestBed.resetTestingModule();
+      expect(setup('ar').date.transform('2026-08-21T12:04:00Z', 'long')).toBe(
+        'الجمعة ٢١ أغسطس ٢٠٢٦، ٣:٠٤ م',
+      );
+    });
+
     it('moves the date when Cairo is already on the next day', () => {
       const { date } = setup('en');
 

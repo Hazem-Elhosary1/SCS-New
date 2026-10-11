@@ -1,5 +1,12 @@
 import { Routes } from '@angular/router';
-import { pendingSignInGuard, sessionGuard, signedOutGuard, temporaryPasswordGuard } from 'core';
+import {
+  holds,
+  pendingSignInGuard,
+  sessionGuard,
+  signedOutGuard,
+  temporaryPasswordGuard,
+} from 'core';
+import { NoAccessPage, ROLES_VIEW, RolesPage } from './administration/roles.page';
 import { LandingPage, NotYetPage } from './landing/landing.page';
 import { ChangePasswordPage } from './password/change-password.page';
 import { ForgotPasswordPage } from './password/forgot-password.page';
@@ -21,5 +28,19 @@ export const routes: Routes = [
   { path: 'change-password', component: ChangePasswordPage, canActivate: [temporaryPasswordGuard] },
   { path: 'privacy', component: NotYetPage },
   { path: 'terms', component: NotYetPage },
+  // A destination is two routes on one path: its page for a holder of its view permission,
+  // and the "not in your role" page for anyone else — who then loads nothing of it (spec 005).
+  {
+    path: 'administration/roles',
+    component: RolesPage,
+    canActivate: [sessionGuard],
+    canMatch: [holds(ROLES_VIEW)],
+  },
+  {
+    path: 'administration/roles',
+    component: NoAccessPage,
+    canActivate: [sessionGuard],
+    data: { permission: ROLES_VIEW, titleKey: 'app.administration.roles.title' },
+  },
   { path: '**', component: LandingPage, canActivate: [sessionGuard] },
 ];

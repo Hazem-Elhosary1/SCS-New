@@ -114,6 +114,15 @@
         "signOut": "Sign out"
       },
       "retry": "Try again"
+    },
+    "administration": {
+      "breadcrumb": "Administration",
+      "roles": {
+        "title": "Roles & permissions",
+        "viewOnly": "Changing roles needs “{{ permission }}”.",
+        "noAccessNote": "a role that does not carry “{{ permission }}”",
+        "noRoleNote": "an account that holds no role"
+      }
     }
   }
 }

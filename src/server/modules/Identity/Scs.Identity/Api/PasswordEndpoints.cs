@@ -78,6 +78,7 @@ internal static class PasswordEndpoints
             .WithName("SetPasswordWithLink");
 
         password.MapPost("/change", ChangeAsync)
+            .OwnAccountOnly()
             .AllowsTemporaryPassword()
             .WithName("ChangeTemporaryPassword");
 

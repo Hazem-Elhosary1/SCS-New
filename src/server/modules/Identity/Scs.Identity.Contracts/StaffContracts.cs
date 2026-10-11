@@ -1,8 +1,8 @@
 namespace Scs.Identity.Contracts;
 
 /// <summary>
-/// Who is asking, on a request made with a staff session (spec 003). Roles and permissions are
-/// not here; they arrive with spec 005. Using it on a request with no session is refused with
+/// Who is asking, on a request made with a staff session (spec 003). What they may do is asked
+/// of <c>IStaffAccess</c> (spec 005), never worked out from a role's name. Using it on a request with no session is refused with
 /// <c>UNAUTHENTICATED</c>.
 /// </summary>
 public interface ICurrentStaff
@@ -137,4 +137,65 @@ public interface IAccountHandover
     /// <c>ACCOUNT_DISABLED</c>. The new password is never compared with the current one.
     /// </summary>
     Task<AccountHandoverResult> ReissueAsync(Guid accountId, string method, string? password, CancellationToken cancellation);
+}
+
+/// <summary>A clinic's role, as a list shows it.</summary>
+/// <param name="ReadyKey">
+/// <c>owner</c>, <c>manager</c> or <c>doctor</c> for a ready role that still has the name it was
+/// created with: show the name for the key in the page's language. Null otherwise.
+/// </param>
+/// <param name="Fixed">«مالك العيادة»: holds every permission and is never edited or removed.</param>
+/// <param name="PermissionCount">Counted from the catalogue for the fixed role, from the role's own set otherwise.</param>
+public sealed record RoleSummary(
+    Guid Id, string Name, string? ReadyKey, string? Description, string Category, bool Fixed, int PermissionCount);
+
+/// <summary>What an edit changed in a role's set, for the record of spec 007.</summary>
+public sealed record RoleChange(Guid RoleId, IReadOnlyList<string> Added, IReadOnlyList<string> Removed);
+
+/// <summary>
+/// The roles of the established clinic and who holds them (spec 005), for the specs that own the
+/// screens (015 clinic creation, 026 users, 027 roles). Every operation runs under isolation, in
+/// one transaction: a role or an account of another clinic is "not found".
+///
+/// <para>
+/// These enforce what cannot depend on who is asking: a set that keeps the requirement rule, the
+/// fixed role, the role in use, the last owner, and one's own account. Whether the caller may do
+/// it at all — and "nobody grants a permission they do not hold", "nobody edits the role they
+/// hold" — is the caller's business.
+/// </para>
+/// </summary>
+public interface IClinicRoles
+{
+    /// <summary>
+    /// Creates «مالك العيادة», «مدير العيادة» and «طبيب» if the clinic has no roles yet. Safe to
+    /// repeat: a clinic that removed one of the two editable ready roles does not get it back.
+    /// </summary>
+    Task ProvisionAsync(CancellationToken cancellation);
+
+    /// <summary>Ready roles first (owner, manager, doctor), then the clinic's own by name.</summary>
+    Task<IReadOnlyList<RoleSummary>> ListAsync(CancellationToken cancellation);
+
+    /// <summary>
+    /// Creates a custom role. Refused with field codes on <c>name</c> (<c>REQUIRED</c>,
+    /// <c>TOO_LONG</c>, <c>TAKEN</c>) and <c>permissions</c> (<c>REQUIRED</c>, <c>UNKNOWN</c>,
+    /// <c>DUPLICATE</c>, <c>MISSING_REQUIREMENT</c> — the last with <c>missing</c>, the pairs).
+    /// </summary>
+    Task<Guid> CreateAsync(string name, string? description, IReadOnlyCollection<string> permissions, CancellationToken cancellation);
+
+    /// <summary>
+    /// Replaces a role's name, description and set. The same refusals, and <c>ROLE_FIXED</c> for
+    /// «مالك العيادة». Its holders follow the new set on their next request; their sessions go on.
+    /// </summary>
+    Task<RoleChange> UpdateAsync(
+        Guid roleId, string name, string? description, IReadOnlyCollection<string> permissions, CancellationToken cancellation);
+
+    /// <summary>Removes a role nobody holds. <c>ROLE_FIXED</c>; <c>ROLE_IN_USE</c> with <c>holders</c>.</summary>
+    Task RemoveAsync(Guid roleId, CancellationToken cancellation);
+
+    /// <summary>
+    /// Gives the account that role. When the role is a different one the account's sessions end
+    /// in the same transaction (SH-045). <c>OWN_ROLE</c> when the signed-in person is the
+    /// account; <c>LAST_OWNER</c> when it would leave the clinic without an owner.
+    /// </summary>
+    Task AssignAsync(Guid accountId, Guid roleId, CancellationToken cancellation);
 }

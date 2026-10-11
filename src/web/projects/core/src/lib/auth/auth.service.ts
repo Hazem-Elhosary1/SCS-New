@@ -13,6 +13,18 @@ export interface StaffSession {
   readonly expiresAt: string;
   /** The account holds a temporary password: nothing is reachable until it is replaced (spec 004). */
   readonly mustChangePassword?: boolean;
+  /** The role the account holds; null when it holds none (spec 005). */
+  readonly role?: StaffRole | null;
+  /** The codes the person holds at this moment, in catalogue order. The platform decides again on every request. */
+  readonly permissions?: readonly string[];
+}
+
+export interface StaffRole {
+  readonly id: string;
+  /** As the clinic wrote it. */
+  readonly name: string;
+  /** `owner`, `manager` or `doctor` for a ready role that still has its original name. */
+  readonly readyKey: string | null;
 }
 
 export type PasswordLinkKind = 'reset' | 'new-account';
@@ -57,6 +69,7 @@ export const AuthCodes = {
   codeNotResent: 'SIGN_IN_CODE_NOT_RESENT',
   linkInvalid: 'LINK_INVALID',
   passwordChangeRequired: 'PASSWORD_CHANGE_REQUIRED',
+  permissionRequired: 'PERMISSION_REQUIRED',
 } as const;
 
 /** A link that no longer works is an ordinary answer, not a failure: the page has a screen for it. */
@@ -164,6 +177,32 @@ export class AuthService implements OnDestroy {
     this.left();
     this.channel?.postMessage('signed-out');
     await this.router.navigateByUrl('/sign-in');
+  }
+
+  /**
+   * Asks the platform again who is signed in and what they may do (spec 005): after a refusal
+   * for a missing permission, and every few minutes while a page is open. A failure leaves
+   * what is known as it is — only a refusal by the platform signs anyone out.
+   */
+  async refreshSession(): Promise<void> {
+    if (this.known() !== 'signed-in') {
+      return;
+    }
+    try {
+      this.current.set(await firstValueFrom(this.http.get<StaffSession>('/v1/auth/session')));
+    } catch {
+      // The session interceptor has already dealt with a session that is over.
+    }
+  }
+
+  /**
+   * The platform refused a call for a missing permission: the list this page was drawn from is
+   * stale. Ask again, then match the address again, so a page the person may no longer open
+   * gives way to the "not in your role" state.
+   */
+  async permissionRefused(): Promise<void> {
+    await this.refreshSession();
+    await this.router.navigateByUrl(this.router.url, { onSameUrlNavigation: 'reload' });
   }
 
   /**
@@ -347,6 +386,7 @@ const HANDLES_ITS_OWN = ['/v1/auth/sign-in', '/v1/auth/session/renew', '/v1/auth
  * - `SESSION_ENDED`, or a renewal that is refused: clear the screen and show the sign-in form
  *   with the "session ended" notice.
  * - `PASSWORD_CHANGE_REQUIRED`: show the screen that replaces a temporary password.
+ * - `PERMISSION_REQUIRED`: ask again what the person may do, then match the address again.
  */
 export const sessionInterceptor: HttpInterceptorFn = (request, next) => {
   const app = inject(SCS_APP, { optional: true });
@@ -383,6 +423,11 @@ export const sessionInterceptor: HttpInterceptorFn = (request, next) => {
 
       if (error.problem.code === AuthCodes.passwordChangeRequired) {
         void auth.held();
+      }
+
+      if (error.problem.code === AuthCodes.permissionRequired) {
+        // The list the page was drawn from is stale: read it again and match the address again.
+        void auth.permissionRefused();
       }
 
       return throwError(() => error);

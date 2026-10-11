@@ -1,0 +1,135 @@
+openapi: 3.1.0
+info:
+  title: Smart Clinic OS — access (spec 005)
+  version: 1.0.0
+  description: >
+    One changed endpoint and one new one. Errors use the uniform problem shape of
+    specs/001-platform-foundation/contracts/conventions.md. Every endpoint of the platform may now
+    answer 403 PERMISSION_REQUIRED or 403 FORBIDDEN; see access-engine.md.
+paths:
+  /v1/auth/session:
+    get:
+      operationId: GetSession
+      summary: Who is signed in, and what they may do
+      description: >
+        As spec 003 and 004, plus the role and the permissions held at this moment. Open to any
+        signed-in person (own account). The client asks again after any PERMISSION_REQUIRED and
+        at least every fifteen minutes.
+      responses:
+        '200':
+          description: The signed-in person.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffSession'
+        '401':
+          $ref: '#/components/responses/Problem'
+  /v1/roles:
+    get:
+      operationId: ListRoles
+      summary: The clinic's roles
+      description: Needs `admin.roles.view`. Ready roles first (owner, manager, doctor), then custom roles by name.
+      responses:
+        '200':
+          description: The roles of the signed-in person's clinic.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [catalogueSize, roles]
+                properties:
+                  catalogueSize:
+                    type: integer
+                    description: Counted from the catalogue (83 today).
+                  roles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RoleSummary'
+        '401':
+          $ref: '#/components/responses/Problem'
+        '403':
+          $ref: '#/components/responses/PermissionRequired'
+components:
+  schemas:
+    StaffSession:
+      type: object
+      required: [accountId, email, clinic, expiresAt, mustChangePassword, role, permissions]
+      properties:
+        accountId: { type: string, format: uuid }
+        email: { type: string }
+        clinic:
+          type: object
+          required: [nameAr, nameEn, state]
+          properties:
+            nameAr: { type: string }
+            nameEn: { type: string }
+            state: { type: string }
+        expiresAt: { type: string, format: date-time }
+        mustChangePassword: { type: boolean }
+        role:
+          description: Null when the account holds no role; it then holds no permission.
+          oneOf:
+            - type: 'null'
+            - $ref: '#/components/schemas/RoleRef'
+        permissions:
+          type: array
+          description: Codes of the catalogue, in catalogue order. Empty while mustChangePassword is true.
+          items: { type: string }
+    RoleRef:
+      type: object
+      required: [id, name, readyKey]
+      properties:
+        id: { type: string, format: uuid }
+        name:
+          type: string
+          description: As stored. For a ready role that was never renamed, show the name for readyKey in the page's language instead.
+        readyKey:
+          description: Set for a ready role that still has its original name.
+          oneOf:
+            - type: 'null'
+            - type: string
+              enum: [owner, manager, doctor]
+    RoleSummary:
+      allOf:
+        - $ref: '#/components/schemas/RoleRef'
+        - type: object
+          required: [category, fixed, permissionCount]
+          properties:
+            description: { type: [string, 'null'] }
+            category: { type: string, enum: [ready, custom] }
+            fixed: { type: boolean }
+            permissionCount: { type: integer }
+    Problem:
+      type: object
+      required: [type, title, status, code, traceId]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        code: { type: string }
+        traceId: { type: string }
+        permission:
+          type: string
+          description: Only with PERMISSION_REQUIRED — the code that was needed.
+  responses:
+    Problem:
+      description: Refused; `code` says why.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    PermissionRequired:
+      description: >
+        403 PERMISSION_REQUIRED with the code needed, or 403 PASSWORD_CHANGE_REQUIRED for a
+        temporary password. Says nothing about any record.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://scs.example/problems/permission-required
+            title: هذه الصفحة ليست في دورك
+            status: 403
+            code: PERMISSION_REQUIRED
+            permission: admin.roles.view
+            traceId: 4bf92f3577b34da6a3ce929d0e0e4736

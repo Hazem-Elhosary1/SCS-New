@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Scs.BuildingBlocks.Errors;
 using Scs.BuildingBlocks.Tenancy;
@@ -16,7 +17,8 @@ namespace Scs.Tenancy.Infrastructure;
 /// runs on the operator connection; the three operations a person performs each write an access
 /// record in the same transaction as the change.
 /// </summary>
-internal sealed partial class ClinicRegistry(CrossingDbContext db, TimeProvider clock, ILogger<ClinicRegistry> logger)
+internal sealed partial class ClinicRegistry(
+    CrossingDbContext db, TimeProvider clock, ILogger<ClinicRegistry> logger, IServiceScopeFactory? scopes = null)
     : IClinicRegistry
 {
     public async Task<Guid> RegisterAsync(
@@ -50,7 +52,33 @@ internal sealed partial class ClinicRegistry(CrossingDbContext db, TimeProvider 
         Record(DeclaredCrossings.RegisterClinic, clinic.Id, operatorId, now);
         await SaveAsync(cancellation).ConfigureAwait(false);
 
+        await ProvisionAsync(clinic.Id, cancellation).ConfigureAwait(false);
+
         return clinic.Id;
+    }
+
+    /// <summary>
+    /// Gives the new clinic what every clinic starts with. Each module's part runs in a scope of
+    /// its own with the clinic established — under isolation, not on this operator connection.
+    /// A failure is the caller's to see; the parts are safe to run again.
+    /// </summary>
+    private async Task ProvisionAsync(Guid clinicId, CancellationToken cancellation)
+    {
+        if (scopes is null)
+        {
+            return;
+        }
+
+        var scope = scopes.CreateAsyncScope();
+        await using (scope.ConfigureAwait(false))
+        {
+            scope.ServiceProvider.GetRequiredService<IClinicContext>().Establish(clinicId, ClinicSource.Job);
+
+            foreach (var provisioner in scope.ServiceProvider.GetServices<IClinicProvisioner>())
+            {
+                await provisioner.ProvisionAsync(cancellation).ConfigureAwait(false);
+            }
+        }
     }
 
     public async Task RenameAsync(Guid clinicId, string newShortName, string operatorId, CancellationToken cancellation)

@@ -9,6 +9,16 @@ internal static class EntryPoint
             return await SeedAsync().ConfigureAwait(false);
         }
 
+        if (args is ["catalogue", var path])
+        {
+            // The permission catalogue as the web sites read it (spec 005). Run after any change
+            // to the catalogue; a test fails while the checked-in file is out of date.
+            await File.WriteAllTextAsync(path, Scs.SharedKernel.Access.PermissionCatalogueFile.Write()).ConfigureAwait(false);
+            await Console.Out.WriteLineAsync($"Wrote {Scs.SharedKernel.Access.PermissionCatalogue.Count} permissions to {path}.")
+                .ConfigureAwait(false);
+            return 0;
+        }
+
         using var cancellation = new CancellationTokenSource();
         Console.CancelKeyPress += (_, e) =>
         {

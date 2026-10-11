@@ -157,12 +157,16 @@ public static class StaffSessionExtensions
 {
     /// <summary>
     /// Every route is refused unless it explicitly declares who may call it (constitution
-    /// Principle III, SH-056). From spec 003 the refusal is lifted by a live staff session.
+    /// Principle III, SH-056). A request with no session is answered here; what a signed-in
+    /// person may call is decided by the access gate (spec 005), which refuses a route that
+    /// declares nothing.
     /// </summary>
     public static IServiceCollection AddScsDenyByDefault(this IServiceCollection services)
     {
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<SessionCookies>();
+        services.AddHttpContextAccessor();
+        services.TryAddScoped<IStaffAccess, StaffAccess>();
 
         services
             .AddAuthentication(StaffSessionAuthenticationHandler.SchemeName)

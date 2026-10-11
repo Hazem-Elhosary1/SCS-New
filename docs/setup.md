@@ -91,6 +91,29 @@ Other made-up accounts, all with the same password: `reception@noor.example`,
 an account for 15 minutes; `ops/runbooks/sign-in.md` says how to open it at once. More than ten
 sign-in requests in a minute are refused for the rest of that minute.
 
+### Roles and what each person sees (spec 005)
+
+Every seeded account holds a role. Open <http://localhost:4201/administration/roles> as each of
+these to see the three things the address can show:
+
+| Account | Role | At that address |
+|---|---|---|
+| `owner@noor.example`, `owner@shifa.example` | «مالك العيادة» (every permission) | the page, with no notice |
+| `doctor@shifa.example` | «طبيب» (may read roles, not change them) | «للعرض فقط» above the page |
+| `reception@noor.example` | «فريق العيادة», a custom role | «هذه الصفحة ليست في دورك» |
+| `temp@noor.example`, `new@shifa.example` | «مدير العيادة» | the page, once the password is their own |
+
+The page itself says "not available yet" until spec 027. A change to what a role holds is seen
+on the holder's next request; no one signs in again. The seed gives a role only to a seeded
+account that has none, so a role you changed by hand is kept.
+
+After changing the permission catalogue (`src/server/shared/Scs.SharedKernel/Access`), write
+the file the web sites read, or `CatalogueFileTests` fails:
+
+```powershell
+dotnet run --project src/server/tools/Scs.Migrator -- catalogue src/web/projects/core/src/lib/access/permission-catalogue.json
+```
+
 ### Check the "not ready" behaviour
 
 ```bash
