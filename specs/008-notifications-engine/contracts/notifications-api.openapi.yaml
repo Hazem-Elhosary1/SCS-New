@@ -1,0 +1,128 @@
+openapi: 3.0.3
+info:
+  title: Smart Clinic OS — notifications (spec 008)
+  version: 0.8.0
+  description: >
+    The bell's addresses, for the signed-in person's own notifications, and the clinic's email
+    switches. Errors are problem details as everywhere (spec 001). Words are in the language of
+    Accept-Language.
+paths:
+  /v1/notifications/state:
+    get:
+      summary: Whether the person has anything unread. Asked every thirty seconds by an open console.
+      responses:
+        '200':
+          description: The state.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [unread]
+                properties:
+                  unread: { type: boolean, description: At least one unread notification of the last ninety days. }
+                  latestAt: { type: string, format: date-time, nullable: true, description: When the newest notification was raised. }
+        '401': { description: UNAUTHENTICATED }
+  /v1/notifications:
+    get:
+      summary: The person's notifications of the last ninety days, newest first.
+      parameters:
+        - { name: before, in: query, schema: { type: string }, description: The `next` of the page before. Absent for the first page. }
+        - { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+      responses:
+        '200':
+          description: A page.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, unread]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Notification' }
+                  unread: { type: boolean }
+                  next: { type: string, nullable: true, description: Absent when there is nothing older. }
+        '400': { description: VALIDATION_FAILED — `before` or `size` cannot be read (INVALID). }
+        '401': { description: UNAUTHENTICATED }
+  /v1/notifications/{id}/read:
+    post:
+      summary: Marks one of the person's notifications read. Repeating it changes nothing.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Read. }
+        '401': { description: UNAUTHENTICATED }
+        '404': { description: NOT_FOUND — no such notification of this person; another person's is answered the same. }
+  /v1/notifications/read-all:
+    post:
+      summary: Marks every unread notification of the person read.
+      responses:
+        '204': { description: Done. }
+        '401': { description: UNAUTHENTICATED }
+  /v1/settings/notification-emails:
+    get:
+      summary: The clinic's email switches. Needs settings.view.
+      responses:
+        '200':
+          description: One entry for each event whose email can be switched.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [switches]
+                properties:
+                  switches:
+                    type: array
+                    items:
+                      type: object
+                      required: [event, name, group, enabled]
+                      properties:
+                        event: { type: string, description: The event's key. }
+                        name: { type: string, description: In the reader's language. }
+                        group: { type: string, enum: [support, billing, channels, services, patients, accounts] }
+                        enabled: { type: boolean }
+        '401': { description: UNAUTHENTICATED }
+        '403': { description: PERMISSION_REQUIRED with permission settings.view }
+  /v1/settings/notification-emails/{event}:
+    put:
+      summary: Turns the email of one switchable event on or off for the whole clinic. Needs settings.notifications.
+      parameters:
+        - { name: event, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled]
+              properties:
+                enabled: { type: boolean }
+      responses:
+        '200':
+          description: The switch as it is now.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [event, enabled]
+                properties:
+                  event: { type: string }
+                  enabled: { type: boolean }
+        '400': { description: VALIDATION_FAILED — `enabled` missing (REQUIRED); the event's email cannot be switched (event NOT_SWITCHABLE). }
+        '401': { description: UNAUTHENTICATED }
+        '403': { description: PERMISSION_REQUIRED with permission settings.notifications }
+        '404': { description: NOT_FOUND — no such event. }
+components:
+  schemas:
+    Notification:
+      type: object
+      required: [id, kind, title, text, at, read]
+      properties:
+        id: { type: string, format: uuid }
+        kind: { type: string, enum: [ticket, invoice, subscription, feedback, notice, warning, incident], description: The mark it is drawn with. }
+        event: { type: string, description: The event's key. }
+        title: { type: string, description: In the reader's language. }
+        text: { type: string, description: The line, in the reader's language. }
+        at: { type: string, format: date-time }
+        read: { type: boolean }
+        link: { type: string, nullable: true, description: A path inside the console; null when it leads nowhere. }

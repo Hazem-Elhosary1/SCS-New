@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\shared\Scs.BuildingBlocks\Scs.BuildingBlocks.csproj" />
+    <ProjectReference Include="..\..\modules\Platform\Scs.Platform\Scs.Platform.csproj" />
+    <ProjectReference Include="..\..\modules\Tenancy\Scs.Tenancy\Scs.Tenancy.csproj" />
+    <ProjectReference Include="..\..\modules\Identity\Scs.Identity\Scs.Identity.csproj" />
+    <ProjectReference Include="..\..\modules\Audit\Scs.Audit\Scs.Audit.csproj" />
+    <ProjectReference Include="..\..\modules\Notifications\Scs.Notifications\Scs.Notifications.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+  </ItemGroup>
+
+</Project>

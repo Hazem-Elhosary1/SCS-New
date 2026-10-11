@@ -1,0 +1,94 @@
+/*
+ * Looks for what opens over the page: menus, popovers, tooltips and passing notices. They are
+ * drawn outside the component that opened them, so their styles cannot live in it; each app's
+ * styles.css imports this file after the CDK's own overlay styles. Appearance comes only from
+ * the app's token variables.
+ */
+.scs-menu {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 240px;
+  margin-block-start: var(--scs-spacing-xs);
+  padding: var(--scs-spacing-xs);
+  border: 1px solid var(--scs-color-border-default);
+  border-radius: var(--scs-radius-md);
+  background: var(--scs-color-bg-surface);
+  box-shadow: 0 8px 24px -4px #0a0f1424;
+  font-family: var(--scs-font-family);
+}
+
+.scs-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--scs-spacing-sm);
+  min-block-size: 36px;
+  padding: var(--scs-spacing-6) var(--scs-spacing-12);
+  border: 0;
+  border-radius: var(--scs-radius-sm);
+  background: none;
+  color: var(--scs-color-text-primary);
+  font: inherit;
+  font-size: var(--scs-text-body);
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.scs-menu-item:hover,
+.scs-menu-item:focus-visible {
+  background: var(--scs-color-bg-surface-secondary);
+  outline: none;
+}
+
+.scs-menu-item scs-icon {
+  color: var(--scs-color-icon-default);
+}
+
+.scs-menu-item[aria-checked='true'],
+.scs-menu-item[data-active='true'] {
+  /* Design: Menu — the chosen item on the brand's pale tint. */
+  background: var(--scs-color-brand-subtle, var(--scs-color-bg-surface-secondary));
+  color: var(--scs-color-brand-active);
+  font-weight: 500;
+}
+
+.scs-menu-item[data-active='true'] scs-icon {
+  color: var(--scs-color-brand-active);
+}
+
+.scs-menu-item[data-danger='true'],
+.scs-menu-item[data-danger='true'] scs-icon {
+  color: var(--scs-color-feedback-danger-text);
+}
+
+.scs-menu-item .end {
+  margin-inline-start: auto;
+}
+
+.scs-menu-separator {
+  block-size: 1px;
+  margin: var(--scs-spacing-xs) 0;
+  background: var(--scs-color-border-default);
+}
+
+.scs-popover {
+  margin-block-start: var(--scs-spacing-xs);
+  border: 1px solid var(--scs-color-border-default);
+  border-radius: var(--scs-radius-md);
+  background: var(--scs-color-bg-surface);
+  box-shadow: 0 8px 24px -4px #0a0f1424;
+  font-family: var(--scs-font-family);
+  color: var(--scs-color-text-primary);
+}
+
+.scs-tooltip {
+  padding: var(--scs-spacing-6) var(--scs-spacing-10);
+  border-radius: var(--scs-radius-sm);
+  background: var(--scs-color-text-primary);
+  color: var(--scs-color-text-inverse);
+  font-family: var(--scs-font-family);
+  font-size: var(--scs-text-label);
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+}

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\shared\Scs.BuildingBlocks\Scs.BuildingBlocks.csproj" />
+    <ProjectReference Include="..\..\modules\Tenancy\Scs.Tenancy\Scs.Tenancy.csproj" />
+    <ProjectReference Include="..\..\modules\Identity\Scs.Identity\Scs.Identity.csproj" />
+    <ProjectReference Include="..\..\modules\Audit\Scs.Audit\Scs.Audit.csproj" />
+    <ProjectReference Include="..\..\modules\Notifications\Scs.Notifications\Scs.Notifications.csproj" />
+  </ItemGroup>
+
+</Project>

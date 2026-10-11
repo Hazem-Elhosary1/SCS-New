@@ -1,0 +1,133 @@
+openapi: 3.1.0
+info:
+  title: Smart Clinic OS Platform — foundation endpoints
+  version: 0.1.0
+  description: >
+    The four endpoints delivered by spec 001. They are the only anonymous endpoints; every
+    other route is denied by the fallback policy until specs 003 and 005 open it.
+servers:
+  - url: http://localhost:5080
+    description: local
+paths:
+  /health/live:
+    get:
+      summary: Is the process alive
+      description: Never checks a dependency. Used by the container runtime.
+      security: []
+      responses:
+        '200':
+          description: Alive
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+  /health/ready:
+    get:
+      summary: Is the platform ready to serve requests
+      description: Checks the database and job storage. Used by the load balancer.
+      security: []
+      responses:
+        '200':
+          description: Ready
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+        '503':
+          description: Alive but not ready; `checks` names the failing dependency
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+  /v1/meta/version:
+    get:
+      summary: Which release is running
+      security: []
+      responses:
+        '200':
+          description: Release information
+          headers:
+            X-Trace-Id: { $ref: '#/components/headers/X-Trace-Id' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Version' }
+  /v1/client-errors:
+    post:
+      summary: Report an unhandled front-end failure
+      description: >
+        Anonymous, limited to 16 KB and to 30 requests per minute per address. The server
+        scrubs personal data and secrets before logging. Extra properties are rejected.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ClientError' }
+      responses:
+        '202':
+          description: Accepted
+          headers:
+            X-Trace-Id: { $ref: '#/components/headers/X-Trace-Id' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '413': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/Problem' }
+components:
+  headers:
+    X-Trace-Id:
+      description: Request reference; equals `traceId` in any error body
+      schema: { type: string, pattern: '^[0-9a-f]{32}$' }
+  responses:
+    Problem:
+      description: Uniform error (see conventions.md)
+      headers:
+        X-Trace-Id: { $ref: '#/components/headers/X-Trace-Id' }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [Healthy, Unhealthy] }
+        checks:
+          type: array
+          items:
+            type: object
+            required: [name, status]
+            properties:
+              name: { type: string, enum: [database, jobs] }
+              status: { type: string, enum: [Healthy, Unhealthy] }
+              durationMs: { type: integer, minimum: 0 }
+    Version:
+      type: object
+      required: [version, commit, builtAt, environment]
+      properties:
+        version: { type: string, examples: ['0.1.0+3f9c2ab'] }
+        commit: { type: string, pattern: '^[0-9a-f]{40}$' }
+        builtAt: { type: string, format: date-time }
+        environment: { type: string, enum: [local, test, production] }
+    ClientError:
+      type: object
+      additionalProperties: false
+      required: [app, version, message]
+      properties:
+        app: { type: string, enum: [clinic, patient, ops] }
+        version: { type: string, maxLength: 40 }
+        route: { type: string, maxLength: 200, description: Route template, never the address with values }
+        message: { type: string, maxLength: 1000 }
+        stack: { type: string, maxLength: 8000 }
+        traceId: { type: string, pattern: '^[0-9a-f]{32}$' }
+        language: { type: string, enum: [ar, en] }
+    Problem:
+      type: object
+      required: [type, title, status, code, traceId]
+      properties:
+        type: { type: string, format: uri-reference }
+        title: { type: string, description: Message in the caller's language }
+        status: { type: integer }
+        code: { type: string, pattern: '^[A-Z][A-Z0-9_]+$' }
+        traceId: { type: string, pattern: '^[0-9a-f]{32}$' }
+        errors:
+          type: object
+          description: Present for VALIDATION_FAILED only; field name to list of codes
+          additionalProperties:
+            type: array
+            items: { type: string }

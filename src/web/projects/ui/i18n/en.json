@@ -1,0 +1,109 @@
+{
+  "ui": {
+    "language": {
+      "switch": {
+        "label": "Change language",
+        "target": "العربية"
+      }
+    },
+    "platform": {
+      "status": {
+        "checking": "Checking the connection to the platform…",
+        "reachable": "Platform is available",
+        "unreachable": "The platform could not be reached"
+      },
+      "detail": {
+        "version": "Platform version",
+        "environment": "Environment",
+        "appVersion": "App version"
+      }
+    },
+    "sample": {
+      "format": {
+        "date": "Date and time",
+        "amount": "Amount"
+      }
+    },
+    "state": {
+      "loading": {
+        "title": "Loading…"
+      },
+      "empty": {
+        "title": "Nothing here yet"
+      },
+      "error": {
+        "title": "The request could not be completed",
+        "reference": "Reference",
+        "retry": "Try again"
+      },
+      "offline": {
+        "message": "You are offline — this is the last loaded copy, and anything that changes data is disabled until the connection returns."
+      },
+      "viewOnly": {
+        "title": "View only"
+      },
+      "notInPlan": {
+        "title": "Not included in your plan",
+        "action": "Upgrade plan"
+      }
+    },
+    "demo": {
+      "states": {
+        "title": "Screen states",
+        "content": "Content",
+        "loading": "Loading",
+        "empty": "Empty",
+        "error": "Error",
+        "offline": "Offline",
+        "viewOnly": "View only",
+        "notInPlan": "Not in plan"
+      }
+    },
+    "auth": {
+      "intro": {
+        "badge": "The smart clinic operating system",
+        "headline": "An integrated digital medical infrastructure",
+        "about": "Your clinic's appointments, patients, medical records and invoices in one place, with a booking assistant that answers your patients on WhatsApp and Telegram."
+      },
+      "footer": {
+        "help": "Need help? Contact support",
+        "privacy": "Privacy policy",
+        "terms": "Terms of use"
+      }
+    },
+    "field": {
+      "password": {
+        "show": "Show password",
+        "hide": "Hide password"
+      }
+    },
+    "dialog": {
+      "close": "Close"
+    },
+    "page": {
+      "notYet": {
+        "title": "This page is not available yet",
+        "back": "Back to sign-in"
+      }
+    },
+    "passwordRules": {
+      "title": "Password rules",
+      "pending": "not met yet",
+      "met": "met",
+      "unmet": "not met",
+      "summary": "Rules not met: {{ count }}"
+    },
+    "access": {
+      "noAccess": {
+        "title": "This page is not in your role",
+        "text": "It opens for holders of “{{ permission }}”, and your role “{{ role }}” does not carry it. Whatever is needed from it is requested from whoever manages roles & permissions in the clinic.",
+        "textNoRole": "It opens for holders of “{{ permission }}”, and your account does not hold a role yet. Whatever is needed from it is requested from whoever manages roles & permissions in the clinic."
+      },
+      "role": {
+        "owner": "Clinic owner",
+        "manager": "Clinic manager",
+        "doctor": "Doctor"
+      }
+    }
+  }
+}

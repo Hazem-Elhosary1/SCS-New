@@ -1,0 +1,81 @@
+openapi: 3.1.0
+info:
+  title: Smart Clinic OS Platform — clinic resolution
+  version: 0.2.0
+  description: >
+    The one endpoint spec 002 adds. It tells the patient site which clinic an address belongs
+    to. Operator operations (register, rename, list) have no endpoint yet: there is no operator
+    sign-in until spec 010, and every route is denied unless it declares who may call it.
+paths:
+  /v1/clinic:
+    get:
+      summary: The clinic a patient address belongs to
+      description: >
+        Anonymous, patient surface. The clinic is named by the `X-Scs-Clinic` header, which the
+        patient site fills from the first part of its address. Every name that matches no
+        clinic gets the same 404, and so does a clinic whose state is `suspended` or
+        `cancelled`: the answer never shows that such a clinic exists.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Clinic'
+      responses:
+        '200':
+          description: The clinic
+          headers:
+            X-Trace-Id: { $ref: '#/components/headers/X-Trace-Id' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClinicSummary' }
+        '400':
+          description: Header missing (`CLINIC_REQUIRED`)
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '404':
+          description: No clinic has this name (`CLINIC_NOT_AVAILABLE`)
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+components:
+  parameters:
+    Clinic:
+      name: X-Scs-Clinic
+      in: header
+      required: true
+      description: >
+        A clinic's short name, current or earlier. Case and surrounding slashes are ignored.
+        Honoured on patient-surface endpoints only.
+      schema: { type: string, maxLength: 60 }
+  headers:
+    X-Trace-Id:
+      schema: { type: string, pattern: '^[0-9a-f]{32}$' }
+  schemas:
+    ClinicSummary:
+      type: object
+      required: [shortName, nameAr, nameEn, state, renamed]
+      properties:
+        shortName:
+          type: string
+          description: The current short name. Differs from the one asked for when `renamed` is true
+          pattern: '^[a-z][a-z0-9]*(-[a-z0-9]+)*$'
+          minLength: 3
+          maxLength: 40
+        nameAr: { type: string, maxLength: 200 }
+        nameEn: { type: string, maxLength: 200 }
+        state:
+          type: string
+          description: >
+            Never `suspended` or `cancelled` here (those answer 404). What the other states
+            permit is spec 016
+        renamed:
+          type: boolean
+          description: True when the name asked for is an earlier one; the site then moves to `shortName`
+    Problem:
+      type: object
+      required: [type, title, status, code, traceId]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        code: { type: string, enum: [CLINIC_REQUIRED, CLINIC_NOT_AVAILABLE, CLINIC_MISMATCH] }
+        traceId: { type: string, pattern: '^[0-9a-f]{32}$' }

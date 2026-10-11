@@ -1,0 +1,76 @@
+/*
+ * Design tokens for the ops app.
+ *
+ * NOT YET FROM THE DESIGN FILE. The Figma file "SCS Ops Console — Admin Design System"
+ * (fileKey SetO9EhDivNcmurAMfcflY) exposed no variables on the nodes read on 2026-10-10, so the
+ * names below match the clinic file and the values are neutral placeholders. Replace the
+ * values from the ops file (spec 001, task T098) before any ops screen is built.
+ */
+:root {
+  --scs-color-text-primary: #111827;
+  --scs-color-text-secondary: #4b5563;
+  --scs-color-text-tertiary: #6b7280;
+  --scs-color-text-inverse: #ffffff;
+  --scs-color-text-link: #1f2937;
+
+  --scs-color-bg-surface: #ffffff;
+  --scs-color-bg-canvas: #f8fafb;
+  --scs-color-bg-surface-secondary: #f3f4f6;
+  --scs-color-border-default: #e5e7eb;
+  --scs-color-border-subtle: #f1f4f6;
+  --scs-color-bg-muted: #f1f4f6;
+  --scs-color-icon-default: #374151;
+
+  --scs-color-brand-default: #374151;
+  --scs-color-brand-active: #111827;
+  --scs-color-brand-on-brand: #ffffff;
+  --scs-color-brand-subtle: #f3edfe;
+
+  --scs-color-feedback-info-icon: #1d4ed8;
+  --scs-color-feedback-info-bg: #eff6ff;
+  --scs-color-feedback-info-border: #dbeafe;
+  --scs-color-feedback-danger-icon: #b91c1c;
+  --scs-color-feedback-danger-text: #991b1b;
+  --scs-color-feedback-danger-bg: #fdf2f2;
+  --scs-color-feedback-danger-border: #fda29b;
+  --scs-color-feedback-warning-icon: #b45309;
+  --scs-color-feedback-warning-bg: #fffbeb;
+  --scs-color-feedback-warning-border: #fef3c7;
+  --scs-color-feedback-warning-text: #92400e;
+  --scs-color-feedback-success-icon: #067647;
+  --scs-color-feedback-success-text: #085d3a;
+  --scs-color-feedback-success-bg: #ecfdf3;
+  --scs-color-feedback-success-border: #abefc6;
+  --scs-color-feedback-info-text: #1e40af;
+  --scs-color-overlay: #0a0f1480;
+
+  --scs-font-family: system-ui, 'Segoe UI', Tahoma, sans-serif;
+  --scs-text-caption: 11px;
+  --scs-text-label: 12px;
+  --scs-text-body-sm: 13px;
+  --scs-text-body: 14px;
+  --scs-text-body-lg: 15px;
+  --scs-text-heading-sm: 16px;
+  --scs-text-title-sm: 20px;
+  --scs-text-title: 22px;
+  --scs-text-display-sm: 26px;
+  --scs-text-display: 34px;
+
+  --scs-spacing-2: 2px;
+  --scs-spacing-xs: 4px;
+  --scs-spacing-6: 6px;
+  --scs-spacing-sm: 8px;
+  --scs-spacing-10: 10px;
+  --scs-spacing-12: 12px;
+  --scs-spacing-md: 16px;
+  --scs-spacing-20: 20px;
+  --scs-spacing-lg: 24px;
+  --scs-spacing-xl: 32px;
+  --scs-spacing-40: 40px;
+  --scs-spacing-3xl: 64px;
+
+  --scs-radius-sm: 6px;
+  --scs-radius-md: 10px;
+  --scs-radius-full: 999px;
+  --scs-shadow-subtle: 0 1px 2px 0 #0a0f140f;
+}

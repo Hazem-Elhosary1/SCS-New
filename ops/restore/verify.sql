@@ -1,0 +1,137 @@
+-- Verifies a restored copy of the production database (ops/runbooks/restore.md).
+-- Run with sqlcmd against the RESTORED instance, never against production:
+--
+--   sqlcmd -S <restored-server> -d scs -b -v BACKUP_TAKEN_AT="2026-10-10T02:00:00Z" -i ops/restore/verify.sql
+--
+-- BACKUP_TAKEN_AT is the time the backup was taken, in UTC.
+-- Any failed check raises an error, and -b makes sqlcmd exit non-zero.
+-- A failed verification is a production incident, not a failed test.
+
+SET NOCOUNT ON;
+
+DECLARE @backupTakenAt datetimeoffset = CAST('$(BACKUP_TAKEN_AT)' AS datetimeoffset);
+DECLARE @failures int = 0;
+
+-- 1. The structure history is present and not empty.
+IF OBJECT_ID(N'platform.__EFMigrationsHistory', N'U') IS NULL
+BEGIN
+    PRINT 'FAIL  platform.__EFMigrationsHistory is missing';
+    SET @failures += 1;
+END
+ELSE IF NOT EXISTS (SELECT 1 FROM platform.__EFMigrationsHistory)
+BEGIN
+    PRINT 'FAIL  platform.__EFMigrationsHistory is empty';
+    SET @failures += 1;
+END
+ELSE
+    PRINT 'ok    structure history present';
+
+-- 2. Job storage is present.
+IF OBJECT_ID(N'hangfire.[Schema]', N'U') IS NULL
+BEGIN
+    PRINT 'FAIL  job storage (schema hangfire) is missing';
+    SET @failures += 1;
+END
+ELSE
+    PRINT 'ok    job storage present';
+
+-- 3. Exactly one heartbeat row.
+IF OBJECT_ID(N'platform.JobHeartbeat', N'U') IS NULL
+BEGIN
+    PRINT 'FAIL  platform.JobHeartbeat is missing';
+    SET @failures += 1;
+END
+ELSE
+BEGIN
+    DECLARE @rows int = (SELECT COUNT(*) FROM platform.JobHeartbeat);
+    IF @rows <> 1
+    BEGIN
+        PRINT CONCAT('FAIL  platform.JobHeartbeat has ', @rows, ' rows; expected 1');
+        SET @failures += 1;
+    END
+    ELSE
+    BEGIN
+        PRINT 'ok    one heartbeat row';
+
+        -- 4. The data is as recent as the backup: the job runs every minute, so the last run
+        --    must fall in the 15 minutes before the backup was taken, and not after it.
+        DECLARE @lastRun datetimeoffset = (SELECT LastRunAtUtc FROM platform.JobHeartbeat);
+        DECLARE @ageMinutes int = DATEDIFF(MINUTE, @lastRun, @backupTakenAt);
+
+        IF @lastRun > DATEADD(MINUTE, 1, @backupTakenAt)
+        BEGIN
+            PRINT CONCAT('FAIL  last heartbeat ', CONVERT(varchar(40), @lastRun, 127),
+                         ' is after the stated backup time; wrong backup or wrong time given');
+            SET @failures += 1;
+        END
+        ELSE IF @ageMinutes > 15
+        BEGIN
+            PRINT CONCAT('FAIL  last heartbeat is ', @ageMinutes,
+                         ' minutes older than the backup; the copy is stale or jobs had stopped');
+            SET @failures += 1;
+        END
+        ELSE
+            PRINT CONCAT('ok    last heartbeat ', @ageMinutes, ' minute(s) before the backup');
+    END
+END
+
+-- 5. Clinic isolation came back with the data (spec 002): the function every policy calls
+--    exists, there is at least one policy, and none is switched off. Run as a login that may
+--    see definitions (the administrator or the migrator); otherwise the counts read as zero.
+IF OBJECT_ID(N'tenancy.fn_ClinicAccess', N'IF') IS NULL
+BEGIN
+    PRINT 'FAIL  the isolation function tenancy.fn_ClinicAccess is missing';
+    SET @failures += 1;
+END
+ELSE
+BEGIN
+    DECLARE @policies int = (SELECT COUNT(*) FROM sys.security_policies);
+    DECLARE @switchedOff int = (SELECT COUNT(*) FROM sys.security_policies WHERE is_enabled = 0);
+
+    IF @policies = 0
+    BEGIN
+        PRINT 'FAIL  no isolation policy is present (or this login cannot see definitions)';
+        SET @failures += 1;
+    END
+    ELSE IF @switchedOff > 0
+    BEGIN
+        PRINT CONCAT('FAIL  ', @switchedOff, ' of ', @policies, ' isolation policies are switched off');
+        SET @failures += 1;
+    END
+    ELSE
+        PRINT CONCAT('ok    ', @policies, ' isolation policies present and switched on');
+END
+
+-- 6. The one database module that may see across clinics came back, runs as the user it should,
+--    and is the only one (spec 003). A module that runs as someone else and is not this one is
+--    a way around isolation.
+DECLARE @lookup int = (
+    SELECT COUNT(*)
+    FROM sys.sql_modules m
+    JOIN sys.objects o ON o.object_id = m.object_id
+    WHERE SCHEMA_NAME(o.schema_id) = N'identity' AND o.name = N'usp_FindAccountForSignIn'
+      AND USER_NAME(m.execute_as_principal_id) = N'scs_signin_lookup');
+DECLARE @others int = (
+    SELECT COUNT(*)
+    FROM sys.sql_modules m
+    JOIN sys.objects o ON o.object_id = m.object_id
+    WHERE m.execute_as_principal_id IS NOT NULL AND o.is_ms_shipped = 0
+      AND NOT (SCHEMA_NAME(o.schema_id) = N'identity' AND o.name = N'usp_FindAccountForSignIn'));
+
+IF @lookup <> 1
+BEGIN
+    PRINT 'FAIL  the sign-in lookup identity.usp_FindAccountForSignIn is missing or runs as the wrong user';
+    SET @failures += 1;
+END
+ELSE IF @others > 0
+BEGIN
+    PRINT CONCAT('FAIL  ', @others, ' other database module(s) run as another user');
+    SET @failures += 1;
+END
+ELSE
+    PRINT 'ok    the sign-in lookup is present and is the only module that runs as another user';
+
+IF @failures > 0
+    RAISERROR('Restore verification FAILED (%d check(s)). Treat this as a production incident.', 16, 1, @failures);
+ELSE
+    PRINT 'Restore verification passed.';

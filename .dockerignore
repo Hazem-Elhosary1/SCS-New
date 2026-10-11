@@ -1,0 +1,14 @@
+.git/
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+**/.angular/
+**/coverage/
+**/*.log
+.env
+.env.*
+specs/
+.specify/
+.claude/
+deploy/infra/

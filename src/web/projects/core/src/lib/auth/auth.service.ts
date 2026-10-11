@@ -1,0 +1,453 @@
+import { HttpClient, HttpInterceptorFn } from '@angular/common/http';
+import { Injectable, Injector, OnDestroy, inject, signal } from '@angular/core';
+import { CanActivateFn, CanMatchFn, Router, UrlTree } from '@angular/router';
+import { catchError, firstValueFrom, from, switchMap, throwError } from 'rxjs';
+import { SCS_APP } from '../app-token';
+import { ScsProblemError } from '../http/problem';
+
+/** The signed-in person, as the platform describes them (contracts/identity-api.openapi.yaml). */
+export interface StaffSession {
+  readonly accountId: string;
+  readonly email: string;
+  readonly clinic: { readonly nameAr: string; readonly nameEn: string; readonly state: string };
+  readonly expiresAt: string;
+  /** The account holds a temporary password: nothing is reachable until it is replaced (spec 004). */
+  readonly mustChangePassword?: boolean;
+  /** The role the account holds; null when it holds none (spec 005). */
+  readonly role?: StaffRole | null;
+  /** The codes the person holds at this moment, in catalogue order. The platform decides again on every request. */
+  readonly permissions?: readonly string[];
+  /** What the person keeps between sessions (spec 006). */
+  readonly preferences?: StaffPreferences;
+}
+
+export interface StaffPreferences {
+  readonly language: 'ar' | 'en' | null;
+  readonly sidebarFolded: boolean | null;
+  /** The subscription banner state the person closed today, or null. */
+  readonly dismissedBanner: 'trial' | 'expiring' | 'grace' | null;
+}
+
+export interface StaffRole {
+  readonly id: string;
+  /** As the clinic wrote it. */
+  readonly name: string;
+  /** `owner`, `manager` or `doctor` for a ready role that still has its original name. */
+  readonly readyKey: string | null;
+}
+
+export type PasswordLinkKind = 'reset' | 'new-account';
+
+/** A live emailed link, as the page that opened it needs to know it. */
+export interface PasswordLinkView {
+  readonly kind: PasswordLinkKind;
+  readonly email: string;
+  /** Only for a new account. */
+  readonly clinicNameAr?: string | null;
+  readonly clinicNameEn?: string | null;
+}
+
+/** What a call made with a link ended in: its result, or the kind of link that no longer works. */
+export type LinkAnswer<T> =
+  | { readonly live: true; readonly value: T }
+  | { readonly live: false; readonly kind: PasswordLinkKind };
+
+/** What the platform says after sending a sign-in code. */
+export interface CodeSent {
+  readonly expiresInSeconds: number;
+  readonly resendAvailableInSeconds: number;
+  readonly resendsLeft: number;
+}
+
+export type SessionStatus = 'unknown' | 'signed-in' | 'signed-out';
+
+export const AuthCodes = {
+  unauthenticated: 'UNAUTHENTICATED',
+  accessExpired: 'ACCESS_EXPIRED',
+  sessionEnded: 'SESSION_ENDED',
+  invalidCredentials: 'INVALID_CREDENTIALS',
+  codeInvalid: 'CODE_INVALID',
+  accountLocked: 'ACCOUNT_LOCKED',
+  accountDisabled: 'ACCOUNT_DISABLED',
+  clinicSuspended: 'CLINIC_SUSPENDED',
+  networkBlocked: 'NETWORK_BLOCKED',
+  rateLimited: 'RATE_LIMITED',
+  resendTooEarly: 'RESEND_TOO_EARLY',
+  resendLimitReached: 'RESEND_LIMIT_REACHED',
+  codeNotSent: 'SIGN_IN_CODE_NOT_SENT',
+  codeNotResent: 'SIGN_IN_CODE_NOT_RESENT',
+  linkInvalid: 'LINK_INVALID',
+  passwordChangeRequired: 'PASSWORD_CHANGE_REQUIRED',
+  permissionRequired: 'PERMISSION_REQUIRED',
+} as const;
+
+/** A link that no longer works is an ordinary answer, not a failure: the page has a screen for it. */
+function deadLink(error: unknown): { readonly live: false; readonly kind: PasswordLinkKind } {
+  if (error instanceof ScsProblemError && error.problem.code === AuthCodes.linkInvalid) {
+    const kind = (error.problem as { kind?: unknown }).kind;
+    return { live: false, kind: kind === 'new-account' ? 'new-account' : 'reset' };
+  }
+  throw error;
+}
+
+const CHANNEL = 'scs-auth';
+
+function isSession(value: unknown): value is StaffSession {
+  return typeof value === 'object' && value !== null && 'accountId' in value && 'clinic' in value;
+}
+
+/**
+ * Who is signed in on this browser, and the calls that change it (spec 003). The session
+ * itself lives in cookies scripts cannot read; this service only knows what the platform tells
+ * it. Nothing here is kept in browser storage: the email typed at the first step is held in
+ * memory for the second and is gone on a reload.
+ */
+@Injectable({ providedIn: 'root' })
+export class AuthService implements OnDestroy {
+  private readonly http = inject(HttpClient);
+  private readonly router = inject(Router);
+
+  private readonly current = signal<StaffSession | null>(null);
+  private readonly known = signal<SessionStatus>('unknown');
+  private readonly pending = signal<{ email: string; code: CodeSent } | null>(null);
+
+  private loading: Promise<void> | null = null;
+  private renewing: Promise<boolean> | null = null;
+  private readonly channel = this.openChannel();
+
+  /** The signed-in person, or null. */
+  readonly session = this.current.asReadonly();
+
+  readonly status = this.known.asReadonly();
+
+  /** The sign-in waiting for its code: the email it was sent to and the countdown figures. */
+  readonly pendingSignIn = this.pending.asReadonly();
+
+  ngOnDestroy(): void {
+    this.channel?.close();
+  }
+
+  /** Asks the platform once who is signed in. Safe to call from every guard. */
+  load(): Promise<void> {
+    this.loading ??= this.refresh();
+    return this.loading;
+  }
+
+  /**
+   * Step one. Resolves to `code` when a code was sent, or `signed-in` when the platform's
+   * second step is switched off. Refusals are thrown as ScsProblemError.
+   */
+  async signIn(email: string, password: string): Promise<'code' | 'signed-in'> {
+    const answer = await firstValueFrom(
+      this.http.post<CodeSent | StaffSession>('/v1/auth/sign-in', { email, password }),
+    );
+
+    if (isSession(answer)) {
+      this.entered(answer);
+      return 'signed-in';
+    }
+
+    this.pending.set({ email: email.trim(), code: answer });
+    return 'code';
+  }
+
+  /** Step two. On success the person is signed in; refusals are thrown. */
+  async confirmCode(code: string): Promise<void> {
+    const session = await firstValueFrom(
+      this.http.post<StaffSession>('/v1/auth/sign-in/code', { code }),
+    );
+    this.entered(session);
+  }
+
+  /** Sends a new code to the same email and returns the new countdown figures. */
+  async resendCode(): Promise<CodeSent> {
+    const sent = await firstValueFrom(
+      this.http.post<CodeSent>('/v1/auth/sign-in/code/resend', null),
+    );
+    const pending = this.pending();
+    if (pending !== null) {
+      this.pending.set({ email: pending.email, code: sent });
+    }
+    return sent;
+  }
+
+  /** Leaves the code step without signing in. */
+  abandonSignIn(): void {
+    this.pending.set(null);
+  }
+
+  /** Ends this browser's session and shows the plain sign-in form. Never fails. */
+  async signOut(): Promise<void> {
+    try {
+      await firstValueFrom(this.http.post('/v1/auth/sign-out', null));
+    } catch {
+      // Whatever the platform said, this browser no longer shows anything as signed in.
+    }
+    this.left();
+    this.channel?.postMessage('signed-out');
+    await this.router.navigateByUrl('/sign-in');
+  }
+
+  /**
+   * Asks the platform again who is signed in and what they may do (spec 005): after a refusal
+   * for a missing permission, and every few minutes while a page is open. A failure leaves
+   * what is known as it is — only a refusal by the platform signs anyone out.
+   */
+  async refreshSession(): Promise<void> {
+    if (this.known() !== 'signed-in') {
+      return;
+    }
+    try {
+      this.current.set(await firstValueFrom(this.http.get<StaffSession>('/v1/auth/session')));
+    } catch {
+      // The session interceptor has already dealt with a session that is over.
+    }
+  }
+
+  /**
+   * The platform refused a call for a missing permission: the list this page was drawn from is
+   * stale. Ask again, then match the address again, so a page the person may no longer open
+   * gives way to the "not in your role" state.
+   */
+  async permissionRefused(): Promise<void> {
+    await this.refreshSession();
+    await this.router.navigateByUrl(this.router.url, { onSameUrlNavigation: 'reload' });
+  }
+
+  /**
+   * Asks for a reset link (spec 004). The platform answers the same whatever the address, so
+   * this resolves for every well-formed one; only an outage or too many requests are thrown.
+   */
+  async requestPasswordReset(email: string): Promise<void> {
+    await firstValueFrom(this.http.post('/v1/auth/password/forgot', { email }));
+  }
+
+  /** Looks at an emailed link without using it up. */
+  async inspectLink(token: string): Promise<LinkAnswer<PasswordLinkView>> {
+    try {
+      const value = await firstValueFrom(
+        this.http.post<PasswordLinkView>('/v1/auth/password/link', { token }),
+      );
+      return { live: true, value };
+    } catch (error) {
+      return deadLink(error);
+    }
+  }
+
+  /**
+   * Sets the password with a link, using it up. Nobody is signed in by this: the person signs
+   * in afterwards with both steps. A refused password is thrown; the link stays live.
+   */
+  async setPasswordWithLink(
+    token: string,
+    password: string,
+  ): Promise<LinkAnswer<PasswordLinkKind>> {
+    try {
+      const done = await firstValueFrom(
+        this.http.post<{ kind: PasswordLinkKind }>('/v1/auth/password/link/set', {
+          token,
+          password,
+        }),
+      );
+      return { live: true, value: done.kind };
+    } catch (error) {
+      return deadLink(error);
+    }
+  }
+
+  /** Replaces a temporary password. The person stays signed in, in the same session. */
+  async changeTemporaryPassword(password: string): Promise<void> {
+    await firstValueFrom(this.http.post('/v1/auth/password/change', { password }));
+    this.current.update((session) =>
+      session === null ? session : { ...session, mustChangePassword: false },
+    );
+  }
+
+  /**
+   * The platform refused a call because the password is temporary: show the one screen that
+   * is allowed. It is the platform that holds the person there; this only follows.
+   */
+  async held(): Promise<void> {
+    this.current.update((session) =>
+      session === null ? session : { ...session, mustChangePassword: true },
+    );
+    if (!this.router.url.startsWith('/change-password')) {
+      await this.router.navigateByUrl('/change-password');
+    }
+  }
+
+  /**
+   * Renews the session. Calls that arrive while a renewal is in flight share it, so three
+   * requests that find the access cookie expired cause one renewal, not three.
+   */
+  renew(): Promise<boolean> {
+    this.renewing ??= firstValueFrom(this.http.post('/v1/auth/session/renew', null))
+      .then(
+        () => true,
+        () => false,
+      )
+      .finally(() => {
+        this.renewing = null;
+      });
+    return this.renewing;
+  }
+
+  /**
+   * The session was ended by something other than the person signing out: clear what is known
+   * and show the sign-in form with the neutral notice. It never says why (FR-041).
+   */
+  async ended(): Promise<void> {
+    if (this.known() === 'signed-out' && this.router.url.startsWith('/sign-in')) {
+      return;
+    }
+    this.left();
+    await this.router.navigate(['/sign-in'], { queryParams: { ended: 1 } });
+  }
+
+  private async refresh(): Promise<void> {
+    try {
+      this.entered(await firstValueFrom(this.http.get<StaffSession>('/v1/auth/session')), false);
+    } catch {
+      this.left();
+    }
+  }
+
+  private entered(session: StaffSession, announce = true): void {
+    this.current.set(session);
+    this.known.set('signed-in');
+    this.pending.set(null);
+    if (announce) {
+      this.channel?.postMessage('signed-in');
+    }
+  }
+
+  private left(): void {
+    this.current.set(null);
+    this.known.set('signed-out');
+    this.pending.set(null);
+  }
+
+  /** Other tabs of this browser follow a sign-in or a sign-out at once. */
+  private openChannel(): BroadcastChannel | null {
+    if (typeof BroadcastChannel === 'undefined') {
+      return null;
+    }
+
+    const channel = new BroadcastChannel(CHANNEL);
+    channel.onmessage = (event: MessageEvent<unknown>) => {
+      if (event.data === 'signed-out') {
+        this.left();
+        void this.router.navigateByUrl('/sign-in');
+      } else if (event.data === 'signed-in' && this.known() !== 'signed-in') {
+        void this.refresh().then(() => {
+          if (this.known() === 'signed-in' && this.router.url.startsWith('/sign-in')) {
+            void this.router.navigateByUrl('/');
+          }
+        });
+      }
+    };
+    return channel;
+  }
+}
+
+async function signedInOrSentAway(): Promise<boolean | UrlTree> {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  await auth.load();
+  if (auth.status() !== 'signed-in') {
+    return router.parseUrl('/sign-in');
+  }
+  // A temporary password must be replaced before any page of the console (spec 004, FR-035).
+  return auth.session()?.mustChangePassword === true ? router.parseUrl('/change-password') : true;
+}
+
+/** Only a signed-in person passes; anyone else is shown the sign-in form. */
+export const sessionGuard: CanActivateFn = () => signedInOrSentAway();
+
+/**
+ * The same check, made before a part of the app that is loaded on demand is downloaded: a
+ * person who is not signed in is shown the sign-in form without downloading the console.
+ */
+export const sessionMatchGuard: CanMatchFn = () => signedInOrSentAway();
+
+/** The screen that replaces a temporary password is for the person who holds one, and nobody else. */
+export const temporaryPasswordGuard: CanActivateFn = async () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  await auth.load();
+  if (auth.status() !== 'signed-in') {
+    return router.parseUrl('/sign-in');
+  }
+  return auth.session()?.mustChangePassword === true ? true : router.parseUrl('/');
+};
+
+/** The sign-in form is for people who are not signed in; the others are taken inside. */
+export const signedOutGuard: CanActivateFn = async () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  await auth.load();
+  return auth.status() === 'signed-in' ? router.parseUrl('/') : true;
+};
+
+/** The code step exists only while a sign-in is waiting for its code. */
+export const pendingSignInGuard: CanActivateFn = () =>
+  inject(AuthService).pendingSignIn() !== null ? true : inject(Router).parseUrl('/sign-in');
+
+const HANDLES_ITS_OWN = ['/v1/auth/sign-in', '/v1/auth/session/renew', '/v1/auth/sign-out'];
+
+/**
+ * Keeps a session going without the person noticing, and notices when it is over (spec 003).
+ * Place it before the API interceptor. Only the staff and operators sites use it.
+ *
+ * - `ACCESS_EXPIRED`: renew once, then repeat the call once.
+ * - `SESSION_ENDED`, or a renewal that is refused: clear the screen and show the sign-in form
+ *   with the "session ended" notice.
+ * - `PASSWORD_CHANGE_REQUIRED`: show the screen that replaces a temporary password.
+ * - `PERMISSION_REQUIRED`: ask again what the person may do, then match the address again.
+ */
+export const sessionInterceptor: HttpInterceptorFn = (request, next) => {
+  const app = inject(SCS_APP, { optional: true });
+  if (app === 'patient' || HANDLES_ITS_OWN.some((path) => request.url.includes(path))) {
+    return next(request);
+  }
+
+  // Resolved when needed: the service itself makes calls that pass through here.
+  const injector = inject(Injector);
+
+  return next(request).pipe(
+    catchError((error: unknown) => {
+      if (!(error instanceof ScsProblemError)) {
+        return throwError(() => error);
+      }
+
+      const auth = injector.get(AuthService);
+
+      if (error.problem.code === AuthCodes.accessExpired) {
+        return from(auth.renew()).pipe(
+          switchMap((renewed) => {
+            if (renewed) {
+              return next(request);
+            }
+            void auth.ended();
+            return throwError(() => error);
+          }),
+        );
+      }
+
+      if (error.problem.code === AuthCodes.sessionEnded) {
+        void auth.ended();
+      }
+
+      if (error.problem.code === AuthCodes.passwordChangeRequired) {
+        void auth.held();
+      }
+
+      if (error.problem.code === AuthCodes.permissionRequired) {
+        // The list the page was drawn from is stale: read it again and match the address again.
+        void auth.permissionRefused();
+      }
+
+      return throwError(() => error);
+    }),
+  );
+};

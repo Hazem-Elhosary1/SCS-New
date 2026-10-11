@@ -1,0 +1,10 @@
+{
+  "app": {
+    "shell": {
+      "name": "Patient pages"
+    },
+    "clinic": {
+      "notAvailable": "This page is not available"
+    }
+  }
+}

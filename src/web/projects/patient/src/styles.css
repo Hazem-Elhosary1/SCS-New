@@ -1,0 +1,18 @@
+@import 'tailwindcss';
+@import './styles/tokens.css';
+@import '../../ui/src/lib/controls/controls.css';
+
+/* The design file's typeface, served from this site: no page calls a third party. */
+@import '@fontsource-variable/cairo';
+
+/* Shared libraries are part of this app's styles. */
+@source '../../core/src';
+@source '../../ui/src';
+
+body {
+  margin: 0;
+  background: var(--scs-color-bg-surface);
+  color: var(--scs-color-text-primary);
+  font-family: var(--scs-font-family);
+  font-size: var(--scs-text-body);
+}

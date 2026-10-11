@@ -1,0 +1,23 @@
+# Database migrator: a one-off task the pipeline runs before a release starts. It needs
+# SCS_DB__MIGRATION_CONNECTION (the login that may alter structure) and exits non-zero on failure.
+# Build from the repository root:
+#   docker build -f deploy/docker/Dockerfile.migrator -t scs-migrator .
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /repo
+
+COPY .editorconfig ./
+COPY src/server/ ./src/server/
+
+WORKDIR /repo/src/server
+RUN dotnet restore tools/Scs.Migrator/Scs.Migrator.csproj
+RUN dotnet publish tools/Scs.Migrator/Scs.Migrator.csproj -c Release -o /app --no-restore
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+ENV DOTNET_EnableDiagnostics=0
+
+WORKDIR /app
+COPY --from=build /app ./
+
+USER $APP_UID
+ENTRYPOINT ["dotnet", "Scs.Migrator.dll"]

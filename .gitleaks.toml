@@ -1,0 +1,15 @@
+# Secret scanning rules for the pull-request gate.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Sample values for local development and values made up inside tests"
+paths = [
+  '''deploy/compose/\.env\.example$''',
+  '''src/server/tests/.*''',
+  '''src/web/projects/.*\.spec\.ts  '''specs/.*''',
+]
+'',
+  '''src/web/e2e/.*''',
+  '''specs/.*''',
+]

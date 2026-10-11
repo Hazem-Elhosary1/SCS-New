@@ -1,0 +1,293 @@
+openapi: 3.1.0
+info:
+  title: Smart Clinic OS — Staff sign-in and sessions
+  version: 0.3.0
+  description: |
+    Spec 003. Served on the staff address only (`app.scs-heta.com/api`). Every answer follows the
+    conventions of spec 001 (`contracts/conventions.md`): problems are RFC 9457 with `code` and
+    `traceId`; `X-Trace-Id` is on every response.
+
+    Cookies are set and cleared by the server; scripts never read them.
+    Every request that changes something here must carry `X-Scs-Request: 1`, as must any
+    changing request to an endpoint that needs a signed-in person.
+
+    `INVALID_CREDENTIALS` is never answered sooner than 300 ms after the request.
+
+    The three sign-in operations (sign-in, code, resend) share one limit of ten requests per
+    minute per network address. Renewal has its own, larger limit.
+
+    When the platform switch for the email code is off, `POST /auth/sign-in` answers 200 with
+    the session body and the session cookies, and the code operations answer `CODE_INVALID`.
+servers:
+  - url: /v1
+tags:
+  - name: sign-in
+  - name: session
+  - name: meta
+paths:
+  /auth/sign-in:
+    post:
+      tags: [sign-in]
+      operationId: signIn
+      summary: Step one — email and password
+      description: |
+        Order of checks: blocked network → request limit → account exists → password → lock →
+        account state → clinic state → send the code.
+
+        A correct password opens no session. It issues a code, emails it, and sets the
+        short-lived challenge cookie.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/RequestHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [email, password]
+              properties:
+                email: { type: string, maxLength: 254 }
+                password: { type: string, minLength: 1, maxLength: 200 }
+      responses:
+        '200':
+          description: The code was sent
+          headers:
+            Set-Cookie:
+              description: The challenge cookie (HttpOnly, Secure, SameSite=Strict, 10 minutes)
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/CodeSent'
+                  - $ref: '#/components/schemas/Session'
+        '400':
+          description: '`VALIDATION_FAILED` — email or password missing or malformed'
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+        '401':
+          description: |
+            `INVALID_CREDENTIALS` — one answer for: unknown email; wrong password; invited
+            account; wrong password on a locked or disabled account or in a suspended or
+            cancelled clinic.
+            Identical in body and timing.
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+        '403':
+          description: |
+            Only after a correct password, except `NETWORK_BLOCKED`, which comes first:
+            `ACCOUNT_LOCKED` (with `lockedUntil`), `ACCOUNT_DISABLED`, `CLINIC_SUSPENDED`,
+            `NETWORK_BLOCKED`.
+          content:
+            application/problem+json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Problem'
+                  - type: object
+                    properties:
+                      lockedUntil: { type: string, format: date-time, description: 'Only with ACCOUNT_LOCKED' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: '`SIGN_IN_CODE_NOT_SENT` — the password was correct and the email could not be sent; no challenge exists'
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+
+  /auth/sign-in/code:
+    post:
+      tags: [sign-in]
+      operationId: confirmCode
+      summary: Step two — the six-digit code
+      description: |
+        Needs the challenge cookie. On success opens the session, sets the access and renewal
+        cookies, clears the challenge cookie and records a sign-in event. The account's and the
+        clinic's state are checked again.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/RequestHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [code]
+              properties:
+                code: { type: string, pattern: '^[0-9]{6}$' }
+      responses:
+        '200':
+          description: Signed in
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Session' }
+        '401':
+          description: |
+            `CODE_INVALID` — one answer for: wrong code; expired; spent after five attempts;
+            already used; replaced by a newer one; no challenge cookie.
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+        '403':
+          description: '`ACCOUNT_DISABLED` or `CLINIC_SUSPENDED` — changed between the two steps; the challenge cookie is cleared'
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /auth/sign-in/code/resend:
+    post:
+      tags: [sign-in]
+      operationId: resendCode
+      summary: Send a new code to the same email
+      description: |
+        Needs the challenge cookie. A successful resend cancels the earlier code and restarts
+        the countdown; a failed one leaves the earlier code valid. The new code does not extend
+        the ten minutes of the sign-in it belongs to.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/RequestHeader'
+      responses:
+        '200':
+          description: A new code was sent
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CodeSent' }
+        '401':
+          description: '`CODE_INVALID` — no standing sign-in to resend for'
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+        '409':
+          description: '`RESEND_TOO_EARLY` — the countdown has not ended; `resendAvailableInSeconds` says how long. Or `RESEND_LIMIT_REACHED` — three codes were already resent in this sign-in; the last one is still valid'
+          content:
+            application/problem+json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Problem'
+                  - type: object
+                    properties:
+                      resendAvailableInSeconds: { type: integer }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: '`SIGN_IN_CODE_NOT_RESENT` — the earlier code is still valid'
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+
+  /auth/session:
+    get:
+      tags: [session]
+      operationId: getSession
+      summary: Who is signed in
+      responses:
+        '200':
+          description: The session of this browser
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Session' }
+        '401': { $ref: '#/components/responses/NotSignedIn' }
+
+  /auth/session/renew:
+    post:
+      tags: [session]
+      operationId: renewSession
+      summary: Renew the session
+      description: |
+        Needs the renewal cookie. Replaces its secret and issues a new access cookie. Refused
+        when the session is ended or past its maximum life, the account is not active, or the
+        clinic is suspended. A replaced secret presented after its grace period ends every
+        session of the account.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/RequestHeader'
+      responses:
+        '204': { description: Renewed }
+        '401':
+          description: '`SESSION_ENDED` — sign in again; both cookies are cleared'
+          content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+
+  /auth/sign-out:
+    post:
+      tags: [session]
+      operationId: signOut
+      summary: End this session
+      description: Ends the current session only and clears the cookies. Succeeds even when no session is alive, and in a suspended clinic.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/RequestHeader'
+      responses:
+        '204': { description: Signed out }
+
+  /meta/support:
+    get:
+      tags: [meta]
+      operationId: getSupport
+      summary: Support hours and channels for the help window
+      security: []
+      responses:
+        '200':
+          description: Platform settings; nothing private
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [hoursAr, hoursEn, hotline, whatsapp, email]
+                properties:
+                  hoursAr: { type: string }
+                  hoursEn: { type: string }
+                  hotline: { type: string, description: 'Shown as written; dialled as tel:' }
+                  whatsapp: { type: string, description: 'International number, digits only' }
+                  email: { type: string, format: email }
+
+components:
+  securitySchemes:
+    staffSession:
+      type: apiKey
+      in: cookie
+      name: __Host-scs-session
+  parameters:
+    RequestHeader:
+      name: X-Scs-Request
+      in: header
+      required: true
+      schema: { type: string, enum: ['1'] }
+      description: Required on every request that changes something; without it the answer is 403 `FORBIDDEN`.
+  responses:
+    RateLimited:
+      description: '`RATE_LIMITED` — ten sign-in requests per minute per network address'
+      headers:
+        Retry-After: { schema: { type: integer }, description: Seconds until the next request is accepted }
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+    NotSignedIn:
+      description: |
+        One of: `UNAUTHENTICATED` (no session cookie — show the plain sign-in form),
+        `ACCESS_EXPIRED` (renew, then repeat the request), `SESSION_ENDED` (show the sign-in form
+        with the "session ended" notice).
+      content: { application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } } }
+  schemas:
+    CodeSent:
+      type: object
+      required: [expiresInSeconds, resendAvailableInSeconds, resendsLeft]
+      properties:
+        expiresInSeconds: { type: integer, description: Until the sign-in must be started again }
+        resendAvailableInSeconds: { type: integer, description: The countdown }
+        resendsLeft: { type: integer, minimum: 0, description: How many more codes may be resent in this sign-in }
+    Session:
+      type: object
+      required: [accountId, email, clinic, expiresAt]
+      properties:
+        accountId: { type: string, format: uuid }
+        email: { type: string }
+        clinic:
+          type: object
+          required: [nameAr, nameEn, state]
+          properties:
+            nameAr: { type: string }
+            nameEn: { type: string }
+            state: { type: string }
+        expiresAt: { type: string, format: date-time, description: The session's maximum life }
+    Problem:
+      type: object
+      required: [type, title, status, code, traceId]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        code: { type: string }
+        traceId: { type: string, pattern: '^[0-9a-f]{32}$' }
+        errors:
+          type: object
+          additionalProperties: { type: array, items: { type: string } }
+security:
+  - staffSession: []

@@ -1,0 +1,17 @@
+# The audit trail's action codes, frozen (spec 007, FR-007).
+# A code in this file is never renamed, reused or removed, and never changes its category:
+# entries written under it are kept for years and must go on meaning the same thing.
+# Add new codes at the end.
+role.created users
+role.updated users
+role.deleted users
+account.role-changed users
+account.access-reissued users
+invitation.accepted users
+signin.succeeded security
+signin.failed-run security
+session.signed-out security
+sessions.ended security
+password.reset-completed security
+password.temporary-replaced security
+settings.notification-email-changed changes
