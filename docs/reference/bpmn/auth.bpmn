@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_auth" name="Sign-in, two-step code, invitation and password reset (clinic staff &amp; operators)" targetNamespace="https://scs.clinic/bpmn" exporter="SCS BPMN generator" exporterVersion="1.0">
+  <bpmn:collaboration id="Collaboration_auth">
+    <bpmn:documentation>Shared authentication flow of the platform: password sign-in, emailed 6-digit code, invitation and reset links.</bpmn:documentation>
+    <bpmn:participant id="Participant_user" name="Clinic staff member or operator — browser" />
+    <bpmn:participant id="Participant_auth" name="SCS Platform — authentication" processRef="Process_auth" />
+    <bpmn:participant id="Participant_inbox" name="User’s email inbox — delivered by Resend" />
+    <bpmn:messageFlow id="MessageFlow_1" name="clinic slug · email · password" sourceRef="Participant_user" targetRef="S_login" />
+    <bpmn:messageFlow id="MessageFlow_2" name="code" sourceRef="Participant_user" targetRef="W_code" />
+    <bpmn:messageFlow id="MessageFlow_3" name="code email" sourceRef="T_send" targetRef="Participant_inbox" />
+    <bpmn:messageFlow id="MessageFlow_4" name="link email" sourceRef="T_link" targetRef="Participant_inbox" />
+    <bpmn:messageFlow id="MessageFlow_5" name="opens link" sourceRef="Participant_inbox" targetRef="W_link" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_auth" name="SCS Platform — authentication" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_auth">
+      <bpmn:lane id="Lane_signin" name="Sign-in &amp; session">
+        <bpmn:flowNodeRef>S_login</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_check</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G_ok</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E_refused</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>W_code</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G_code</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E_bad</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_jwt</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E_in</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_acct" name="Codes, invitations &amp; reset links">
+        <bpmn:flowNodeRef>T_send</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>S_inv</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_link</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>W_link</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G_valid</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_setpw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_end</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E_pw</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E_expired</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="S_login" name="Sign-in request">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="S_login_def" />
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="T_check" name="Check clinic &amp; credentials">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="G_ok" name="Valid?">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="E_refused" name="Refused (5 fails → 15-min lock)">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sendTask id="T_send" name="Email 6-digit code">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:intermediateCatchEvent id="W_code" name="Code entered">
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="W_code_def" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="G_code" name="Code correct?">
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+      <bpmn:outgoing>Flow_7</bpmn:outgoing>
+      <bpmn:outgoing>Flow_8</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="E_bad" name="Wrong or expired code">
+      <bpmn:incoming>Flow_7</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="T_jwt" name="Issue JWT &amp; refresh session">
+      <bpmn:incoming>Flow_8</bpmn:incoming>
+      <bpmn:outgoing>Flow_9</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="E_in" name="Signed in">
+      <bpmn:incoming>Flow_9</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="S_inv" name="Reset requested or owner invited">
+      <bpmn:outgoing>Flow_10</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sendTask id="T_link" name="Email link">
+      <bpmn:incoming>Flow_10</bpmn:incoming>
+      <bpmn:outgoing>Flow_11</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:intermediateCatchEvent id="W_link" name="Link opened">
+      <bpmn:incoming>Flow_11</bpmn:incoming>
+      <bpmn:outgoing>Flow_12</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="W_link_def" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="G_valid" name="Link valid &amp; unused?">
+      <bpmn:incoming>Flow_12</bpmn:incoming>
+      <bpmn:outgoing>Flow_13</bpmn:outgoing>
+      <bpmn:outgoing>Flow_14</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="T_setpw" name="Set new password">
+      <bpmn:incoming>Flow_14</bpmn:incoming>
+      <bpmn:outgoing>Flow_15</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="T_end" name="End all sessions, log event">
+      <bpmn:incoming>Flow_15</bpmn:incoming>
+      <bpmn:outgoing>Flow_16</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="E_pw" name="Password set — sign in again">
+      <bpmn:incoming>Flow_16</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="E_expired" name="Link expired or used">
+      <bpmn:incoming>Flow_13</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="S_login" targetRef="T_check">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="T_check" targetRef="G_ok">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="G_ok" targetRef="E_refused" name="no">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="G_ok" targetRef="T_send" name="yes">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="T_send" targetRef="W_code">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="W_code" targetRef="G_code">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="G_code" targetRef="E_bad" name="no">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_8" sourceRef="G_code" targetRef="T_jwt" name="yes">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_9" sourceRef="T_jwt" targetRef="E_in">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_10" sourceRef="S_inv" targetRef="T_link">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_11" sourceRef="T_link" targetRef="W_link">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_12" sourceRef="W_link" targetRef="G_valid">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_13" sourceRef="G_valid" targetRef="E_expired" name="no">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_14" sourceRef="G_valid" targetRef="T_setpw" name="yes">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_15" sourceRef="T_setpw" targetRef="T_end">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_16" sourceRef="T_end" targetRef="E_pw">
+    </bpmn:sequenceFlow>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_auth">
+    <bpmndi:BPMNPlane id="BPMNPlane_auth" bpmnElement="Collaboration_auth">
+      <bpmndi:BPMNShape id="Participant_user_di" bpmnElement="Participant_user" isHorizontal="true"><dc:Bounds x="40" y="40" width="2962" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_auth_di" bpmnElement="Participant_auth" isHorizontal="true"><dc:Bounds x="40" y="170" width="2962" height="340" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_signin_di" bpmnElement="Lane_signin" isHorizontal="true"><dc:Bounds x="76" y="170" width="2926" height="170" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_acct_di" bpmnElement="Lane_acct" isHorizontal="true"><dc:Bounds x="76" y="340" width="2926" height="170" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_inbox_di" bpmnElement="Participant_inbox" isHorizontal="true"><dc:Bounds x="40" y="570" width="2962" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_login_di" bpmnElement="S_login"><dc:Bounds x="189" y="237" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="161" y="277" width="93" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_check_di" bpmnElement="T_check"><dc:Bounds x="327" y="207" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="G_ok_di" bpmnElement="G_ok"><dc:Bounds x="562" y="230" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="557" y="198" width="60" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="E_refused_di" bpmnElement="E_refused"><dc:Bounds x="759" y="237" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="707" y="277" width="140" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_send_di" bpmnElement="T_send"><dc:Bounds x="707" y="377" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="W_code_di" bpmnElement="W_code"><dc:Bounds x="949" y="237" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="930" y="277" width="74" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="G_code_di" bpmnElement="G_code"><dc:Bounds x="1132" y="230" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="1117" y="198" width="81" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="E_bad_di" bpmnElement="E_bad"><dc:Bounds x="1139" y="299" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1092" y="339" width="130" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_jwt_di" bpmnElement="T_jwt"><dc:Bounds x="1277" y="207" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="E_in_di" bpmnElement="E_in"><dc:Bounds x="1519" y="237" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1507" y="277" width="60" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_inv_di" bpmnElement="S_inv"><dc:Bounds x="1709" y="407" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1657" y="447" width="140" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_link_di" bpmnElement="T_link"><dc:Bounds x="1847" y="377" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="W_link_di" bpmnElement="W_link"><dc:Bounds x="2089" y="407" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="2073" y="447" width="68" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="G_valid_di" bpmnElement="G_valid"><dc:Bounds x="2272" y="400" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="2235" y="368" width="124" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_setpw_di" bpmnElement="T_setpw"><dc:Bounds x="2417" y="352" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_end_di" bpmnElement="T_end"><dc:Bounds x="2607" y="352" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="E_pw_di" bpmnElement="E_pw"><dc:Bounds x="2849" y="382" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="2797" y="422" width="140" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="E_expired_di" bpmnElement="E_expired"><dc:Bounds x="2469" y="469" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="2425" y="509" width="124" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1"><di:waypoint x="225" y="255" /><di:waypoint x="327" y="255" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2"><di:waypoint x="467" y="255" /><di:waypoint x="562" y="255" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3"><di:waypoint x="612" y="255" /><di:waypoint x="759" y="255" /><bpmndi:BPMNLabel><dc:Bounds x="692" y="233" width="40" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4"><di:waypoint x="587" y="280" /><di:waypoint x="587" y="425" /><di:waypoint x="707" y="425" /><bpmndi:BPMNLabel><dc:Bounds x="593" y="331" width="40" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5"><di:waypoint x="847" y="425" /><di:waypoint x="887" y="425" /><di:waypoint x="887" y="255" /><di:waypoint x="949" y="255" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6"><di:waypoint x="985" y="255" /><di:waypoint x="1132" y="255" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7"><di:waypoint x="1157" y="280" /><di:waypoint x="1157" y="299" /><bpmndi:BPMNLabel><dc:Bounds x="1163" y="268" width="40" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_8"><di:waypoint x="1182" y="255" /><di:waypoint x="1277" y="255" /><bpmndi:BPMNLabel><dc:Bounds x="1236" y="233" width="40" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_9_di" bpmnElement="Flow_9"><di:waypoint x="1417" y="255" /><di:waypoint x="1519" y="255" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_10_di" bpmnElement="Flow_10"><di:waypoint x="1745" y="425" /><di:waypoint x="1847" y="425" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11_di" bpmnElement="Flow_11"><di:waypoint x="1987" y="425" /><di:waypoint x="2089" y="425" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_12_di" bpmnElement="Flow_12"><di:waypoint x="2125" y="425" /><di:waypoint x="2272" y="425" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_13_di" bpmnElement="Flow_13"><di:waypoint x="2297" y="450" /><di:waypoint x="2297" y="487" /><di:waypoint x="2469" y="487" /><bpmndi:BPMNLabel><dc:Bounds x="2303" y="447" width="40" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_14_di" bpmnElement="Flow_14"><di:waypoint x="2322" y="425" /><di:waypoint x="2362" y="425" /><di:waypoint x="2362" y="400" /><di:waypoint x="2417" y="400" /><bpmndi:BPMNLabel><dc:Bounds x="2348" y="403" width="40" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_15_di" bpmnElement="Flow_15"><di:waypoint x="2557" y="400" /><di:waypoint x="2607" y="400" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_16_di" bpmnElement="Flow_16"><di:waypoint x="2747" y="400" /><di:waypoint x="2849" y="400" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_1_di" bpmnElement="MessageFlow_1"><di:waypoint x="207" y="110" /><di:waypoint x="207" y="237" /><bpmndi:BPMNLabel><dc:Bounds x="213" y="166" width="186" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_2_di" bpmnElement="MessageFlow_2"><di:waypoint x="967" y="110" /><di:waypoint x="967" y="237" /><bpmndi:BPMNLabel><dc:Bounds x="973" y="166" width="50" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_3_di" bpmnElement="MessageFlow_3"><di:waypoint x="777" y="473" /><di:waypoint x="777" y="570" /><bpmndi:BPMNLabel><dc:Bounds x="783" y="514" width="62" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_4_di" bpmnElement="MessageFlow_4"><di:waypoint x="1917" y="473" /><di:waypoint x="1917" y="570" /><bpmndi:BPMNLabel><dc:Bounds x="1923" y="514" width="62" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_5_di" bpmnElement="MessageFlow_5"><di:waypoint x="2107" y="570" /><di:waypoint x="2107" y="443" /><bpmndi:BPMNLabel><dc:Bounds x="2113" y="499" width="62" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

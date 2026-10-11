@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_ops-lifecycle" name="Ops console — clinic onboarding, subscription and support lifecycle" targetNamespace="https://scs.clinic/bpmn" exporter="SCS BPMN generator" exporterVersion="1.0">
+  <bpmn:collaboration id="Collaboration_ops-lifecycle">
+    <bpmn:documentation>Operator-side lifecycle of a clinic account: onboarding, renewal billing through Fawry, automatic reminders and suspension, and support tickets.</bpmn:documentation>
+    <bpmn:participant id="Participant_clinic" name="Clinic — owner &amp; staff" />
+    <bpmn:participant id="Participant_ops" name="SCS Ops Console — Heta operators" processRef="Process_ops" />
+    <bpmn:participant id="Participant_fawry" name="Fawry" />
+    <bpmn:messageFlow id="MessageFlow_1" name="POST /tickets" sourceRef="Participant_clinic" targetRef="S_ticket" />
+    <bpmn:messageFlow id="MessageFlow_2" name="ticket update emails (Resend)" sourceRef="T_work" targetRef="Participant_clinic" />
+    <bpmn:messageFlow id="MessageFlow_3" name="reminder email (Resend)" sourceRef="T_remind" targetRef="Participant_clinic" />
+    <bpmn:messageFlow id="MessageFlow_4" name="invitation email (Resend)" sourceRef="T_invite" targetRef="Participant_clinic" />
+    <bpmn:messageFlow id="MessageFlow_5" name="invoice email (Resend)" sourceRef="T_email" targetRef="Participant_clinic" />
+    <bpmn:messageFlow id="MessageFlow_6" name="create checkout link" sourceRef="T_link" targetRef="Participant_fawry" />
+    <bpmn:messageFlow id="MessageFlow_7" name="webhook · poller · return page" sourceRef="Participant_fawry" targetRef="W_pay" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_ops" name="SCS Ops Console — Heta operators" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_ops">
+      <bpmn:lane id="Lane_auto" name="Platform automation (timers)">
+        <bpmn:flowNodeRef>S_t2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_remind</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E_rem</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>S_t1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G_grace</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_suspend</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E_susp</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E_keep</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_sup" name="Support">
+        <bpmn:flowNodeRef>S_ticket</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_triage</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_work</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>B_sla</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G_res</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E_closed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E_sla</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_op" name="Account manager / operator">
+        <bpmn:flowNodeRef>S_new</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_create</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_invite</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_channels</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_am</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E_live</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>S_manual</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>SP_manual</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E_manual</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_bill" name="Billing">
+        <bpmn:flowNodeRef>S_renew</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_invoice</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_link</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_email</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>W_pay</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G_paid</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_settle</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E_renewed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E_failed</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="S_t2" name="14 / 7 / 1 days before expiry">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="S_t2_def" />
+    </bpmn:startEvent>
+    <bpmn:sendTask id="T_remind" name="Send renewal reminder">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:endEvent id="E_rem" name="Reminded">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="S_t1" name="Hourly check">
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="S_t1_def" />
+    </bpmn:startEvent>
+    <bpmn:exclusiveGateway id="G_grace" name="Grace over &amp; auto-suspend on?">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="T_suspend" name="Suspend clinic">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="E_susp" name="Suspended">
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="E_keep" name="No change">
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="S_ticket" name="Ticket created">
+      <bpmn:outgoing>Flow_7</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="S_ticket_def" />
+    </bpmn:startEvent>
+    <bpmn:userTask id="T_triage" name="Triage &amp; start SLA clock">
+      <bpmn:incoming>Flow_7</bpmn:incoming>
+      <bpmn:outgoing>Flow_8</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T_work" name="Reply · escalate · hold · reassign">
+      <bpmn:incoming>Flow_8</bpmn:incoming>
+      <bpmn:incoming>Flow_11</bpmn:incoming>
+      <bpmn:outgoing>Flow_9</bpmn:outgoing>
+      <bpmn:standardLoopCharacteristics />
+    </bpmn:userTask>
+    <bpmn:boundaryEvent id="B_sla" name="SLA warning / breach" attachedToRef="T_work" cancelActivity="false">
+      <bpmn:outgoing>Flow_12</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="B_sla_def" />
+    </bpmn:boundaryEvent>
+    <bpmn:exclusiveGateway id="G_res" name="Resolved?">
+      <bpmn:incoming>Flow_9</bpmn:incoming>
+      <bpmn:outgoing>Flow_10</bpmn:outgoing>
+      <bpmn:outgoing>Flow_11</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="E_closed" name="Closed">
+      <bpmn:incoming>Flow_10</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="E_sla" name="Bell + email alert to operators">
+      <bpmn:incoming>Flow_12</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="S_new" name="New clinic agreed">
+      <bpmn:outgoing>Flow_13</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="T_create" name="Create clinic">
+      <bpmn:incoming>Flow_13</bpmn:incoming>
+      <bpmn:outgoing>Flow_14</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sendTask id="T_invite" name="Send owner invitation">
+      <bpmn:incoming>Flow_14</bpmn:incoming>
+      <bpmn:outgoing>Flow_15</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:userTask id="T_channels" name="Configure channels &amp; bot">
+      <bpmn:incoming>Flow_15</bpmn:incoming>
+      <bpmn:outgoing>Flow_16</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T_am" name="Assign account manager">
+      <bpmn:incoming>Flow_16</bpmn:incoming>
+      <bpmn:outgoing>Flow_17</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="E_live" name="Clinic active (trial)">
+      <bpmn:incoming>Flow_17</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="S_manual" name="Operator action">
+      <bpmn:outgoing>Flow_18</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:subProcess id="SP_manual" name="Manual subscription actions">
+      <bpmn:incoming>Flow_18</bpmn:incoming>
+      <bpmn:outgoing>Flow_19</bpmn:outgoing>
+    </bpmn:subProcess>
+    <bpmn:endEvent id="E_manual" name="History entry written">
+      <bpmn:incoming>Flow_19</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="S_renew" name="Renewal initiated">
+      <bpmn:outgoing>Flow_20</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="T_invoice" name="Create renewal invoice">
+      <bpmn:incoming>Flow_20</bpmn:incoming>
+      <bpmn:outgoing>Flow_21</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="T_link" name="Create Fawry checkout link">
+      <bpmn:incoming>Flow_21</bpmn:incoming>
+      <bpmn:outgoing>Flow_22</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sendTask id="T_email" name="Email invoice &amp; link">
+      <bpmn:incoming>Flow_22</bpmn:incoming>
+      <bpmn:outgoing>Flow_23</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:intermediateCatchEvent id="W_pay" name="Payment result">
+      <bpmn:incoming>Flow_23</bpmn:incoming>
+      <bpmn:outgoing>Flow_24</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="W_pay_def" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="G_paid" name="Paid in full?">
+      <bpmn:incoming>Flow_24</bpmn:incoming>
+      <bpmn:outgoing>Flow_25</bpmn:outgoing>
+      <bpmn:outgoing>Flow_27</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="T_settle" name="Settle &amp; extend expiry">
+      <bpmn:incoming>Flow_25</bpmn:incoming>
+      <bpmn:outgoing>Flow_26</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="E_renewed" name="Renewed">
+      <bpmn:incoming>Flow_26</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="E_failed" name="payment_failed">
+      <bpmn:incoming>Flow_27</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="S_t2" targetRef="T_remind">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="T_remind" targetRef="E_rem">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="S_t1" targetRef="G_grace">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="G_grace" targetRef="T_suspend" name="yes">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="T_suspend" targetRef="E_susp">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="G_grace" targetRef="E_keep" name="no">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="S_ticket" targetRef="T_triage">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_8" sourceRef="T_triage" targetRef="T_work">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_9" sourceRef="T_work" targetRef="G_res">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_10" sourceRef="G_res" targetRef="E_closed" name="yes">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_11" sourceRef="G_res" targetRef="T_work" name="no">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_12" sourceRef="B_sla" targetRef="E_sla">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_13" sourceRef="S_new" targetRef="T_create">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_14" sourceRef="T_create" targetRef="T_invite">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_15" sourceRef="T_invite" targetRef="T_channels">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_16" sourceRef="T_channels" targetRef="T_am">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_17" sourceRef="T_am" targetRef="E_live">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_18" sourceRef="S_manual" targetRef="SP_manual">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_19" sourceRef="SP_manual" targetRef="E_manual">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_20" sourceRef="S_renew" targetRef="T_invoice">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_21" sourceRef="T_invoice" targetRef="T_link">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_22" sourceRef="T_link" targetRef="T_email">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_23" sourceRef="T_email" targetRef="W_pay">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_24" sourceRef="W_pay" targetRef="G_paid">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_25" sourceRef="G_paid" targetRef="T_settle" name="yes">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_26" sourceRef="T_settle" targetRef="E_renewed">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_27" sourceRef="G_paid" targetRef="E_failed" name="declined">
+    </bpmn:sequenceFlow>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_ops-lifecycle">
+    <bpmndi:BPMNPlane id="BPMNPlane_ops-lifecycle" bpmnElement="Collaboration_ops-lifecycle">
+      <bpmndi:BPMNShape id="Participant_clinic_di" bpmnElement="Participant_clinic" isHorizontal="true"><dc:Bounds x="40" y="40" width="2772" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_ops_di" bpmnElement="Participant_ops" isHorizontal="true"><dc:Bounds x="40" y="170" width="2772" height="760" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_auto_di" bpmnElement="Lane_auto" isHorizontal="true"><dc:Bounds x="76" y="170" width="2736" height="190" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_sup_di" bpmnElement="Lane_sup" isHorizontal="true"><dc:Bounds x="76" y="360" width="2736" height="190" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_op_di" bpmnElement="Lane_op" isHorizontal="true"><dc:Bounds x="76" y="550" width="2736" height="190" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_bill_di" bpmnElement="Lane_bill" isHorizontal="true"><dc:Bounds x="76" y="740" width="2736" height="190" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_fawry_di" bpmnElement="Participant_fawry" isHorizontal="true"><dc:Bounds x="40" y="990" width="2772" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_t2_di" bpmnElement="S_t2"><dc:Bounds x="1329" y="247" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1277" y="287" width="140" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_remind_di" bpmnElement="T_remind"><dc:Bounds x="1467" y="217" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="E_rem_di" bpmnElement="E_rem"><dc:Bounds x="1709" y="247" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1697" y="287" width="60" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_t1_di" bpmnElement="S_t1"><dc:Bounds x="2089" y="247" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="2070" y="287" width="74" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="G_grace_di" bpmnElement="G_grace"><dc:Bounds x="2272" y="240" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="2227" y="208" width="140" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_suspend_di" bpmnElement="T_suspend"><dc:Bounds x="2417" y="192" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="E_susp_di" bpmnElement="E_susp"><dc:Bounds x="2659" y="222" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="2647" y="262" width="60" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="E_keep_di" bpmnElement="E_keep"><dc:Bounds x="2469" y="309" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="2457" y="349" width="60" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_ticket_di" bpmnElement="S_ticket"><dc:Bounds x="189" y="437" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="164" y="477" width="87" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_triage_di" bpmnElement="T_triage"><dc:Bounds x="327" y="407" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_work_di" bpmnElement="T_work"><dc:Bounds x="707" y="407" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="B_sla_di" bpmnElement="B_sla"><dc:Bounds x="804" y="477" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="760" y="523" width="124" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="G_res_di" bpmnElement="G_res"><dc:Bounds x="942" y="430" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="937" y="398" width="60" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="E_closed_di" bpmnElement="E_closed"><dc:Bounds x="1139" y="437" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1127" y="477" width="60" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="E_sla_di" bpmnElement="E_sla"><dc:Bounds x="1139" y="499" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1087" y="539" width="140" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_new_di" bpmnElement="S_new"><dc:Bounds x="189" y="627" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="154" y="667" width="105" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_create_di" bpmnElement="T_create"><dc:Bounds x="327" y="597" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_invite_di" bpmnElement="T_invite"><dc:Bounds x="517" y="597" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_channels_di" bpmnElement="T_channels"><dc:Bounds x="707" y="597" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_am_di" bpmnElement="T_am"><dc:Bounds x="897" y="597" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="E_live_di" bpmnElement="E_live"><dc:Bounds x="1139" y="627" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1092" y="667" width="130" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_manual_di" bpmnElement="S_manual"><dc:Bounds x="2089" y="627" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="2061" y="667" width="93" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SP_manual_di" bpmnElement="SP_manual" isExpanded="false"><dc:Bounds x="2227" y="597" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="E_manual_di" bpmnElement="E_manual"><dc:Bounds x="2469" y="627" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="2422" y="667" width="130" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_renew_di" bpmnElement="S_renew"><dc:Bounds x="1329" y="817" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1294" y="857" width="105" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_invoice_di" bpmnElement="T_invoice"><dc:Bounds x="1467" y="787" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_link_di" bpmnElement="T_link"><dc:Bounds x="1657" y="787" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_email_di" bpmnElement="T_email"><dc:Bounds x="1847" y="787" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="W_pay_di" bpmnElement="W_pay"><dc:Bounds x="2089" y="817" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="2064" y="857" width="87" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="G_paid_di" bpmnElement="G_paid"><dc:Bounds x="2272" y="810" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="2257" y="778" width="81" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_settle_di" bpmnElement="T_settle"><dc:Bounds x="2417" y="762" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="E_renewed_di" bpmnElement="E_renewed"><dc:Bounds x="2659" y="792" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="2647" y="832" width="60" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="E_failed_di" bpmnElement="E_failed"><dc:Bounds x="2469" y="879" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="2444" y="919" width="87" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1"><di:waypoint x="1365" y="265" /><di:waypoint x="1467" y="265" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2"><di:waypoint x="1607" y="265" /><di:waypoint x="1709" y="265" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3"><di:waypoint x="2125" y="265" /><di:waypoint x="2272" y="265" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4"><di:waypoint x="2322" y="265" /><di:waypoint x="2362" y="265" /><di:waypoint x="2362" y="240" /><di:waypoint x="2417" y="240" /><bpmndi:BPMNLabel><dc:Bounds x="2348" y="243" width="40" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5"><di:waypoint x="2557" y="240" /><di:waypoint x="2659" y="240" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6"><di:waypoint x="2297" y="290" /><di:waypoint x="2297" y="327" /><di:waypoint x="2469" y="327" /><bpmndi:BPMNLabel><dc:Bounds x="2303" y="287" width="40" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7"><di:waypoint x="225" y="455" /><di:waypoint x="327" y="455" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_8"><di:waypoint x="467" y="455" /><di:waypoint x="707" y="455" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_9_di" bpmnElement="Flow_9"><di:waypoint x="847" y="455" /><di:waypoint x="942" y="455" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_10_di" bpmnElement="Flow_10"><di:waypoint x="992" y="455" /><di:waypoint x="1139" y="455" /><bpmndi:BPMNLabel><dc:Bounds x="1072" y="433" width="40" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11_di" bpmnElement="Flow_11"><di:waypoint x="967" y="430" /><di:waypoint x="967" y="362" /><di:waypoint x="777" y="362" /><di:waypoint x="777" y="407" /><bpmndi:BPMNLabel><dc:Bounds x="973" y="374" width="40" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_12_di" bpmnElement="Flow_12"><di:waypoint x="840" y="495" /><di:waypoint x="880" y="495" /><di:waypoint x="880" y="517" /><di:waypoint x="1139" y="517" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_13_di" bpmnElement="Flow_13"><di:waypoint x="225" y="645" /><di:waypoint x="327" y="645" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_14_di" bpmnElement="Flow_14"><di:waypoint x="467" y="645" /><di:waypoint x="517" y="645" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_15_di" bpmnElement="Flow_15"><di:waypoint x="657" y="645" /><di:waypoint x="707" y="645" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_16_di" bpmnElement="Flow_16"><di:waypoint x="847" y="645" /><di:waypoint x="897" y="645" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_17_di" bpmnElement="Flow_17"><di:waypoint x="1037" y="645" /><di:waypoint x="1139" y="645" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_18_di" bpmnElement="Flow_18"><di:waypoint x="2125" y="645" /><di:waypoint x="2227" y="645" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_19_di" bpmnElement="Flow_19"><di:waypoint x="2367" y="645" /><di:waypoint x="2469" y="645" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_20_di" bpmnElement="Flow_20"><di:waypoint x="1365" y="835" /><di:waypoint x="1467" y="835" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_21_di" bpmnElement="Flow_21"><di:waypoint x="1607" y="835" /><di:waypoint x="1657" y="835" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_22_di" bpmnElement="Flow_22"><di:waypoint x="1797" y="835" /><di:waypoint x="1847" y="835" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_23_di" bpmnElement="Flow_23"><di:waypoint x="1987" y="835" /><di:waypoint x="2089" y="835" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_24_di" bpmnElement="Flow_24"><di:waypoint x="2125" y="835" /><di:waypoint x="2272" y="835" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_25_di" bpmnElement="Flow_25"><di:waypoint x="2322" y="835" /><di:waypoint x="2362" y="835" /><di:waypoint x="2362" y="810" /><di:waypoint x="2417" y="810" /><bpmndi:BPMNLabel><dc:Bounds x="2348" y="813" width="40" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_26_di" bpmnElement="Flow_26"><di:waypoint x="2557" y="810" /><di:waypoint x="2659" y="810" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_27_di" bpmnElement="Flow_27"><di:waypoint x="2297" y="860" /><di:waypoint x="2297" y="897" /><di:waypoint x="2469" y="897" /><bpmndi:BPMNLabel><dc:Bounds x="2303" y="857" width="52" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_1_di" bpmnElement="MessageFlow_1"><di:waypoint x="207" y="110" /><di:waypoint x="207" y="437" /><bpmndi:BPMNLabel><dc:Bounds x="213" y="266" width="81" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_2_di" bpmnElement="MessageFlow_2"><di:waypoint x="737" y="407" /><di:waypoint x="737" y="110" /><bpmndi:BPMNLabel><dc:Bounds x="743" y="251" width="180" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_3_di" bpmnElement="MessageFlow_3"><di:waypoint x="1537" y="217" /><di:waypoint x="1537" y="110" /><bpmndi:BPMNLabel><dc:Bounds x="1543" y="156" width="143" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_4_di" bpmnElement="MessageFlow_4"><di:waypoint x="587" y="597" /><di:waypoint x="587" y="110" /><bpmndi:BPMNLabel><dc:Bounds x="593" y="346" width="155" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_5_di" bpmnElement="MessageFlow_5"><di:waypoint x="1917" y="787" /><di:waypoint x="1917" y="110" /><bpmndi:BPMNLabel><dc:Bounds x="1923" y="441" width="136" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_6_di" bpmnElement="MessageFlow_6"><di:waypoint x="1727" y="883" /><di:waypoint x="1727" y="990" /><bpmndi:BPMNLabel><dc:Bounds x="1733" y="929" width="124" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_7_di" bpmnElement="MessageFlow_7"><di:waypoint x="2107" y="990" /><di:waypoint x="2107" y="853" /><bpmndi:BPMNLabel><dc:Bounds x="2113" y="914" width="186" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
