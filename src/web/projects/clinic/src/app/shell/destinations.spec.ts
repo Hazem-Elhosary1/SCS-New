@@ -2,8 +2,11 @@ import { Route } from '@angular/router';
 import { PERMISSIONS } from 'core';
 import { RolesPage } from '../administration/roles.page';
 import { routes } from '../app.routes';
+import { SignInPage } from '../sign-in/sign-in.page';
 import { DESTINATIONS, NAV, PARENTS, childrenOf, destination, pageOf } from './destinations';
 import { NoAccessPage, NotFoundPage, NotInPlanPage, NotYetDestinationPage } from './pages';
+import { ShellComponent } from './shell.component';
+import { SHELL_ROUTES } from './shell.routes';
 
 const ar = (await import('../../../public/i18n/ar.json')).default as unknown;
 const en = (await import('../../../public/i18n/en.json')).default as unknown;
@@ -12,7 +15,7 @@ function word(bundle: unknown, key: string): unknown {
   return key.split('.').reduce<unknown>((at, part) => (at as Record<string, unknown>)?.[part], bundle);
 }
 
-const inside = routes.find((route) => route.path === '')?.children ?? [];
+const inside = SHELL_ROUTES[0].children ?? [];
 const routesAt = (path: string): Route[] => inside.filter((route) => route.path === path);
 
 describe('the destinations of the console', () => {
@@ -77,7 +80,12 @@ describe('the routes generated from the destinations', () => {
       const [plan, page] = routesAt(place.path);
 
       expect(plan.component, place.key).toBe(NotInPlanPage);
-      expect(page.component, place.key).toBe(pageOf(place.key) ?? NotYetDestinationPage);
+      if (pageOf(place.key) === undefined) {
+        expect(page.component, place.key).toBe(NotYetDestinationPage);
+      } else {
+        expect(page.loadComponent, place.key).toBe(pageOf(place.key));
+        expect(page.component, place.key).toBeUndefined();
+      }
       expect(page.data, place.key).toEqual({ destination: place.key });
     }
   });
@@ -96,8 +104,10 @@ describe('the routes generated from the destinations', () => {
     }
   });
 
-  it('shows the roles list at its destination', () => {
-    expect(routesAt('administration/roles')[1].component).toBe(RolesPage);
+  it('shows the roles list at its destination, loaded when it is opened', async () => {
+    const page = routesAt('administration/roles')[1];
+
+    expect(await page.loadComponent?.()).toBe(RolesPage);
   });
 
   it('leads a parent to a child, and anything else to "not found"', () => {
@@ -115,12 +125,58 @@ describe('the routes generated from the destinations', () => {
 });
 
 describe('the routes as the router takes them', () => {
-  it('are a configuration the router accepts', async () => {
+  it.each([
+    ['the app', routes],
+    ['the frame', SHELL_ROUTES],
+  ])('are a configuration the router accepts: %s', async (_name, config) => {
     const { TestBed } = await import('@angular/core/testing');
     const { Router, provideRouter } = await import('@angular/router');
-    TestBed.configureTestingModule({ providers: [provideRouter(routes)] });
+    TestBed.configureTestingModule({ providers: [provideRouter(config)] });
 
     expect(() => TestBed.inject(Router)).not.toThrow();
+  });
+});
+
+describe('what is downloaded first', () => {
+  // Spec 007, FR-041: a person who has not signed in downloads the sign-in form and nothing else.
+  it('is the sign-in form alone; every other page before sign-in is loaded when opened', () => {
+    const eager = routes.filter((route) => route.component !== undefined);
+
+    expect(eager.map((route) => route.path)).toEqual(['sign-in']);
+    expect(eager[0].component).toBe(SignInPage);
+    for (const route of routes.filter((each) => each.path !== 'sign-in' && each.path !== '')) {
+      expect(route.loadComponent, route.path).toEqual(expect.any(Function));
+    }
+  });
+
+  it('loads the frame and everything inside it only for a signed-in person', async () => {
+    const frame = routes.find((route) => route.path === '');
+
+    expect(frame?.component).toBeUndefined();
+    expect(frame?.children).toBeUndefined();
+    // Asked before the download, not after it.
+    expect(frame?.canMatch).toHaveLength(1);
+    expect(frame?.canActivate).toBeUndefined();
+    expect(await frame?.loadChildren?.()).toBe(SHELL_ROUTES);
+    expect(SHELL_ROUTES[0].component).toBe(ShellComponent);
+  });
+
+  // Spec 007, FR-040: opening one of the frame's own pages costs no further download.
+  it('keeps the frame’s own small pages inside the frame', () => {
+    const own = [NotInPlanPage, NotYetDestinationPage, NoAccessPage, NotFoundPage];
+    const used = new Set(inside.map((route) => route.component).filter((page) => page !== undefined));
+
+    expect([...used].sort()).toEqual([...own].sort());
+  });
+
+  it('names a destination’s page by how to load it', () => {
+    for (const place of DESTINATIONS) {
+      const load = pageOf(place.key);
+
+      expect(load === undefined || typeof load === 'function', place.key).toBe(true);
+    }
+    expect(pageOf('administration.roles')).toEqual(expect.any(Function));
+    expect(pageOf('bookings')).toBeUndefined();
   });
 });
 

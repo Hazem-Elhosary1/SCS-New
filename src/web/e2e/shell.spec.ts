@@ -91,10 +91,13 @@ test.describe('the frame', () => {
     for (const place of SIDE_BAR) {
       expect(shown, place.key).toContain(place.key);
       if (place.parent !== undefined) {
-        await page.getByTestId(`nav-${place.parent}`).click();
-        if (!(await page.getByTestId(`nav-${place.key}`).isVisible())) {
-          await page.getByTestId(`nav-${place.parent}`).click();
+        // Open its parent if it is not the open one. Asked of the parent itself, not of whether
+        // the child can be seen: a child is still on screen for a moment while its parent folds.
+        const parent = page.getByTestId(`nav-${place.parent}`);
+        if ((await parent.getAttribute('aria-expanded')) !== 'true') {
+          await parent.click();
         }
+        await expect(parent).toHaveAttribute('aria-expanded', 'true');
       }
       await expect(page.getByTestId(`nav-${place.key}`)).toHaveText(place.ar);
     }

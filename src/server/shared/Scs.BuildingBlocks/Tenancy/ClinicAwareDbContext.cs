@@ -5,6 +5,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Scs.BuildingBlocks.Audit;
 using Scs.BuildingBlocks.Errors;
 using Scs.SharedKernel;
 
@@ -51,17 +52,76 @@ public abstract class ClinicAwareDbContext(DbContextOptions options, IClinicCont
         }
     }
 
+    private readonly List<AuditRecord> _audit = [];
+
+    // Entries written in one transaction are of one act, and carry one moment.
+    private (Guid Transaction, DateTimeOffset At)? _auditMoment;
+
+    /// <summary>
+    /// Says what the change being made must leave in the audit trail (spec 007). The entry is
+    /// written by the next <see cref="SaveChangesAsync(bool, CancellationToken)"/>, in one
+    /// transaction with the change: both take effect or neither does (FR-009).
+    /// </summary>
+    public void Record(AuditRecord record)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+        _audit.Add(record);
+    }
+
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
+        if (_audit.Count > 0)
+        {
+            throw new AuditRefusedException("A change that is recorded in the audit trail is saved with SaveChangesAsync.");
+        }
+
         EnforceClinicOwnership();
         return base.SaveChanges(acceptAllChangesOnSuccess);
     }
 
-    public override Task<int> SaveChangesAsync(
+    public override async Task<int> SaveChangesAsync(
         bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
         EnforceClinicOwnership();
-        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+
+        if (_audit.Count == 0)
+        {
+            return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken).ConfigureAwait(false);
+        }
+
+        var records = _audit.ToList();
+        _audit.Clear();
+
+        var own = Database.CurrentTransaction is null
+            ? await Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false)
+            : null;
+        try
+        {
+            var saved = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken).ConfigureAwait(false);
+            var transaction = Database.CurrentTransaction!.TransactionId;
+            if (_auditMoment?.Transaction != transaction)
+            {
+                _auditMoment = (transaction, AuditWriter.Now(this));
+            }
+
+            await AuditWriter.WriteAsync(this, clinic.Require(), records, _auditMoment.Value.At, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (own is not null)
+            {
+                await own.CommitAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            return saved;
+        }
+        finally
+        {
+            // Disposing a transaction that was not committed rolls it back: the change goes with its entry.
+            if (own is not null)
+            {
+                await own.DisposeAsync().ConfigureAwait(false);
+            }
+        }
     }
 
     private void EnforceClinicOwnership()

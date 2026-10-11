@@ -11,6 +11,7 @@ internal static class ModuleRegistration
     public static IReadOnlyList<IModule> Modules { get; } =
     [
         new Scs.Tenancy.TenancyModule(),
+        new Scs.Audit.AuditModule(),
         new Scs.Identity.IdentityModule(),
         new Scs.Platform.PlatformModule(),
     ];

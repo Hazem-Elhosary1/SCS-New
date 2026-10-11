@@ -91,18 +91,22 @@ export function childrenOf(parent: string): readonly Destination[] {
   return DESTINATIONS.filter((candidate) => candidate.parent === parent);
 }
 
-const PAGES = new Map<string, Type<unknown>>();
+/** How a destination's page is loaded: it is downloaded when the destination is first opened. */
+export type PageLoader = () => Promise<Type<unknown>>;
+
+const PAGES = new Map<string, PageLoader>();
 
 /**
- * Gives a destination its page. A later spec calls this for its destination's key before the
- * routes are built (in the app's configuration); nothing in the frame changes (SC-008). Until
- * a destination has a page, the frame shows "not available yet" for it.
+ * Gives a destination its page, by saying how to load it. A later spec adds one line for its
+ * destination's key in shell.routes.ts; nothing in the frame changes (SC-008), and the frame's
+ * own download does not grow (spec 007, FR-041). Until a destination has a page, the frame
+ * shows "not available yet" for it.
  */
-export function registerDestinationPage(key: string, page: Type<unknown>): void {
+export function registerDestinationPage(key: string, load: PageLoader): void {
   destination(key);
-  PAGES.set(key, page);
+  PAGES.set(key, load);
 }
 
-export function pageOf(key: string): Type<unknown> | undefined {
+export function pageOf(key: string): PageLoader | undefined {
   return PAGES.get(key);
 }

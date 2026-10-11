@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Scs.BuildingBlocks.Configuration;
+using Scs.BuildingBlocks.Security;
 using Scs.Tenancy.Infrastructure.Persistence;
 
 namespace Scs.Tenancy.Infrastructure;
@@ -11,6 +12,7 @@ namespace Scs.Tenancy.Infrastructure;
 /// than the retention period (spec 002, FR-032). It is the only code that deletes such a record.
 /// Running it twice has the same result as once.
 /// </summary>
+[RecordsNothing("removes cross-clinic access records past their retention; logged with the count (spec 002, FR-032)")]
 internal sealed partial class PurgeAccessRecordsJob(
     CrossingDbContext db, IOptions<ScsOptions> options, TimeProvider clock, ILogger<PurgeAccessRecordsJob> logger)
 {

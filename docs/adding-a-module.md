@@ -113,6 +113,45 @@ page with `*scsCan="'code'"`. Plan entitlements, the read-only clinic and a reco
 not permissions; they have their own answers. The full contract is
 `specs/005-permissions-engine/contracts/access-engine.md`.
 
+## Recording what was done (spec 007)
+
+Every action a person would later ask "who did this?" about leaves an entry in the audit trail,
+written in the same transaction as the change: both take effect, or neither does. Four steps,
+and nothing in the audit module changes:
+
+1. **Add the action to the catalogue** — `src/server/shared/Scs.SharedKernel/Audit/AuditActions.cs`:
+   its code, its category (security, changes, records, users), its name and one sentence in the
+   passive, in Arabic and English, the facts it may carry, and whether it needs the value before
+   and after (it does when it moves money, changes a permission or changes a plan).
+2. **Add the code to `audit-actions.lock`** beside it. A code, once used, is never renamed.
+3. **Record it where the change is saved**, on your own context:
+
+   ```csharp
+   db.Record(new AuditRecord(
+       AuditActions.RefundIssued,
+       new AuditTarget("invoice", invoice.Id, invoice.Number),
+       Facts: new Dictionary<string, object?> { ["amount"] = amount },
+       Changes: [AuditChange.Of("status", "paid", "refunded")]));
+   await db.SaveChangesAsync(cancellation);
+   ```
+
+   The entry is written by that save. Who did it, for which clinic, from which address and
+   device, and when, are taken by the trail itself — you cannot pass them. With nobody signed
+   in, the platform is the actor; work the platform does alone says so with `BySystem = true`.
+4. **Declare it on the route**: `.Records(AuditActions.RefundIssued)`. A route that changes
+   nothing a person would trace says `.RecordsNothing("why")`; a scheduled job carries
+   `[Records(...)]` or `[RecordsNothing("why")]`. `RouteAuditDeclarationTests` fails for a
+   `POST`, `PUT`, `PATCH` or `DELETE` route, or a job, that says nothing.
+
+Rules the trail enforces, and refuses otherwise: the code is in the catalogue; every fact key is
+one the action allows; values are short text, numbers, yes/no or lists of codes; before and
+after are there when the action needs them. Rules it cannot enforce and you keep: one entry per
+thing changed; an account is named by reference (`AuditTarget.ForAccount(id)`), never by its
+email address; for a clinical record say that it changed and whose, never what; never record a
+display preference or a refusal; never put a password, a code, a token or a link anywhere in an
+entry. An entry is never changed or removed. The contract is
+`specs/007-audit-trail/contracts/audit-trail.md`.
+
 ## Conventions to follow
 
 These are decided once in `specs/001-platform-foundation/contracts/` and are not re-decided in
@@ -165,10 +204,17 @@ two apps need goes into `core` (not visual) or `ui` (visual), never copied.
 Every page after sign-in is shown inside the console's frame. The frame, the side bar and the
 routes are all drawn from one table, `src/web/projects/clinic/src/app/shell/destinations.ts`.
 
-- **Give a destination its page**: add one line to `app.routes.ts` —
-  `registerDestinationPage('<key>', YourPage)`. Until then the destination shows "not available
-  yet". The side bar, the address, the permission check, "not in your role" and "not in your
-  plan" are already there; nothing in the frame changes.
+- **Give a destination its page**: add one line to `shell/shell.routes.ts`, naming the page by
+  how to load it —
+  `registerDestinationPage('<key>', () => import('../your/your.page').then((file) => file.YourPage))`.
+  Until then the destination shows "not available yet". The side bar, the address, the
+  permission check, "not in your role" and "not in your plan" are already there; nothing in the
+  frame changes. The page is downloaded when it is first opened, so the frame does not grow
+  with it; do not import a destination's page anywhere else.
+- **What is downloaded first is the sign-in form alone.** The frame and everything inside it is
+  one download for a signed-in person, and every other page before sign-in its own
+  (`app.routes.ts`). The build warns when the first download passes 500 kB; keep it quiet by
+  loading on demand, never by raising the limit.
 - **Start the page with `<scs-page-header>`** (title, the group before it, one line under it,
   header buttons projected into it). It is not optional: while there is no connection the
   frame's warning is shown by the page header, under the title — a page without one would not

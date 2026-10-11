@@ -1,6 +1,6 @@
 import { HttpClient, HttpInterceptorFn } from '@angular/common/http';
 import { Injectable, Injector, OnDestroy, inject, signal } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
+import { CanActivateFn, CanMatchFn, Router, UrlTree } from '@angular/router';
 import { catchError, firstValueFrom, from, switchMap, throwError } from 'rxjs';
 import { SCS_APP } from '../app-token';
 import { ScsProblemError } from '../http/problem';
@@ -350,8 +350,7 @@ export class AuthService implements OnDestroy {
   }
 }
 
-/** Only a signed-in person passes; anyone else is shown the sign-in form. */
-export const sessionGuard: CanActivateFn = async () => {
+async function signedInOrSentAway(): Promise<boolean | UrlTree> {
   const auth = inject(AuthService);
   const router = inject(Router);
   await auth.load();
@@ -360,7 +359,16 @@ export const sessionGuard: CanActivateFn = async () => {
   }
   // A temporary password must be replaced before any page of the console (spec 004, FR-035).
   return auth.session()?.mustChangePassword === true ? router.parseUrl('/change-password') : true;
-};
+}
+
+/** Only a signed-in person passes; anyone else is shown the sign-in form. */
+export const sessionGuard: CanActivateFn = () => signedInOrSentAway();
+
+/**
+ * The same check, made before a part of the app that is loaded on demand is downloaded: a
+ * person who is not signed in is shown the sign-in form without downloading the console.
+ */
+export const sessionMatchGuard: CanMatchFn = () => signedInOrSentAway();
 
 /** The screen that replaces a temporary password is for the person who holds one, and nobody else. */
 export const temporaryPasswordGuard: CanActivateFn = async () => {

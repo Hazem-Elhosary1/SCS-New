@@ -136,6 +136,30 @@ filled states are shown by the browser tests, which give the frame sample data b
 (`sampleSources` in `src/web/e2e/staff-platform.ts`): `SCS_SHOTS=<folder> npx playwright test
 shell-states` saves a picture of every state in both languages.
 
+### The audit trail (spec 007)
+
+Everything that changes who may do what, and everything that happens at sign-in, is recorded in
+one table, `audit.Entry`. There is no page for it yet («سجل الأنشطة والأمان» arrives with spec
+059); it is read at one address by anyone who holds «عرض سجل الأنشطة» — an owner or a manager:
+
+```text
+GET http://localhost:5080/v1/audit/entries?category=security&page=1&size=25
+```
+
+Signed in at <http://localhost:4201>, open the browser's console and ask it:
+
+```js
+await (await fetch('http://localhost:5080/v1/audit/entries', { credentials: 'include', headers: { 'Accept-Language': 'en' } })).json()
+```
+
+Type a wrong password twice for `doctor@shifa.example`, sign in as `owner@shifa.example`, and
+the answer holds «محاولتان على حساب doctor@shifa.example» and the owner's own sign-in. Words
+follow `Accept-Language`. The facets are `from`, `to` (ninety days when not given, a year at
+most), `category`, `actor`, `action`, `q`, `page` and `size`.
+`reception@shifa.example` and `doctor@shifa.example` are refused: their roles do not hold
+the permission. What the platform itself did — the roles a clinic starts with — is in the table
+and is not part of what a clinic reads.
+
 After changing the permission catalogue (`src/server/shared/Scs.SharedKernel/Access`), write
 the file the web sites read, or `CatalogueFileTests` fails:
 

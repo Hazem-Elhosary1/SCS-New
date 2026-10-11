@@ -200,3 +200,27 @@ public interface IClinicRoles
     /// </summary>
     Task AssignAsync(Guid accountId, Guid roleId, CancellationToken cancellation);
 }
+
+/// <summary>A run of failed sign-in attempts, named by the request that began it.</summary>
+/// <param name="TraceId">The trace of the request whose wrong password began the run.</param>
+/// <param name="NextTraceId">The trace of the request that began the account's next run, when there is one.</param>
+public sealed record FailedRunRef(Guid AccountId, string TraceId, string? NextTraceId);
+
+/// <param name="Attempts">Wrong passwords from the run's first to its lock, or to the next run.</param>
+/// <param name="Locked">The run ended in a lock.</param>
+/// <param name="LockMinutes">How long a lock lasts.</param>
+public sealed record FailedRun(Guid AccountId, string TraceId, int Attempts, bool Locked, int LockMinutes);
+
+/// <summary>
+/// What a reader of the audit trail needs to know about the accounts of the established clinic
+/// (spec 007): how each is called today, and how a run of failed attempts went. Under isolation:
+/// an account of another clinic is "not there".
+/// </summary>
+public interface IStaffDirectory
+{
+    /// <summary>The display name of each account that exists: the email address until accounts have names (spec 026).</summary>
+    Task<IReadOnlyDictionary<Guid, string>> NamesAsync(IReadOnlyCollection<Guid> accountIds, CancellationToken cancellation);
+
+    /// <summary>One answer for each run asked about; a run nothing is known of is one attempt and no lock.</summary>
+    Task<IReadOnlyList<FailedRun>> FailedRunsAsync(IReadOnlyCollection<FailedRunRef> runs, CancellationToken cancellation);
+}

@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Scs.BuildingBlocks.Errors;
+using Scs.BuildingBlocks.Security;
 using Scs.Platform.Contracts;
 using Scs.SharedKernel;
 
@@ -43,6 +44,7 @@ internal static partial class ClientErrorEndpoints
             })
             .AllowAnonymous()
             .RequireRateLimiting(RateLimitPolicy)
+            .RecordsNothing("a browser's error report; it goes to the operational log")
             .WithName("ReportClientError");
 
         return v1;

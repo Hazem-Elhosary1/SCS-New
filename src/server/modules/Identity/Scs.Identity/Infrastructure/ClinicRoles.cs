@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Scs.BuildingBlocks.Audit;
 using Scs.BuildingBlocks.Errors;
 using Scs.BuildingBlocks.Security;
 using Scs.BuildingBlocks.Tenancy;
@@ -8,9 +9,46 @@ using Scs.Identity.Domain;
 using Scs.Identity.Infrastructure.Persistence;
 using Scs.SharedKernel;
 using Scs.SharedKernel.Access;
+using Scs.SharedKernel.Audit;
 using Scs.Tenancy.Contracts;
 
 namespace Scs.Identity.Infrastructure;
+
+/// <summary>What a change to a role leaves in the audit trail (spec 007, FR-025).</summary>
+internal static class RoleEntries
+{
+    public const string Name = "name";
+    public const string Description = "description";
+    public const string Permissions = "permissions";
+    public const string RoleField = "role";
+
+    /// <summary>A ready role under its own name keeps its key, so it reads in the reader's language (FR-037).</summary>
+    public static string? KeyOf(Role role) => role.IsRenamed ? null : role.ReadyKey;
+
+    public static AuditTarget Target(Role role) => new(AuditTarget.Role, role.Id, role.Name, KeyOf(role));
+
+    /// <param name="bySystem">The platform created it: a ready role, or a seeded one.</param>
+    public static AuditRecord Created(Role role, bool bySystem = false)
+    {
+        // The owner role stores no rows: it holds whatever the catalogue holds.
+        var held = role.HoldsEverything
+            ? PermissionCatalogue.All.Select(p => p.Code)
+            : PermissionCatalogue.InOrder(role.Permissions.Select(p => p.Code));
+
+        return new AuditRecord(
+            AuditActions.RoleCreated,
+            Target(role),
+            Changes:
+            [
+                new AuditChange(Name, null, role.Name, AfterKey: KeyOf(role)),
+                AuditChange.Of(Description, null, role.Description),
+                AuditChange.OfSet(Permissions, held, []),
+            ])
+        {
+            BySystem = bySystem,
+        };
+    }
+}
 
 /// <summary>
 /// The three roles every clinic starts with (SH-052, CL-AD-082). One routine creates them, for
@@ -46,7 +84,14 @@ internal sealed class ReadyRoles(IdentityDbContext db, IClinicContext clinic, Ti
         var doctor = Role.Ready(ReadyRoleKeys.Doctor, DoctorName, DoctorDescription, now);
         doctor.Hold(ReadySets.Doctor);
 
-        db.Roles.AddRange(Role.Ready(ReadyRoleKeys.Owner, OwnerName, OwnerDescription, now), manager, doctor);
+        var owner = Role.Ready(ReadyRoleKeys.Owner, OwnerName, OwnerDescription, now);
+        db.Roles.AddRange(owner, manager, doctor);
+
+        // The platform gives a clinic these; nobody of the clinic did (spec 007, FR-027).
+        foreach (var role in new[] { owner, manager, doctor })
+        {
+            db.Record(RoleEntries.Created(role, bySystem: true));
+        }
 
         try
         {
@@ -168,6 +213,7 @@ internal sealed class ClinicRoles(
                 var role = Role.Custom(cleanName, cleanDescription, Actor(), clock.GetUtcNow());
                 role.Hold(permissions);
                 db.Roles.Add(role);
+                db.Record(RoleEntries.Created(role));
                 await SaveNamedAsync(cancellation).ConfigureAwait(false);
                 return role.Id;
             },
@@ -189,10 +235,25 @@ internal sealed class ClinicRoles(
                 }
 
                 var (cleanName, cleanDescription) = Validate(name, description, permissions);
+                var before = (role.Name, role.Description, Key: RoleEntries.KeyOf(role));
                 role.Describe(cleanName, cleanDescription, Actor(), clock.GetUtcNow());
                 var (added, removed) = role.Hold(permissions);
+                var change = new RoleChange(role.Id, PermissionCatalogue.InOrder(added), PermissionCatalogue.InOrder(removed));
+
+                // One entry for the edit, however much of the role it changed; none when it changed nothing.
+                db.Record(new AuditRecord(
+                    AuditActions.RoleUpdated,
+                    RoleEntries.Target(role),
+                    Changes:
+                    [
+                        new AuditChange(
+                            RoleEntries.Name, before.Name, role.Name, BeforeKey: before.Key, AfterKey: RoleEntries.KeyOf(role)),
+                        AuditChange.Of(RoleEntries.Description, before.Description, role.Description),
+                        AuditChange.OfSet(RoleEntries.Permissions, change.Added, change.Removed),
+                    ]));
+
                 await SaveNamedAsync(cancellation).ConfigureAwait(false);
-                return new RoleChange(role.Id, PermissionCatalogue.InOrder(added), PermissionCatalogue.InOrder(removed));
+                return change;
             },
             cancellation).ConfigureAwait(false);
     }
@@ -218,6 +279,17 @@ internal sealed class ClinicRoles(
                         Extensions = new Dictionary<string, object?>(StringComparer.Ordinal) { ["holders"] = holders },
                     };
                 }
+
+                // The entry keeps the role's name and what it held: it is read after the role is gone.
+                db.Record(new AuditRecord(
+                    AuditActions.RoleDeleted,
+                    RoleEntries.Target(role),
+                    Changes:
+                    [
+                        new AuditChange(RoleEntries.Name, role.Name, null, BeforeKey: RoleEntries.KeyOf(role)),
+                        AuditChange.OfSet(
+                            RoleEntries.Permissions, [], PermissionCatalogue.InOrder(role.Permissions.Select(p => p.Code))),
+                    ]));
 
                 db.Roles.Remove(role);
                 await db.SaveChangesAsync(cancellation).ConfigureAwait(false);
@@ -260,8 +332,24 @@ internal sealed class ClinicRoles(
                     }
                 }
 
+                var previous = account.RoleId is { } held
+                    ? await db.Roles.AsNoTracking().SingleOrDefaultAsync(r => r.Id == held, cancellation).ConfigureAwait(false)
+                    : null;
+
                 var hadRole = account.RoleId is not null;
                 account.AssignRole(role.Id);
+                db.Record(new AuditRecord(
+                    AuditActions.AccountRoleChanged,
+                    AuditTarget.ForAccount(accountId),
+                    Changes:
+                    [
+                        new AuditChange(
+                            RoleEntries.RoleField,
+                            previous?.Name,
+                            role.Name,
+                            BeforeKey: previous is null ? null : RoleEntries.KeyOf(previous),
+                            AfterKey: RoleEntries.KeyOf(role)),
+                    ]));
                 await db.SaveChangesAsync(cancellation).ConfigureAwait(false);
 
                 if (hadRole)

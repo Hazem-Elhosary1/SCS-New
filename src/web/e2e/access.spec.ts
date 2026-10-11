@@ -151,7 +151,11 @@ test.describe('how soon', () => {
     const started = Date.now();
     await page.goto(ROLES);
     await expect(page.getByTestId('no-access')).toBeVisible();
-    expect(Date.now() - started).toBeLessThan(1000);
+    const took = Date.now() - started;
+
+    // Kept with the result, so the figure can be read and not only its verdict (spec 007, FR-040).
+    test.info().annotations.push({ type: 'opened in', description: `${took} ms` });
+    expect(took).toBeLessThan(1000);
     expect(platform.calls).not.toContain('GET /v1/roles');
   });
 });

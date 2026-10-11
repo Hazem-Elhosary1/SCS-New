@@ -85,6 +85,26 @@ public sealed class ProbeEndpoints : IEndpointContributor
             })
             .Requires(Permissions.AdminUsersManage);
 
+        // Nobody is signed in, and the handler tries to say who acted (spec 007, FR-014).
+        root.MapPost("/probe/record-as/{clinicId:guid}/{accountId:guid}", async (
+                Guid clinicId,
+                Guid accountId,
+                IClinicContext clinic,
+                Scs.BuildingBlocks.Audit.AuditActorScope scope,
+                Scs.Identity.Contracts.IClinicRoles roles,
+                CancellationToken cancellation) =>
+            {
+                if (clinic.ClinicId is null)
+                {
+                    clinic.Establish(clinicId, ClinicSource.Job);
+                }
+
+                scope.AccountId = accountId;
+                await roles.CreateAsync("باسم غيره", null, [Permissions.BookingsView], cancellation);
+                return Results.NoContent();
+            })
+            .AllowAnonymous();
+
         root.MapPost("/probe/role-without-view", async (Scs.Identity.Contracts.IClinicRoles roles, CancellationToken cancellation) =>
             {
                 await roles.CreateAsync("بلا عرض", null, [Permissions.AdminUsersManage], cancellation);

@@ -74,6 +74,7 @@ internal sealed class SessionService(
         db.Sessions.Add(session);
         db.Events.Add(SignInEvent.Record(
             accountId, SignInEventKinds.SignedIn, now, origin.TraceId, origin.IpAddress, origin.UserAgent, session.Id));
+        db.Record(TrailEntries.SignedIn(accountId, origin));
 
         return new IssuedSession(session.Id, accountId, clinic.Require(), secret, session.ExpiresAtUtc);
     }
@@ -164,7 +165,8 @@ internal sealed class SessionService(
     public async Task SignOutAsync(Guid sessionId, Guid accountId, Guid clinicId, RequestOrigin origin, CancellationToken cancellation)
     {
         clinic.Establish(clinicId, ClinicSource.Account);
-        await EndAsync([sessionId], accountId, SessionEndReasons.SignedOut, origin, cancellation).ConfigureAwait(false);
+        await EndAsync([sessionId], accountId, SessionEndReasons.SignedOut, origin, cancellation, byOwner: true)
+            .ConfigureAwait(false);
     }
 
     public Task<int> EndForAccountAsync(Guid accountId, string reason, CancellationToken cancellation)
@@ -194,7 +196,8 @@ internal sealed class SessionService(
         var ended = 0;
         foreach (var account in alive.GroupBy(s => s.AccountId))
         {
-            ended += await EndAsync([.. account.Select(s => s.Id)], account.Key, reason, RequestOrigin.None, cancellation)
+            ended += await EndAsync(
+                    [.. account.Select(s => s.Id)], account.Key, reason, RequestOrigin.None, cancellation, TrailEntries.ScopeAll)
                 .ConfigureAwait(false);
         }
 
@@ -205,8 +208,10 @@ internal sealed class SessionService(
     /// Ends every live session of an account, for any reason, and saves — except one, when
     /// given: the session of the person who has just replaced their own temporary password.
     /// </summary>
+    /// <param name="byOwner">The account's owner caused it, signed in or not: the entry names them (spec 007).</param>
     public async Task<int> EndForAccountCoreAsync(
-        Guid accountId, string reason, RequestOrigin origin, CancellationToken cancellation, Guid? exceptSessionId = null)
+        Guid accountId, string reason, RequestOrigin origin, CancellationToken cancellation, Guid? exceptSessionId = null,
+        bool byOwner = false)
     {
         clinic.Require();
         var alive = await db.Sessions.AsNoTracking()
@@ -215,7 +220,8 @@ internal sealed class SessionService(
             .ToListAsync(cancellation)
             .ConfigureAwait(false);
 
-        return await EndAsync(alive, accountId, reason, origin, cancellation).ConfigureAwait(false);
+        return await EndAsync(alive, accountId, reason, origin, cancellation, TrailEntries.ScopeAll, byOwner)
+            .ConfigureAwait(false);
     }
 
     /// <summary>
@@ -245,7 +251,8 @@ internal sealed class SessionService(
     }
 
     private async Task<int> EndAsync(
-        List<Guid> sessionIds, Guid accountId, string reason, RequestOrigin origin, CancellationToken cancellation)
+        List<Guid> sessionIds, Guid accountId, string reason, RequestOrigin origin, CancellationToken cancellation,
+        string scope = TrailEntries.ScopeOne, bool byOwner = false)
     {
         if (sessionIds.Count == 0)
         {
@@ -270,6 +277,9 @@ internal sealed class SessionService(
                     accountId, SignInEventKinds.SessionEnded, now, origin.TraceId,
                     origin.IpAddress, origin.UserAgent, id, reason));
             }
+
+            // One entry for the account, however many of its sessions ended (spec 007, FR-013).
+            db.Record(TrailEntries.SessionsEnded(accountId, reason, scope, byOwner, origin));
         }
 
         await db.SaveChangesAsync(cancellation).ConfigureAwait(false);

@@ -23,6 +23,7 @@ internal static class PreferencesEndpoints
     {
         v1.MapPut("/account/preferences", SaveAsync)
             .OwnAccountOnly()
+            .RecordsNothing("display preferences are never recorded (spec 007, FR-019)")
             .WithName("SavePreferences");
 
         return v1;

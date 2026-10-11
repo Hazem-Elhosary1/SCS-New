@@ -1,3 +1,4 @@
+using Scs.Audit;
 using Scs.Identity;
 using Scs.IntegrationTests.Fixtures;
 using Scs.Tenancy;
@@ -42,6 +43,9 @@ public sealed class RolesRollOutTests(SqlServerFixture sql)
         var tenancy = new TenancyModule();
         var identity = new IdentityModule();
         await tenancy.MigrateAsync(db.Migration, null, default);
+
+        // The trail comes before Identity, whose roles are recorded in it (spec 007).
+        await new AuditModule().MigrateAsync(db.Migration, null, default);
         await identity.MigrateAsync(db.Migration, Before, default);
 
         // Three clinics as they are before this spec: accounts and no roles.
@@ -96,6 +100,7 @@ public sealed class RolesRollOutTests(SqlServerFixture sql)
         var db = await sql.CreateScratchDatabaseAsync();
         var identity = new IdentityModule();
         await new TenancyModule().MigrateAsync(db.Migration, null, default);
+        await new AuditModule().MigrateAsync(db.Migration, null, default);
         await identity.MigrateAsync(db.Migration, null, default);
         var clinic = await db.SeedClinicAsync();
         await AccountAsync(db, clinic, "active", minutesAgo: 1);

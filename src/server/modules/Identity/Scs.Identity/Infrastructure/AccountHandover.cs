@@ -99,6 +99,7 @@ internal sealed class AccountHandover(
             db.Events.Add(SignInEvent.Record(
                 accountId, SignInEventKinds.AccessReissued, clock.GetUtcNow(), RequestOrigin.None.TraceId,
                 ipAddress: null, userAgent: null, detail: method, actorAccountId: actor));
+            db.Record(TrailEntries.AccessReissued(accountId, method));
             await db.SaveChangesAsync(cancellation).ConfigureAwait(false);
 
             return new AccountHandoverResult(accountId, sent, GeneratedPassword: null);
