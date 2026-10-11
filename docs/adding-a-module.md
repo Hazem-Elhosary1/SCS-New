@@ -152,6 +152,46 @@ display preference or a refusal; never put a password, a code, a token or a link
 entry. An entry is never changed or removed. The contract is
 `specs/007-audit-trail/contracts/audit-trail.md`.
 
+## Telling people (spec 008)
+
+When something happens that a person should hear about, the module raises an event and the
+notifications engine does the rest: who is told, the bell, the email. The notification is
+written in the same transaction as the change — both take effect, or neither does — and nothing
+in the Notifications module changes.
+
+1. **The event is in the catalogue** — `src/server/shared/Scs.SharedKernel/Notifications/NotificationEvents.cs`:
+   its key, group, names in Arabic and English, mark, who is told (holders of a permission, the
+   owner of the record, both, or everyone), whether it is emailed (always, by the clinic's
+   switch, never), the fact keys its line may carry, the line in both languages, and where
+   pressing it leads. The twenty events of the BRD are there already; one that has no cause yet
+   has no line, and gets its line and destination from the spec that raises it. A new event also
+   goes in `notification-events.lock` beside it; a key, once used, is never renamed.
+2. **Raise it where the change is saved**, on your own context:
+
+   ```csharp
+   db.Notify(new RaisedEvent(
+       NotificationEvents.TicketSupportReplied,
+       new EventSubject("ticket", ticket.Id, ticket.Number),
+       Facts: new Dictionary<string, object?> { ["subject"] = ticket.Subject },
+       Owners: [ticket.OpenedByAccountId]));
+   await db.SaveChangesAsync(cancellation);
+   ```
+
+   The clinic, the moment, who is told and whether an email is owed are taken by the engine —
+   you cannot pass them. An account that was disabled or removed is not told.
+3. **A reminder a job raises again and again** names its occasion —
+   `Occasion: "7-days"` — and is told once for that record and that occasion however often the
+   job runs. Without an occasion every raise tells.
+
+Rules the engine enforces, and refuses otherwise (the save fails, and the change with it): the
+key is in the catalogue and has a line; every fact key is one the event allows; values are short
+text, numbers or yes/no; an event told to its owner names one; a clinical event carries no
+facts at all — the record alone. Rules it cannot enforce and you keep: never put a password, a
+code, a link or an email address in a fact; never read or write the `notify` tables yourself
+(`NotificationRulesTests` fails); do not gather several events into one; save with
+`SaveChangesAsync`, since the synchronous save refuses a pending event. The contract is
+`specs/008-notifications-engine/contracts/notifications-engine.md`.
+
 ## Conventions to follow
 
 These are decided once in `specs/001-platform-foundation/contracts/` and are not re-decided in

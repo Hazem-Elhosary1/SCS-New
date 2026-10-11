@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Scs.BuildingBlocks.Audit;
 using Scs.BuildingBlocks.Errors;
+using Scs.BuildingBlocks.Notifications;
 using Scs.BuildingBlocks.Security;
 using Scs.BuildingBlocks.Tenancy;
 using Scs.Identity.Contracts;
@@ -10,6 +11,7 @@ using Scs.Identity.Infrastructure.Persistence;
 using Scs.SharedKernel;
 using Scs.SharedKernel.Access;
 using Scs.SharedKernel.Audit;
+using Scs.SharedKernel.Notifications;
 using Scs.Tenancy.Contracts;
 
 namespace Scs.Identity.Infrastructure;
@@ -145,6 +147,40 @@ internal sealed class StaffAccessSource(IdentityDbContext db) : IStaffAccessSour
 
         return new StaffGrant(
             role.Id, role.Name, role.IsRenamed ? null : role.ReadyKey, codes.ToHashSet(StringComparer.Ordinal));
+    }
+}
+
+/// <summary>
+/// Who is told about an event (spec 008, FR-010 to FR-012): the holders of a permission, the
+/// people named, or everyone — always accounts of the established clinic that can sign in, each
+/// once, and never by the name of a role. The owner role holds whatever the catalogue holds, so
+/// its holders are among the holders of every permission.
+/// </summary>
+internal sealed class NotificationRecipients(IdentityDbContext db, IClinicContext clinic) : INotificationRecipients
+{
+    public async Task<IReadOnlyList<Guid>> ResolveAsync(
+        RecipientRule rule, IReadOnlyCollection<Guid> owners, CancellationToken cancellation)
+    {
+        ArgumentNullException.ThrowIfNull(rule);
+        ArgumentNullException.ThrowIfNull(owners);
+        clinic.Require();
+
+        var named = owners.Distinct().ToList();
+        var canSignIn = db.Accounts.AsNoTracking().Where(a => a.State == AccountStates.Active);
+        var code = rule.Permission;
+        var holders = canSignIn.Where(a => db.Roles.Any(r =>
+            r.Id == a.RoleId && (r.HoldsEverything || r.Permissions.Any(p => p.Code == code))));
+
+        var told = rule.Kind switch
+        {
+            RecipientRuleKind.Everyone => canSignIn,
+            RecipientRuleKind.Owner => canSignIn.Where(a => named.Contains(a.Id)),
+            RecipientRuleKind.Permission => holders,
+            _ => canSignIn.Where(a => named.Contains(a.Id) || db.Roles.Any(r =>
+                r.Id == a.RoleId && (r.HoldsEverything || r.Permissions.Any(p => p.Code == code)))),
+        };
+
+        return await told.Select(a => a.Id).Distinct().ToListAsync(cancellation).ConfigureAwait(false);
     }
 }
 

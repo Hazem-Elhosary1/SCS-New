@@ -22,7 +22,11 @@ public sealed class RouteDeclarationTests(SqlServerFixture sql)
     /// account. Adding to it means changing this list and contracts/access-engine.md §1, in review.
     /// </summary>
     private static readonly string[] OwnAccountRoutes =
-        ["PUT /v1/account/preferences", "POST /v1/auth/password/change", "GET /v1/auth/session"];
+    [
+        "PUT /v1/account/preferences", "POST /v1/auth/password/change", "GET /v1/auth/session",
+        "GET /v1/notifications", "GET /v1/notifications/state", "POST /v1/notifications/{id:guid}/read",
+        "POST /v1/notifications/read-all",
+    ];
 
     private static string Describe(RouteEndpoint endpoint)
     {

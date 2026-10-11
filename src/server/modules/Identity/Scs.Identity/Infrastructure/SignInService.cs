@@ -49,6 +49,7 @@ internal sealed class SignInService(
     IClinicProfile profile,
     IEmailSender mail,
     SessionService sessions,
+    KnownDevices devices,
     TimeProvider clock,
     IOptions<ScsOptions> options)
 {
@@ -287,6 +288,10 @@ internal sealed class SignInService(
     private async Task<SignInOutcome> OpenSessionAsync(Guid accountId, RequestOrigin origin, CancellationToken cancellation)
     {
         var session = sessions.Open(accountId, origin);
+
+        // The session, its entry in the trail, and the word to the account's owner when the
+        // browser is one the account never used: one save (spec 008, FR-042).
+        await devices.SeenAsync(accountId, origin, cancellation).ConfigureAwait(false);
         await db.SaveChangesAsync(cancellation).ConfigureAwait(false);
 
         // A completed sign-in forgets the codes spent before it.

@@ -1,6 +1,6 @@
-using Scs.Audit.Infrastructure;
+using Scs.SharedKernel.Wording;
 
-namespace Scs.UnitTests.Audit;
+namespace Scs.UnitTests.Wording;
 
 /// <summary>Spec 007, FR-038: the device of an entry reads as the design's log writes it.</summary>
 public class DeviceTextTests

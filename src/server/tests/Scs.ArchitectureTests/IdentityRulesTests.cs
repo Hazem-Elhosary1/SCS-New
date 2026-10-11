@@ -113,12 +113,15 @@ public class IdentityRulesTests
     public void Open_to_any_signed_in_person_is_declared_only_where_accounts_live()
     {
         // OwnAccountOnly() is for what a person does to their own account (spec 005, FR-021):
-        // a module that is not Identity has no such route.
+        // a module that is not Identity has no such route. The one exception is a person's own
+        // bell (spec 008, FR-020): the four routes of access-engine.md §1, in one file.
         var modules = FindUp("src", "server", "modules");
         var offenders = Directory
             .EnumerateFiles(modules, "*.cs", SearchOption.AllDirectories)
             .Where(file => !InBuildOutput(file))
             .Where(file => !file.Contains($"{Path.DirectorySeparatorChar}Identity{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .Where(file => !file.EndsWith(
+                Path.Combine("Notifications", "Scs.Notifications", "Api", "NotificationEndpoints.cs"), StringComparison.Ordinal))
             .Where(file => File.ReadAllText(file).Contains(".OwnAccountOnly()", StringComparison.Ordinal))
             .Select(file => Path.GetRelativePath(modules, file))
             .ToList();

@@ -1,15 +1,37 @@
-namespace Scs.Audit.Infrastructure;
+using System.Globalization;
+
+namespace Scs.SharedKernel.Wording;
 
 /// <summary>
-/// Describes a device from the user agent an entry stored (spec 007, FR-038): the browser's
-/// family and the operating system, as the design's log writes it — «متصفح Chrome على Windows».
-/// The raw text stays on the entry, so an old entry reads better when this learns a new browser.
+/// What every part of the platform that turns stored facts into words shares (specs 007 and
+/// 008): the two languages, and how each writes a number.
 /// </summary>
-internal static class DeviceText
+public static class Words
+{
+    public const string Arabic = "ar";
+    public const string English = "en";
+
+    /// <summary><c>en</c> stays English; anything else is Arabic, the platform's first language.</summary>
+    public static string Language(string? language) => language == English ? English : Arabic;
+
+    /// <summary>A whole number as the reader's language writes it: Arabic-Indic digits in Arabic.</summary>
+    public static string Number(int value, bool english)
+    {
+        var latin = value.ToString(CultureInfo.InvariantCulture);
+        return english ? latin : string.Concat(latin.Select(digit => char.IsAsciiDigit(digit) ? (char)('٠' + (digit - '0')) : digit));
+    }
+}
+
+/// <summary>
+/// Describes a device from a stored user agent: the browser's family and the operating system,
+/// as the design writes it — «متصفح Chrome على Windows». The raw text stays where it was
+/// stored, so an old record reads better when this learns a new browser.
+/// </summary>
+public static class DeviceText
 {
     public static string Describe(string? userAgent, string language)
     {
-        var english = language == Sentences.English;
+        var english = language == Words.English;
         var browser = userAgent is null ? null : Browser(userAgent);
         var system = userAgent is null ? null : System(userAgent);
 

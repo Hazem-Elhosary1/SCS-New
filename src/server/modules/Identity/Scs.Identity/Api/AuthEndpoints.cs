@@ -144,7 +144,10 @@ internal static class AuthEndpoints
         }
 
         var started = System.Diagnostics.Stopwatch.GetTimestamp();
-        var outcome = await signIn.SignInAsync(request!.Email, request.Password!, Origin(context), cancellation);
+        var device = cookies.ReadDevice(context.Request) ?? SessionCookies.NewDeviceMark();
+        var outcome = await signIn.SignInAsync(
+            request!.Email, request.Password!, Origin(context) with { DeviceMark = device }, cancellation);
+        KeepDeviceMark(outcome, device, context, cookies, clock);
 
         if (ReferenceEquals(outcome, SignInOutcome.InvalidCredentials))
         {
@@ -166,8 +169,24 @@ internal static class AuthEndpoints
         CancellationToken cancellation)
     {
         var ticket = ReadChallenge(context, cookies, clock);
-        var outcome = await signIn.ConfirmCodeAsync(ticket, request?.Code, Origin(context), cancellation);
+        var device = cookies.ReadDevice(context.Request) ?? SessionCookies.NewDeviceMark();
+        var outcome = await signIn.ConfirmCodeAsync(
+            ticket, request?.Code, Origin(context) with { DeviceMark = device }, cancellation);
+        KeepDeviceMark(outcome, device, context, cookies, clock);
         await WriteAsync(outcome, context, cookies, db, profile, access, preferences, clock, options.Value.Auth, cancellation);
+    }
+
+    /// <summary>
+    /// A completed sign-in leaves the browser its mark, for thirteen months from now. Nothing
+    /// else does: a failed or refused sign-in marks no browser (spec 008, FR-043).
+    /// </summary>
+    private static void KeepDeviceMark(
+        SignInOutcome outcome, string device, HttpContext context, SessionCookies cookies, TimeProvider clock)
+    {
+        if (outcome is SignInOutcome.SignedIn)
+        {
+            cookies.WriteDevice(context.Response, device, clock.GetUtcNow());
+        }
     }
 
     private static async Task ResendCodeAsync(

@@ -22,10 +22,13 @@ public class AuditActionsTests
         ("sessions.ended", "security"),
         ("password.reset-completed", "security"),
         ("password.temporary-replaced", "security"),
+
+        // Spec 008: who turned the email of a notification on or off.
+        ("settings.notification-email-changed", "changes"),
     ];
 
     [Fact]
-    public void The_catalogue_holds_exactly_the_twelve_actions_of_this_spec()
+    public void The_catalogue_holds_exactly_the_actions_the_specs_name()
     {
         Assert.Equal(
             Expected.OrderBy(e => e.Code, StringComparer.Ordinal),
@@ -99,10 +102,10 @@ public class AuditActionsTests
     }
 
     [Fact]
-    public void The_four_role_actions_and_no_other_need_before_and_after()
+    public void The_actions_that_change_a_value_and_no_other_need_before_and_after()
     {
         Assert.Equal(
-            ["account.role-changed", "role.created", "role.deleted", "role.updated"],
+            ["account.role-changed", "role.created", "role.deleted", "role.updated", "settings.notification-email-changed"],
             AuditActions.All.Where(a => a.NeedsBeforeAfter).Select(a => a.Code).Order(StringComparer.Ordinal));
     }
 

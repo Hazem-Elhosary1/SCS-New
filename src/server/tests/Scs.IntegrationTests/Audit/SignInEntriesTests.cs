@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Scs.Audit;
 using Scs.Identity;
+using Scs.Notifications;
 using Scs.Identity.Contracts;
 using Scs.Identity.Domain;
 using Scs.Identity.Infrastructure;
@@ -472,6 +473,7 @@ public sealed class SignInEntriesTests(SqlServerFixture sql)
         var identity = new IdentityModule();
         await new TenancyModule().MigrateAsync(db.Migration, null, default);
         await new AuditModule().MigrateAsync(db.Migration, null, default);
+        await new NotificationsModule().MigrateAsync(db.Migration, null, default);
         await identity.MigrateAsync(db.Migration, BeforeThisSpec, default);
 
         // A clinic as spec 006 left it: accounts, their sign-in events, and its roles.
@@ -592,6 +594,7 @@ public sealed class SignInEntriesTests(SqlServerFixture sql)
         var identity = new IdentityModule();
         await new TenancyModule().MigrateAsync(db.Migration, null, default);
         await new AuditModule().MigrateAsync(db.Migration, null, default);
+        await new NotificationsModule().MigrateAsync(db.Migration, null, default);
         await identity.MigrateAsync(db.Migration, BeforeThisSpec, default);
 
         var clinic = await db.SeedClinicAsync();

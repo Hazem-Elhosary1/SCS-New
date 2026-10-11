@@ -3,13 +3,15 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { AuthService, StaffPreferences } from '../auth/auth.service';
 import { LanguageService, ScsLanguage } from '../i18n/language.service';
+import { PlatformNotifications } from './platform-notifications';
 
 /**
  * The parts of the console's frame that wait for a later spec's data (spec 006, "frame now,
  * data later"). Each is a source with a default that says "nothing yet": the bell has no
  * notifications, the clinic has one branch, there is no subscription banner, every destination
  * is in the plan. The spec that owns the data provides its own implementation of the source —
- * `{ provide: NotificationsSource, useClass: … }` — and nothing in the frame changes.
+ * `{ provide: NotificationsSource, useClass: … }` — and nothing in the frame changes. The bell
+ * has its data since spec 008: its source is the platform's, `PlatformNotifications`.
  */
 
 export type NotificationKind =
@@ -29,25 +31,47 @@ export interface NotificationItem {
   /** An instant, as the platform sends it. */
   readonly at: string;
   readonly read: boolean;
+  /** Where pressing it leads, a path inside the console; none when it leads nowhere. */
+  readonly link?: string | null;
 }
 
-/** What the bell shows. Filled by the notifications spec (008). */
-@Injectable({ providedIn: 'root' })
+/**
+ * What the bell shows: the person's own notifications from the platform (spec 008). The class
+ * itself is the source that has nothing, for a place that wants a bell with no platform.
+ */
+@Injectable({ providedIn: 'root', useFactory: () => inject(PlatformNotifications) })
 export class NotificationsSource {
   readonly state: Signal<'ready' | 'loading' | 'failed'> = signal('ready');
   readonly items: Signal<readonly NotificationItem[]> = signal([]);
 
+  /** Whether the bell shows its dot: something is unread, loaded or not. */
+  readonly unread: Signal<boolean> = signal(false);
+
+  /** Whether older notifications can still be loaded. */
+  hasMore(): boolean {
+    return false;
+  }
+
+  /** The bell was opened or closed. */
+  setOpen(open: boolean): void {
+    void open;
+  }
+
   markAllRead(): void {
-    // Nothing to mark until notifications exist.
+    // Nothing to mark.
   }
 
   open(item: NotificationItem): void {
     void item;
-    // Nothing to open until notifications exist.
+    // Nothing to open.
   }
 
   retry(): void {
-    // Nothing to load until notifications exist.
+    // Nothing to load.
+  }
+
+  loadMore(): void {
+    // Nothing older.
   }
 }
 

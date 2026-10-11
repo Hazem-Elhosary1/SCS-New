@@ -21,3 +21,4 @@ export * from './lib/auth/support.service';
 export * from './lib/auth/password-rules';
 export * from './lib/access/access.service';
 export * from './lib/shell/sources';
+export * from './lib/shell/platform-notifications';

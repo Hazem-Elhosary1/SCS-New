@@ -48,10 +48,10 @@ public class DeclaredCrossingsTests
     }
 
     [Fact]
-    public void There_are_six_crossings_each_with_a_reason_and_distinct_names()
+    public void There_are_seven_crossings_each_with_a_reason_and_distinct_names()
     {
-        Assert.Equal(6, DeclaredCrossings.All.Count);
-        Assert.Equal(6, DeclaredCrossings.All.Select(c => c.Operation).Distinct().Count());
+        Assert.Equal(7, DeclaredCrossings.All.Count);
+        Assert.Equal(7, DeclaredCrossings.All.Select(c => c.Operation).Distinct().Count());
         Assert.All(DeclaredCrossings.All, c => Assert.False(string.IsNullOrWhiteSpace(c.Reason)));
         Assert.All(DeclaredCrossings.All, c => Assert.Matches("^[a-z]+(-[a-z]+)*$", c.Operation));
     }

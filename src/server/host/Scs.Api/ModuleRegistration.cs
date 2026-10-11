@@ -12,6 +12,7 @@ internal static class ModuleRegistration
     [
         new Scs.Tenancy.TenancyModule(),
         new Scs.Audit.AuditModule(),
+        new Scs.Notifications.NotificationsModule(),
         new Scs.Identity.IdentityModule(),
         new Scs.Platform.PlatformModule(),
     ];

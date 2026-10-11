@@ -24,6 +24,8 @@ gates too; an unknown code also stops the application from starting.
 - `GET /v1/auth/session`
 - `POST /v1/auth/password/change`
 - `PUT /v1/account/preferences` (spec 006: what a person keeps between sessions)
+- `GET /v1/notifications`, `GET /v1/notifications/state`, `POST /v1/notifications/{id}/read`,
+  `POST /v1/notifications/read-all` (spec 008: a person's own bell)
 
 ## 2. What a refused person gets
 

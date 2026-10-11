@@ -1,4 +1,4 @@
-import { Provider, inject, signal } from '@angular/core';
+import { Provider, computed, inject, signal } from '@angular/core';
 import {
   BranchChoice,
   BranchesSource,
@@ -7,6 +7,7 @@ import {
   NotificationItem,
   NotificationsSource,
   PlanSource,
+  PlatformNotifications,
   RuntimeConfigService,
   SubscriptionNotice,
   SubscriptionSource,
@@ -53,6 +54,10 @@ function sampleNotifications(given: ShellSample & SampleLog): NotificationsSourc
   return {
     items: items.asReadonly(),
     state: state.asReadonly(),
+    unread: computed(() => items().some((item) => !item.read)),
+    hasMore: () => false,
+    setOpen: () => undefined,
+    loadMore: () => undefined,
     markAllRead: () => {
       given.calls.push('markAllRead');
       items.update((all) => all.map(read));
@@ -92,10 +97,21 @@ function sampled<T>(source: new () => T, make: (given: ShellSample & SampleLog) 
   };
 }
 
+/** The bell's source is the platform's unless a sample was given. */
+function sampledBell(): Provider {
+  return {
+    provide: NotificationsSource,
+    useFactory: () => {
+      const given = sample();
+      return given === null ? inject(PlatformNotifications) : sampleNotifications(given);
+    },
+  };
+}
+
 /** The frame's sources, answering from `window.__scsSample` when it is there. */
 export function provideSampleSources(): Provider[] {
   return [
-    sampled(NotificationsSource, sampleNotifications),
+    sampledBell(),
     sampled(BranchesSource, sampleBranches),
     sampled(SubscriptionSource, (given) => ({ notice: signal(given.subscription ?? null) })),
     sampled(PlanSource, (given) => ({

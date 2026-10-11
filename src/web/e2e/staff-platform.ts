@@ -107,6 +107,21 @@ export function problem(status: number, code: string, extra: Record<string, unkn
   return { status, code, extra };
 }
 
+/** A notification as `GET /v1/notifications` lists it (spec 008). */
+export interface PlatformNotification {
+  id: string;
+  kind: string;
+  event: string;
+  title: string;
+  text: string;
+  at: string;
+  read: boolean;
+  link: string | null;
+}
+
+/** How many notifications one page of the made-up platform holds, as the real one does. */
+export const NOTIFICATIONS_PAGE = 20;
+
 export interface StaffPlatform {
   /** Whether a session is alive. */
   signedIn: boolean;
@@ -134,6 +149,12 @@ export interface StaffPlatform {
   preferencesSent: Record<string, unknown>[];
   /** Overrides the answer of `GET /v1/auth/session` while set. */
   sessionAnswer: Answer | null;
+  /** The signed-in person's notifications, newest first (spec 008). None by default. */
+  notifications: PlatformNotification[];
+  /** Overrides the answer of `GET /v1/notifications` while set. */
+  notificationsAnswer: Answer | null;
+  /** Every call to the notification addresses, as `METHOD path`, apart from `calls`: the bell asks by itself. */
+  notificationCalls: string[];
   /** Every call made, as `METHOD path`. */
   calls: string[];
   /** Bodies posted to sign-in and code. */
@@ -191,6 +212,9 @@ export async function staffPlatform(
     preferencesAnswer: { status: 204 },
     preferencesSent: [],
     sessionAnswer: null,
+    notifications: [],
+    notificationsAnswer: null,
+    notificationCalls: [],
     calls: [],
     bodies: [],
     lastHeaders: {},
@@ -303,6 +327,57 @@ export async function staffPlatform(
       state.preferences = { ...state.preferences, ...body };
     }
     await fulfil(route, answer);
+  });
+
+  // The bell asks these by itself, every thirty seconds: they are kept out of `calls`.
+  await page.route(/\/v1\/notifications(\/[^?]*)?(\?.*)?$/, async (route) => {
+    const request = route.request();
+    if (request.method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: cors });
+      return;
+    }
+    const url = new URL(request.url());
+    const path = url.pathname.slice(url.pathname.indexOf('/v1/notifications'));
+    state.notificationCalls.push(`${request.method()} ${path}${url.search}`);
+
+    if (!state.signedIn) {
+      await fulfil(route, problem(401, 'UNAUTHENTICATED'));
+      return;
+    }
+
+    const unread = () => state.notifications.some((each) => !each.read);
+    if (request.method() === 'GET' && path === '/v1/notifications/state') {
+      await fulfil(route, {
+        status: 200,
+        json: { unread: unread(), latestAt: state.notifications[0]?.at ?? null },
+      });
+    } else if (request.method() === 'GET' && path === '/v1/notifications') {
+      const from = Number(url.searchParams.get('before') ?? '0');
+      const to = from + NOTIFICATIONS_PAGE;
+      await fulfil(
+        route,
+        state.notificationsAnswer ?? {
+          status: 200,
+          json: {
+            items: state.notifications.slice(from, to),
+            unread: unread(),
+            next: to < state.notifications.length ? String(to) : null,
+          },
+        },
+      );
+    } else if (request.method() === 'POST' && path === '/v1/notifications/read-all') {
+      state.notifications = state.notifications.map((each) => ({ ...each, read: true }));
+      await fulfil(route, { status: 204 });
+    } else if (request.method() === 'POST' && path.endsWith('/read')) {
+      const id = path.split('/')[3];
+      const known = state.notifications.some((each) => each.id === id);
+      state.notifications = state.notifications.map((each) =>
+        each.id === id ? { ...each, read: true } : each,
+      );
+      await fulfil(route, known ? { status: 204 } : problem(404, 'NOT_FOUND'));
+    } else {
+      await fulfil(route, problem(404, 'NOT_FOUND'));
+    }
   });
 
   await on('**/v1/auth/sign-out', async (route) => {

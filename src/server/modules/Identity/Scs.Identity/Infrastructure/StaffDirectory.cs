@@ -42,6 +42,33 @@ internal sealed class StaffDirectory(IdentityDbContext db, IClinicContext clinic
             .ConfigureAwait(false);
     }
 
+    public async Task<IReadOnlyDictionary<Guid, StaffContact>> ContactsAsync(
+        IReadOnlyCollection<Guid> accountIds, CancellationToken cancellation)
+    {
+        ArgumentNullException.ThrowIfNull(accountIds);
+        clinic.Require();
+
+        if (accountIds.Count == 0)
+        {
+            return new Dictionary<Guid, StaffContact>();
+        }
+
+        var ids = accountIds.Distinct().ToList();
+        var rows = await (
+            from account in db.Accounts.AsNoTracking()
+            where ids.Contains(account.Id)
+            select new
+            {
+                account.Id,
+                account.Email,
+                account.State,
+                Language = db.Preferences.Where(p => p.AccountId == account.Id).Select(p => p.Language).FirstOrDefault(),
+            }).ToListAsync(cancellation).ConfigureAwait(false);
+
+        return rows.ToDictionary(
+            row => row.Id, row => new StaffContact(row.Email, row.Language, row.State == AccountStates.Active));
+    }
+
     public async Task<IReadOnlyList<FailedRun>> FailedRunsAsync(
         IReadOnlyCollection<FailedRunRef> runs, CancellationToken cancellation)
     {

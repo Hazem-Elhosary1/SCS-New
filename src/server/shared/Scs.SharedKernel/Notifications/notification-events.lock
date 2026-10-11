@@ -1,0 +1,24 @@
+# The keys of notification events, frozen (spec 008, FR-003).
+# A key in this file is never renamed, reused or removed: notifications stored under it, and a
+# clinic's email switch for it, must go on meaning the same thing.
+# Add new keys at the end.
+ticket.support-replied
+ticket.awaiting-reply
+ticket.resolved
+invoice.issued
+payment.received
+payment.failed
+subscription.ending
+subscription.state-changed
+channel.disconnected
+messages.balance-exhausted
+booking-page.stopped
+teleconsult.minutes-exhausted
+xray.analyses-exhausted
+call.refunded
+offer.expired
+recall.due
+result.out-of-range
+account.new-device
+account.support-action
+licence.expiring

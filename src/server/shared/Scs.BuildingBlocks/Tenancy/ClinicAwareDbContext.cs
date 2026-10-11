@@ -5,7 +5,10 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
 using Scs.BuildingBlocks.Audit;
+using Scs.BuildingBlocks.Notifications;
 using Scs.BuildingBlocks.Errors;
 using Scs.SharedKernel;
 
@@ -68,11 +71,30 @@ public abstract class ClinicAwareDbContext(DbContextOptions options, IClinicCont
         _audit.Add(record);
     }
 
+    private readonly List<RaisedEvent> _raised = [];
+
+    /// <summary>
+    /// Says that the change being made is something people must be told (spec 008). The
+    /// notifications are written by the next <see cref="SaveChangesAsync(bool, CancellationToken)"/>,
+    /// in one transaction with the change: no notification exists of a change that did not take
+    /// effect (FR-006). Emails are sent afterwards, never inside the save.
+    /// </summary>
+    public void Notify(RaisedEvent raised)
+    {
+        ArgumentNullException.ThrowIfNull(raised);
+        _raised.Add(raised);
+    }
+
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
         if (_audit.Count > 0)
         {
             throw new AuditRefusedException("A change that is recorded in the audit trail is saved with SaveChangesAsync.");
+        }
+
+        if (_raised.Count > 0)
+        {
+            throw new NotificationRefusedException("A change people are told about is saved with SaveChangesAsync.");
         }
 
         EnforceClinicOwnership();
@@ -84,13 +106,17 @@ public abstract class ClinicAwareDbContext(DbContextOptions options, IClinicCont
     {
         EnforceClinicOwnership();
 
-        if (_audit.Count == 0)
+        if (_audit.Count == 0 && _raised.Count == 0)
         {
             return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken).ConfigureAwait(false);
         }
 
         var records = _audit.ToList();
         _audit.Clear();
+        var raised = _raised.ToList();
+        _raised.Clear();
+        var established = clinic.Require();
+        var emailWaiting = false;
 
         var own = Database.CurrentTransaction is null
             ? await Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false)
@@ -104,12 +130,30 @@ public abstract class ClinicAwareDbContext(DbContextOptions options, IClinicCont
                 _auditMoment = (transaction, AuditWriter.Now(this));
             }
 
-            await AuditWriter.WriteAsync(this, clinic.Require(), records, _auditMoment.Value.At, cancellationToken)
-                .ConfigureAwait(false);
+            if (records.Count > 0)
+            {
+                await AuditWriter.WriteAsync(this, established, records, _auditMoment.Value.At, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            if (raised.Count > 0)
+            {
+                emailWaiting = await NotificationWriter
+                    .WriteAsync(this, established, raised, _auditMoment.Value.At, cancellationToken)
+                    .ConfigureAwait(false);
+            }
 
             if (own is not null)
             {
                 await own.CommitAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            if (emailWaiting)
+            {
+                // Sent by a job, after the change. When the caller holds the transaction the job
+                // may look before the commit and find nothing; the sweep of every minute finds it.
+                this.GetService<IDbContextOptions>().FindExtension<CoreOptionsExtension>()?.ApplicationServiceProvider?
+                    .GetService<INotificationDispatch>()?.EmailsWaiting(established);
             }
 
             return saved;

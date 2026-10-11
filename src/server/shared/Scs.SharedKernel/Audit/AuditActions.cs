@@ -48,6 +48,7 @@ public static class AuditActions
     public const string SessionsEnded = "sessions.ended";
     public const string PasswordResetCompleted = "password.reset-completed";
     public const string PasswordTemporaryReplaced = "password.temporary-replaced";
+    public const string SettingsNotificationEmailChanged = "settings.notification-email-changed";
 
     /// <summary>Fact keys no action may allow: nothing secret and no email address is ever a fact (FR-016, FR-018).</summary>
     public static IReadOnlyList<string> NeverKeys { get; } =
@@ -80,6 +81,9 @@ public static class AuditActions
             "أُعيد تعيين كلمة مرور {target}", "{target}’s password was reset", [], NeedsBeforeAfter: false),
         new(PasswordTemporaryReplaced, AuditCategories.Security, "استبدال كلمة المرور المؤقتة", "Temporary password replaced",
             "استُبدلت كلمة المرور المؤقتة لحساب {target}", "The temporary password of {target}’s account was replaced", [], NeedsBeforeAfter: false),
+        new(SettingsNotificationEmailChanged, AuditCategories.Changes, "تغيير بريد تنبيه", "Notification email changed",
+            "غُيِّر بريد «{target}» من «{before:enabled}» إلى «{after:enabled}»",
+            "Email for “{target}” was changed from “{before:enabled}” to “{after:enabled}”", [], NeedsBeforeAfter: true),
     ];
 
     private static readonly Dictionary<string, AuditAction> ByCode = All.ToDictionary(a => a.Code, StringComparer.Ordinal);

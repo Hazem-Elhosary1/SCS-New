@@ -11,6 +11,7 @@ using Scs.BuildingBlocks.Configuration;
 using Scs.BuildingBlocks.Jobs;
 using Scs.BuildingBlocks.Mail;
 using Scs.BuildingBlocks.Modules;
+using Scs.BuildingBlocks.Notifications;
 using Scs.BuildingBlocks.Security;
 using Scs.BuildingBlocks.Tenancy;
 using Scs.Identity.Api;
@@ -45,7 +46,10 @@ public sealed class IdentityModule : IModule, IMigratableModule
         services.TryAddSingleton<PasswordLinkTokens>();
         services.AddScoped<AccountLookup>();
         services.AddScoped<SessionService>();
+        services.AddScoped<KnownDevices>();
         services.AddScoped<SignInService>();
+        services.AddScsNotifications();
+        services.AddScoped<INotificationRecipients, NotificationRecipients>();
         services.AddScoped<PasswordLinks>();
         services.AddScoped<PasswordSetter>();
         services.AddScoped<ForgotPasswordService>();

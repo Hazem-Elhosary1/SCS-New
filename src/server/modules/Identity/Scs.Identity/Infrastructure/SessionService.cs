@@ -14,6 +14,9 @@ namespace Scs.Identity.Infrastructure;
 /// <summary>Where a request came from, for the record: an address, a browser, a reference.</summary>
 internal sealed record RequestOrigin(string? IpAddress, string? UserAgent, string TraceId)
 {
+    /// <summary>The mark of the browser a sign-in is made from (spec 008); null where there is none.</summary>
+    public string? DeviceMark { get; init; }
+
     public static RequestOrigin None { get; } = new(null, null, new string('0', 32));
 }
 

@@ -36,6 +36,8 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
 
     public DbSet<StaffPreference> Preferences => Set<StaffPreference>();
 
+    public DbSet<KnownDevice> KnownDevices => Set<KnownDevice>();
+
     /// <summary>Platform-wide and insert-only for the application.</summary>
     public DbSet<AnonymousSignInAttempt> AnonymousAttempts => Set<AnonymousSignInAttempt>();
 
@@ -255,6 +257,21 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
             builder.Property(p => p.UpdatedAtUtc).HasColumnType("datetimeoffset").IsRequired();
             builder.HasOne<StaffAccount>().WithOne().HasForeignKey<StaffPreference>(p => p.AccountId).OnDelete(DeleteBehavior.Restrict);
             builder.HasIndex(p => p.ClinicId);
+        });
+
+        modelBuilder.Entity<KnownDevice>(builder =>
+        {
+            builder.ToTable("KnownDevice");
+            builder.HasKey(d => d.Id);
+            builder.Property(d => d.Id).ValueGeneratedNever();
+            builder.Property(d => d.MarkHash).HasColumnType("binary(32)").IsRequired();
+            builder.Property(d => d.FirstSeenAtUtc).HasColumnType("datetimeoffset").IsRequired();
+            builder.Property(d => d.LastSeenAtUtc).HasColumnType("datetimeoffset").IsRequired();
+            builder.HasOne<StaffAccount>().WithMany().HasForeignKey(d => d.AccountId).OnDelete(DeleteBehavior.Cascade);
+
+            // One row for one browser of one account.
+            builder.HasIndex(d => new { d.AccountId, d.MarkHash }).IsUnique().HasDatabaseName("UX_KnownDevice_OnePerBrowser");
+            builder.HasIndex(d => d.ClinicId);
         });
 
         modelBuilder.Entity<AnonymousSignInAttempt>(builder =>

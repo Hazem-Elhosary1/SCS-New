@@ -73,6 +73,27 @@ is production data like any other and follows the rule above. Three things to kn
   that is itself recorded. If an entry must be removed for a legal reason, that is a decision
   for the data-protection officer and is done by a reviewed migration, not by hand.
 
+## Notifications
+
+The `notify` schema (spec 008) holds what each person was told and the email owed for it. It is
+production data like any other and follows the rule above.
+
+- **`notify.Notification`** — one row per person told: the event, the record it is about (its
+  kind, id and label, such as a ticket number), a few short facts of the moment, and when it was
+  read. It never holds anything from a clinical record, a password, a code or a link. The words
+  a person reads are built when they read, in their language.
+- **`notify.OutgoingEmail`** — whether the email for a notification is waiting, sent, given up
+  on after a day of trying, or dropped. **No address is stored there**: the address and the
+  language are read from the account at the moment of sending, so an account that was disabled
+  or removed since is not written to. The operational logs hold counts only.
+- **`notify.EmailSwitch`** — the events a clinic turned the email off for.
+- **Ninety days.** A job removes notifications older than ninety days every night, read or not,
+  with their email rows. Nothing is lost by it: a notification points at something that is
+  recorded where it happened. Do not restore removed notifications from a backup.
+- `identity.KnownDevice` holds a one-way hash of a mark kept in each browser an account signed
+  in from, to tell a new device from a known one. It holds no address and no user agent, and a
+  browser not seen for four hundred days is forgotten.
+
 ## If it happens anyway
 
 Treat a copy of production patient data outside production as an incident: delete the copy,

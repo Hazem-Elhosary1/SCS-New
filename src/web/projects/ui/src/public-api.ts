@@ -13,4 +13,5 @@ export * from './lib/password-rules/password-rules.component';
 export * from './lib/icon/icon.component';
 export * from './lib/no-access/no-access.component';
 export * from './lib/overlay/overlay';
+export * from './lib/overlay/overlay-direction';
 export * from './lib/list/list';

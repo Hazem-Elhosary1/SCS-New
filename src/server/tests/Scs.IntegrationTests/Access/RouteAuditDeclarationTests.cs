@@ -34,6 +34,9 @@ public sealed class RouteAuditDeclarationTests(SqlServerFixture sql)
         ["PUT /v1/account/preferences"] = AuditDeclarationKind.RecordsNothing,
         ["POST /v1/client-errors"] = AuditDeclarationKind.RecordsNothing,
         ["POST /v1/dev/staff-invitations"] = AuditDeclarationKind.RecordsNothing,
+        ["POST /v1/notifications/{id:guid}/read"] = AuditDeclarationKind.RecordsNothing,
+        ["POST /v1/notifications/read-all"] = AuditDeclarationKind.RecordsNothing,
+        ["PUT /v1/settings/notification-emails/{eventKey}"] = AuditDeclarationKind.Records,
     };
 
     private static string Describe(RouteEndpoint endpoint) => $"{Method(endpoint)} {endpoint.RoutePattern.RawText}";
