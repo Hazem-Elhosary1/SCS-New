@@ -3,27 +3,28 @@
 **Date**: 11 Oct 2026 · **Branch**: `009-file-storage` · **Constitution**: v1.2.0, Principle VII
 
 What was run, what was measured, what was walked on the real stack, what was laid beside the
-design, what was built differently from the plan, and what was not done.
+design, what was built differently from the plan, and what was not done. Second writing, after
+the convergence tasks T049–T052 (section 8); the figures of section 1 are from the last run.
 
 ## 1. What was run
 
 | Gate | Result |
 |---|---|
 | `dotnet test src/server/Scs.sln` (Debug) | unit **551** · architecture **51** · integration **712** — all passed |
-| `npm --prefix src/web run ci` (lint, translation check, tools, unit tests, build of the three apps) | passed — clinic **68**, core **163**, ui **95**, patient 1, ops 1; clinic's first download **452.87 kB**, no size warning |
-| `npx playwright test` | **396 passed**, 1 passed on its second try, 4 skipped (the picture-only tests) |
+| `npm --prefix src/web run ci` (lint, translation check, tools, unit tests, build of the three apps) | passed — clinic **68**, core **164**, ui **95**, patient 1, ops 1; clinic's first download **452.91 kB**, no size warning |
+| `npx playwright test` | **397 passed**, 4 skipped (the picture-only tests) |
 
-The one that needed a second try is spec 005's timing test (`access.spec.ts`, "not in your role
+In the run before convergence one test needed a second try: spec 005's timing test (`access.spec.ts`, "not in your role
 within a second", SC-008 of that spec): 1352 ms the first time, with the whole browser suite
 running beside it. It touches nothing of this spec.
 
-The server suite ran while three browser tests were taking pictures; nothing else was running
-for the web gate and the browser suite.
+In the last run the three gates ran one after the other; a single browser test was run beside
+the server suite to take a picture.
 
 **Before starting (T001)**: the unit and architecture suites were run and matched spec 008's
 record, 499 and 44. The integration suite hung at the baseline because the local API was still
 running and holding the build; it was stopped, and the baseline is taken from spec 008's last
-full run, 640. New since: 52 unit, 7 architecture and 72 integration tests on the server; 18
+full run, 640. New since: 52 unit, 7 architecture and 72 integration tests on the server; 19
 unit tests in core and 23 in ui; 16 browser tests for files and 3 for the environment strip.
 
 New test files: `Files/UploadTests` (with `FileWorld`), `AttachTests`, `ScanAndAccessTests`
@@ -137,8 +138,8 @@ read for them, so tints come from the tokens already in the `ui` library.
 
 ## 5. Built differently from the plan
 
-- No health check for a scan backlog: a file waiting more than an hour is an error line in the
-  log from the sweep. FR-019's alert is that line; nothing pages anybody.
+- FR-019's alert is a health check that reads degraded and an error line in the log; nothing
+  pages anybody until the monitoring of spec 001 is wired.
 - `RemoveFile` and `RestoreFile` take the kind of file as well as its identity.
 - The way in is a relative address, `/v1/files/content/{token}`.
 - Two notification events, `file.scan-refused` and `file.unreadable`, with one audit action
@@ -154,9 +155,6 @@ read for them, so tints come from the tokens already in the `ui` library.
 - **A real scanner was not run.** The ClamAV profile in the compose file and `ClamdScanner`
   were written to the daemon's documented protocol and never met a daemon.
 - **A read-only clinic** could not be tried: nothing yet makes a clinic read-only.
-- **Without a connection** a chosen file reads as not uploaded with its reason, but when the
-  connection returns the console redraws the page (spec 006, FR-021) and the unsaved rows are
-  lost.
 - **The retention periods** seeded are placeholders; the figures, and whether backups fall
   under them, are for the owner and the lawyer.
 - **BRD chapters** 03, 04, 08, 09, 10 and 11 name files this engine will hold; their kinds are
@@ -170,3 +168,15 @@ read for them, so tints come from the tokens already in the `ui` library.
 The environment strip did not reach the full width when the page was wider than the window.
 The app's host now takes the width of its content; three browser tests in
 `e2e/shell-sources.spec.ts`.
+
+## 8. Convergence (T049–T052)
+
+| Task | What was missing | What was done |
+|---|---|---|
+| T049 | FR-016a: the entry of a refused scan did not name the record or the uploader, and the notification did not say what the file was for | The entry holds `record`, `recordId` (empty while unattached) and `uploadedBy`; each kind has a name in both languages and the bell's line carries it: «report.pdf (مرفق تذكرة) · لم يجتز الفحص الأمني» |
+| T050 | US4, scenario 8: a file chosen with no connection was lost when the connection returned, because the console reads the page again (spec 006, FR-021) | A page that holds a file not yet saved says so (`UnsavedWork` in core), and the console leaves it as it is; what the person may do is still read again. The browser test goes offline, chooses, comes back and uploads with "try again" |
+| T051 | FR-019, T035: the health check of the plan was not built | `files-scan-backlog`: degraded with the counts of files and clinics while any file has waited more than an hour; not a check of readiness; in the runbook |
+| T052 | — | The three gates were run again; the figures of section 1 are theirs |
+
+T050 changes a rule of spec 006: with unsaved files on screen, the page shown after a
+reconnect may be older than the platform's. It is worth a look in review.
