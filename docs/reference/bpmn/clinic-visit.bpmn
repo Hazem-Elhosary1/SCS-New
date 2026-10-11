@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_clinic-visit" name="Clinic app — patient conversation, booking and visit lifecycle" targetNamespace="https://scs.clinic/bpmn" exporter="SCS BPMN generator" exporterVersion="1.0">
+  <bpmn:collaboration id="Collaboration_clinic-visit">
+    <bpmn:documentation>What is implemented today in the clinic app and platform for a patient from first contact to a paid visit.</bpmn:documentation>
+    <bpmn:participant id="Participant_patient" name="Patient" />
+    <bpmn:participant id="Participant_scs" name="SCS Clinic Platform" processRef="Process_scs" />
+    <bpmn:messageFlow id="MessageFlow_1" name="WhatsApp / Telegram message (webhook)" sourceRef="Participant_patient" targetRef="S_msg" />
+    <bpmn:messageFlow id="MessageFlow_2" name="greeting (Cloud API / Bot API)" sourceRef="T_greet" targetRef="Participant_patient" />
+    <bpmn:messageFlow id="MessageFlow_3" name="reply — not delivered yet" sourceRef="T_reply" targetRef="Participant_patient" />
+    <bpmn:messageFlow id="MessageFlow_4" name="phone / walk-in" sourceRef="Participant_patient" targetRef="S_walk" />
+    <bpmn:messageFlow id="MessageFlow_5" name="cash at the desk" sourceRef="Participant_patient" targetRef="T_paid" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_scs" name="SCS Clinic Platform" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_scs">
+      <bpmn:lane id="Lane_bot" name="Booking assistant (bot)">
+        <bpmn:flowNodeRef>S_msg</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_verify</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_conv</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G_bot</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_greet</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E_bot</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E_stored</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>S_reply</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_reply</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E_human</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_rec" name="Reception">
+        <bpmn:flowNodeRef>S_walk</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_reg</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_book</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G_show</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_checkin</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E_noshow</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_call</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_doc" name="Doctor">
+        <bpmn:flowNodeRef>T_exam</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_complete</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_acc" name="Accounts">
+        <bpmn:flowNodeRef>T_inv</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T_paid</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E_done</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="S_msg" name="Message received">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="S_msg_def" />
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="T_verify" name="Verify webhook &amp; resolve clinic">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="T_conv" name="Store message in conversation">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="G_bot" name="First message &amp; bot allowed?">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sendTask id="T_greet" name="Send greeting">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:endEvent id="E_bot" name="Conversation open (bot)">
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="E_stored" name="Stored, no reply">
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="S_reply" name="Staff opens the conversation">
+      <bpmn:outgoing>Flow_7</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sendTask id="T_reply" name="Queue staff reply">
+      <bpmn:incoming>Flow_7</bpmn:incoming>
+      <bpmn:outgoing>Flow_8</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:endEvent id="E_human" name="Conversation → human, bot off">
+      <bpmn:incoming>Flow_8</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="S_walk" name="Call, walk-in or chat request">
+      <bpmn:outgoing>Flow_9</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="S_walk_def" />
+    </bpmn:startEvent>
+    <bpmn:userTask id="T_reg" name="Register patient">
+      <bpmn:incoming>Flow_9</bpmn:incoming>
+      <bpmn:outgoing>Flow_10</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T_book" name="Book appointment">
+      <bpmn:incoming>Flow_10</bpmn:incoming>
+      <bpmn:outgoing>Flow_11</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="G_show" name="Patient arrived?">
+      <bpmn:incoming>Flow_11</bpmn:incoming>
+      <bpmn:outgoing>Flow_12</bpmn:outgoing>
+      <bpmn:outgoing>Flow_13</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="T_checkin" name="Check in">
+      <bpmn:incoming>Flow_12</bpmn:incoming>
+      <bpmn:outgoing>Flow_14</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="E_noshow" name="Cancelled">
+      <bpmn:incoming>Flow_13</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:userTask id="T_call" name="Call next (start exam)">
+      <bpmn:incoming>Flow_14</bpmn:incoming>
+      <bpmn:outgoing>Flow_15</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T_exam" name="Examine &amp; record">
+      <bpmn:incoming>Flow_15</bpmn:incoming>
+      <bpmn:outgoing>Flow_16</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T_complete" name="Complete visit">
+      <bpmn:incoming>Flow_16</bpmn:incoming>
+      <bpmn:outgoing>Flow_17</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T_inv" name="Issue invoice">
+      <bpmn:incoming>Flow_17</bpmn:incoming>
+      <bpmn:outgoing>Flow_18</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T_paid" name="Mark paid (cash)">
+      <bpmn:incoming>Flow_18</bpmn:incoming>
+      <bpmn:outgoing>Flow_19</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="E_done" name="Visit closed &amp; paid">
+      <bpmn:incoming>Flow_19</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="S_msg" targetRef="T_verify">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="T_verify" targetRef="T_conv">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="T_conv" targetRef="G_bot">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="G_bot" targetRef="T_greet" name="yes">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="T_greet" targetRef="E_bot">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="G_bot" targetRef="E_stored" name="no">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="S_reply" targetRef="T_reply">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_8" sourceRef="T_reply" targetRef="E_human">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_9" sourceRef="S_walk" targetRef="T_reg">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_10" sourceRef="T_reg" targetRef="T_book">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_11" sourceRef="T_book" targetRef="G_show">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_12" sourceRef="G_show" targetRef="T_checkin" name="yes">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_13" sourceRef="G_show" targetRef="E_noshow" name="no">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_14" sourceRef="T_checkin" targetRef="T_call">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_15" sourceRef="T_call" targetRef="T_exam">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_16" sourceRef="T_exam" targetRef="T_complete">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_17" sourceRef="T_complete" targetRef="T_inv">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_18" sourceRef="T_inv" targetRef="T_paid">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_19" sourceRef="T_paid" targetRef="E_done">
+    </bpmn:sequenceFlow>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_clinic-visit">
+    <bpmndi:BPMNPlane id="BPMNPlane_clinic-visit" bpmnElement="Collaboration_clinic-visit">
+      <bpmndi:BPMNShape id="Participant_patient_di" bpmnElement="Participant_patient" isHorizontal="true"><dc:Bounds x="40" y="40" width="2392" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_scs_di" bpmnElement="Participant_scs" isHorizontal="true"><dc:Bounds x="40" y="170" width="2392" height="680" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_bot_di" bpmnElement="Lane_bot" isHorizontal="true"><dc:Bounds x="76" y="170" width="2356" height="170" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_rec_di" bpmnElement="Lane_rec" isHorizontal="true"><dc:Bounds x="76" y="340" width="2356" height="170" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_doc_di" bpmnElement="Lane_doc" isHorizontal="true"><dc:Bounds x="76" y="510" width="2356" height="170" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_acc_di" bpmnElement="Lane_acc" isHorizontal="true"><dc:Bounds x="76" y="680" width="2356" height="170" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_msg_di" bpmnElement="S_msg"><dc:Bounds x="379" y="237" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="347" y="277" width="99" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_verify_di" bpmnElement="T_verify"><dc:Bounds x="517" y="207" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_conv_di" bpmnElement="T_conv"><dc:Bounds x="707" y="207" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="G_bot_di" bpmnElement="G_bot"><dc:Bounds x="942" y="230" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="897" y="198" width="140" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_greet_di" bpmnElement="T_greet"><dc:Bounds x="1087" y="207" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="E_bot_di" bpmnElement="E_bot"><dc:Bounds x="1329" y="237" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1277" y="205" width="140" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="E_stored_di" bpmnElement="E_stored"><dc:Bounds x="1329" y="299" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1297" y="339" width="99" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_reply_di" bpmnElement="S_reply"><dc:Bounds x="1519" y="237" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1467" y="277" width="140" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_reply_di" bpmnElement="T_reply"><dc:Bounds x="1657" y="207" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="E_human_di" bpmnElement="E_human"><dc:Bounds x="1899" y="237" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="1847" y="277" width="140" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S_walk_di" bpmnElement="S_walk"><dc:Bounds x="189" y="407" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="137" y="447" width="140" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_reg_di" bpmnElement="T_reg"><dc:Bounds x="327" y="377" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_book_di" bpmnElement="T_book"><dc:Bounds x="517" y="377" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="G_show_di" bpmnElement="G_show"><dc:Bounds x="752" y="400" width="50" height="50" /><bpmndi:BPMNLabel><dc:Bounds x="727" y="368" width="99" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_checkin_di" bpmnElement="T_checkin"><dc:Bounds x="897" y="352" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="E_noshow_di" bpmnElement="E_noshow"><dc:Bounds x="949" y="469" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="937" y="509" width="60" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_call_di" bpmnElement="T_call"><dc:Bounds x="1087" y="352" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_exam_di" bpmnElement="T_exam"><dc:Bounds x="1277" y="547" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_complete_di" bpmnElement="T_complete"><dc:Bounds x="1467" y="547" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_inv_di" bpmnElement="T_inv"><dc:Bounds x="1847" y="717" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_paid_di" bpmnElement="T_paid"><dc:Bounds x="2037" y="717" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="E_done_di" bpmnElement="E_done"><dc:Bounds x="2279" y="747" width="36" height="36" /><bpmndi:BPMNLabel><dc:Bounds x="2238" y="787" width="118" height="27" /></bpmndi:BPMNLabel></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1"><di:waypoint x="415" y="255" /><di:waypoint x="517" y="255" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2"><di:waypoint x="657" y="255" /><di:waypoint x="707" y="255" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3"><di:waypoint x="847" y="255" /><di:waypoint x="942" y="255" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4"><di:waypoint x="992" y="255" /><di:waypoint x="1087" y="255" /><bpmndi:BPMNLabel><dc:Bounds x="1046" y="233" width="40" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5"><di:waypoint x="1227" y="255" /><di:waypoint x="1329" y="255" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6"><di:waypoint x="967" y="280" /><di:waypoint x="967" y="317" /><di:waypoint x="1329" y="317" /><bpmndi:BPMNLabel><dc:Bounds x="973" y="277" width="40" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7"><di:waypoint x="1555" y="255" /><di:waypoint x="1657" y="255" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_8"><di:waypoint x="1797" y="255" /><di:waypoint x="1899" y="255" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_9_di" bpmnElement="Flow_9"><di:waypoint x="225" y="425" /><di:waypoint x="327" y="425" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_10_di" bpmnElement="Flow_10"><di:waypoint x="467" y="425" /><di:waypoint x="517" y="425" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11_di" bpmnElement="Flow_11"><di:waypoint x="657" y="425" /><di:waypoint x="752" y="425" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_12_di" bpmnElement="Flow_12"><di:waypoint x="802" y="425" /><di:waypoint x="842" y="425" /><di:waypoint x="842" y="400" /><di:waypoint x="897" y="400" /><bpmndi:BPMNLabel><dc:Bounds x="828" y="403" width="40" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_13_di" bpmnElement="Flow_13"><di:waypoint x="777" y="450" /><di:waypoint x="777" y="487" /><di:waypoint x="949" y="487" /><bpmndi:BPMNLabel><dc:Bounds x="783" y="447" width="40" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_14_di" bpmnElement="Flow_14"><di:waypoint x="1037" y="400" /><di:waypoint x="1087" y="400" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_15_di" bpmnElement="Flow_15"><di:waypoint x="1227" y="400" /><di:waypoint x="1252" y="400" /><di:waypoint x="1252" y="595" /><di:waypoint x="1277" y="595" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_16_di" bpmnElement="Flow_16"><di:waypoint x="1417" y="595" /><di:waypoint x="1467" y="595" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_17_di" bpmnElement="Flow_17"><di:waypoint x="1607" y="595" /><di:waypoint x="1647" y="595" /><di:waypoint x="1647" y="765" /><di:waypoint x="1847" y="765" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_18_di" bpmnElement="Flow_18"><di:waypoint x="1987" y="765" /><di:waypoint x="2037" y="765" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_19_di" bpmnElement="Flow_19"><di:waypoint x="2177" y="765" /><di:waypoint x="2279" y="765" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_1_di" bpmnElement="MessageFlow_1"><di:waypoint x="397" y="110" /><di:waypoint x="397" y="237" /><bpmndi:BPMNLabel><dc:Bounds x="403" y="166" width="229" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_2_di" bpmnElement="MessageFlow_2"><di:waypoint x="1157" y="207" /><di:waypoint x="1157" y="110" /><bpmndi:BPMNLabel><dc:Bounds x="1163" y="151" width="186" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_3_di" bpmnElement="MessageFlow_3"><di:waypoint x="1727" y="207" /><di:waypoint x="1727" y="110" /><bpmndi:BPMNLabel><dc:Bounds x="1735" y="151" width="155" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_4_di" bpmnElement="MessageFlow_4"><di:waypoint x="207" y="110" /><di:waypoint x="207" y="407" /><bpmndi:BPMNLabel><dc:Bounds x="213" y="251" width="93" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_5_di" bpmnElement="MessageFlow_5"><di:waypoint x="2107" y="110" /><di:waypoint x="2107" y="717" /><bpmndi:BPMNLabel><dc:Bounds x="2113" y="406" width="99" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

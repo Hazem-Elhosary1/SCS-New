@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_landscape" name="Integration landscape — SCS platform and external parties" targetNamespace="https://scs.clinic/bpmn" exporter="SCS BPMN generator" exporterVersion="1.0">
+  <bpmn:collaboration id="Collaboration_landscape">
+    <bpmn:documentation>Context map: which lane of the platform owns each integration and what crosses each boundary. Sequence flows are indicative; see the lifecycle diagrams for the processes.</bpmn:documentation>
+    <bpmn:participant id="Participant_patient" name="Patient" />
+    <bpmn:participant id="Participant_meta" name="Meta WhatsApp Cloud API" />
+    <bpmn:participant id="Participant_tg" name="Telegram Bot API" />
+    <bpmn:participant id="Participant_scs" name="SCS Platform" processRef="Process_scs" />
+    <bpmn:participant id="Participant_fawry" name="Fawry" />
+    <bpmn:participant id="Participant_resend" name="Resend (email)" />
+    <bpmn:participant id="Participant_anthropic" name="Anthropic API" />
+    <bpmn:participant id="Participant_twilio" name="Twilio SMS" />
+    <bpmn:messageFlow id="MessageFlow_1" name="chat" sourceRef="Participant_patient" targetRef="Participant_meta" />
+    <bpmn:messageFlow id="MessageFlow_2" name="chat" sourceRef="Participant_patient" targetRef="Participant_tg" />
+    <bpmn:messageFlow id="MessageFlow_3" name="webhook POST (messages)" sourceRef="Participant_meta" targetRef="wa" />
+    <bpmn:messageFlow id="MessageFlow_4" name="send message" sourceRef="wa" targetRef="Participant_meta" />
+    <bpmn:messageFlow id="MessageFlow_5" name="webhook POST" sourceRef="Participant_tg" targetRef="tga" />
+    <bpmn:messageFlow id="MessageFlow_6" name="sendMessage · setWebhook" sourceRef="tga" targetRef="Participant_tg" />
+    <bpmn:messageFlow id="MessageFlow_7" name="checkout link · status · refund" sourceRef="bill" targetRef="Participant_fawry" />
+    <bpmn:messageFlow id="MessageFlow_8" name="webhook · return page" sourceRef="Participant_fawry" targetRef="bill" />
+    <bpmn:messageFlow id="MessageFlow_9" name="send email" sourceRef="mail" targetRef="Participant_resend" />
+    <bpmn:messageFlow id="MessageFlow_10" name="delivery events webhook" sourceRef="Participant_resend" targetRef="mail" />
+    <bpmn:messageFlow id="MessageFlow_11" name="messages API" sourceRef="ai" targetRef="Participant_anthropic" />
+    <bpmn:messageFlow id="MessageFlow_12" name="send test SMS" sourceRef="sms" targetRef="Participant_twilio" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_scs" name="SCS Platform" isExecutable="false">
+    <bpmn:laneSet id="LaneSet_scs">
+      <bpmn:lane id="Lane_chan" name="Platform — channel adapters &amp; conversations">
+        <bpmn:flowNodeRef>wa</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>tga</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>conv</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_clinic" name="Clinic app — clinic staff">
+        <bpmn:flowNodeRef>inbox</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>cl</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>clsub</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>clauth</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_ops" name="Ops console — Heta operators">
+        <bpmn:flowNodeRef>opch</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>opbill</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>optk</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>opai</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>opset</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_api" name="Platform — billing, email, AI, jobs">
+        <bpmn:flowNodeRef>core</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>bill</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>mail</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>ai</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>sms</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:serviceTask id="wa" name="WhatsApp adapter">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="tga" name="Telegram adapter">
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="conv" name="Conversations &amp; greeting">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="inbox" name="Inbox replies">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+    </bpmn:userTask>
+    <bpmn:userTask id="cl" name="Bookings · queue · records · invoices">
+      <bpmn:outgoing>Flow_4</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="clsub" name="Subscription status &amp; read-only banner">
+    </bpmn:userTask>
+    <bpmn:userTask id="clauth" name="Sign-in codes · invitations · resets">
+    </bpmn:userTask>
+    <bpmn:userTask id="opch" name="Channel setup &amp; bot toggles">
+    </bpmn:userTask>
+    <bpmn:userTask id="opbill" name="Renewals · invoices · suspension">
+      <bpmn:outgoing>Flow_5</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="optk" name="Tickets · notifications · audit">
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="opai" name="AI suggestions on the dashboard">
+      <bpmn:incoming>Flow_7</bpmn:incoming>
+    </bpmn:userTask>
+    <bpmn:userTask id="opset" name="Platform settings &amp; environment banner">
+      <bpmn:outgoing>Flow_8</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="core" name="Clinic domain API">
+      <bpmn:incoming>Flow_4</bpmn:incoming>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="bill" name="Subscription billing">
+      <bpmn:incoming>Flow_5</bpmn:incoming>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="mail" name="Email service">
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="ai" name="AI suggestions job">
+      <bpmn:outgoing>Flow_7</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="sms" name="SMS test sender">
+      <bpmn:incoming>Flow_8</bpmn:incoming>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="wa" targetRef="conv">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="tga" targetRef="conv">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="conv" targetRef="inbox">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="cl" targetRef="core">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="opbill" targetRef="bill">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="optk" targetRef="mail">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_7" sourceRef="ai" targetRef="opai">
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_8" sourceRef="opset" targetRef="sms">
+    </bpmn:sequenceFlow>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_landscape">
+    <bpmndi:BPMNPlane id="BPMNPlane_landscape" bpmnElement="Collaboration_landscape">
+      <bpmndi:BPMNShape id="Participant_patient_di" bpmnElement="Participant_patient" isHorizontal="true"><dc:Bounds x="122" y="40" width="360" height="90" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_meta_di" bpmnElement="Participant_meta" isHorizontal="true"><dc:Bounds x="122" y="190" width="170" height="90" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_tg_di" bpmnElement="Participant_tg" isHorizontal="true"><dc:Bounds x="312" y="190" width="170" height="90" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_scs_di" bpmnElement="Participant_scs" isHorizontal="true"><dc:Bounds x="40" y="340" width="1632" height="600" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_chan_di" bpmnElement="Lane_chan" isHorizontal="true"><dc:Bounds x="76" y="340" width="1596" height="150" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_clinic_di" bpmnElement="Lane_clinic" isHorizontal="true"><dc:Bounds x="76" y="490" width="1596" height="150" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_ops_di" bpmnElement="Lane_ops" isHorizontal="true"><dc:Bounds x="76" y="640" width="1596" height="150" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_api_di" bpmnElement="Lane_api" isHorizontal="true"><dc:Bounds x="76" y="790" width="1596" height="150" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_fawry_di" bpmnElement="Participant_fawry" isHorizontal="true"><dc:Bounds x="882" y="1000" width="170" height="90" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_resend_di" bpmnElement="Participant_resend" isHorizontal="true"><dc:Bounds x="1072" y="1000" width="170" height="90" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_anthropic_di" bpmnElement="Participant_anthropic" isHorizontal="true"><dc:Bounds x="1262" y="1000" width="170" height="90" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_twilio_di" bpmnElement="Participant_twilio" isHorizontal="true"><dc:Bounds x="1452" y="1000" width="170" height="90" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="wa_di" bpmnElement="wa"><dc:Bounds x="137" y="367" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="tga_di" bpmnElement="tga"><dc:Bounds x="327" y="367" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="conv_di" bpmnElement="conv"><dc:Bounds x="517" y="367" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="inbox_di" bpmnElement="inbox"><dc:Bounds x="517" y="517" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="cl_di" bpmnElement="cl"><dc:Bounds x="707" y="517" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="clsub_di" bpmnElement="clsub"><dc:Bounds x="897" y="517" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="clauth_di" bpmnElement="clauth"><dc:Bounds x="1087" y="517" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="opch_di" bpmnElement="opch"><dc:Bounds x="327" y="667" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="opbill_di" bpmnElement="opbill"><dc:Bounds x="897" y="667" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="optk_di" bpmnElement="optk"><dc:Bounds x="1087" y="667" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="opai_di" bpmnElement="opai"><dc:Bounds x="1277" y="667" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="opset_di" bpmnElement="opset"><dc:Bounds x="1467" y="667" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="core_di" bpmnElement="core"><dc:Bounds x="707" y="817" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="bill_di" bpmnElement="bill"><dc:Bounds x="897" y="817" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="mail_di" bpmnElement="mail"><dc:Bounds x="1087" y="817" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ai_di" bpmnElement="ai"><dc:Bounds x="1277" y="817" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sms_di" bpmnElement="sms"><dc:Bounds x="1467" y="817" width="140" height="96" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1"><di:waypoint x="277" y="415" /><di:waypoint x="517" y="415" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2"><di:waypoint x="467" y="415" /><di:waypoint x="517" y="415" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3"><di:waypoint x="587" y="463" /><di:waypoint x="587" y="517" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4"><di:waypoint x="777" y="613" /><di:waypoint x="777" y="817" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5"><di:waypoint x="967" y="763" /><di:waypoint x="967" y="817" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6"><di:waypoint x="1157" y="763" /><di:waypoint x="1157" y="817" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7"><di:waypoint x="1347" y="817" /><di:waypoint x="1347" y="763" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_8"><di:waypoint x="1537" y="763" /><di:waypoint x="1537" y="817" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_1_di" bpmnElement="MessageFlow_1"><di:waypoint x="207" y="130" /><di:waypoint x="207" y="190" /><bpmndi:BPMNLabel><dc:Bounds x="213" y="152" width="50" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_2_di" bpmnElement="MessageFlow_2"><di:waypoint x="397" y="130" /><di:waypoint x="397" y="190" /><bpmndi:BPMNLabel><dc:Bounds x="403" y="152" width="50" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_3_di" bpmnElement="MessageFlow_3"><di:waypoint x="193" y="280" /><di:waypoint x="193" y="367" /><bpmndi:BPMNLabel><dc:Bounds x="199" y="304" width="143" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_4_di" bpmnElement="MessageFlow_4"><di:waypoint x="221" y="367" /><di:waypoint x="221" y="280" /><bpmndi:BPMNLabel><dc:Bounds x="227" y="328" width="74" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_5_di" bpmnElement="MessageFlow_5"><di:waypoint x="383" y="280" /><di:waypoint x="383" y="367" /><bpmndi:BPMNLabel><dc:Bounds x="389" y="304" width="74" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_6_di" bpmnElement="MessageFlow_6"><di:waypoint x="411" y="367" /><di:waypoint x="411" y="280" /><bpmndi:BPMNLabel><dc:Bounds x="417" y="328" width="149" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_7_di" bpmnElement="MessageFlow_7"><di:waypoint x="953" y="913" /><di:waypoint x="953" y="1000" /><bpmndi:BPMNLabel><dc:Bounds x="959" y="937" width="192" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_8_di" bpmnElement="MessageFlow_8"><di:waypoint x="981" y="1000" /><di:waypoint x="981" y="913" /><bpmndi:BPMNLabel><dc:Bounds x="987" y="961" width="130" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_9_di" bpmnElement="MessageFlow_9"><di:waypoint x="1143" y="913" /><di:waypoint x="1143" y="1000" /><bpmndi:BPMNLabel><dc:Bounds x="1149" y="937" width="62" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_10_di" bpmnElement="MessageFlow_10"><di:waypoint x="1171" y="1000" /><di:waypoint x="1171" y="913" /><bpmndi:BPMNLabel><dc:Bounds x="1177" y="961" width="143" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_11_di" bpmnElement="MessageFlow_11"><di:waypoint x="1347" y="913" /><di:waypoint x="1347" y="1000" /><bpmndi:BPMNLabel><dc:Bounds x="1353" y="949" width="74" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_12_di" bpmnElement="MessageFlow_12"><di:waypoint x="1537" y="913" /><di:waypoint x="1537" y="1000" /><bpmndi:BPMNLabel><dc:Bounds x="1543" y="949" width="81" height="14" /></bpmndi:BPMNLabel></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
