@@ -214,6 +214,13 @@ test.describe('the bell, with notifications from the platform', () => {
     await expect(items(page)).toHaveCount(45);
     await expect(items(page).last().locator('.item-text')).toHaveText('التذكرة T-1001');
 
+    // A turn of the bell's own asking leaves the loaded ones, and the person's place, alone.
+    const place = await list.evaluate((element) => element.scrollTop);
+    await page.clock.fastForward(30_000);
+    await expect.poll(() => platform.notificationCalls.filter((call) => call === 'GET /v1/notifications').length).toBe(2);
+    await expect(items(page)).toHaveCount(45);
+    expect(await list.evaluate((element) => element.scrollTop)).toBe(place);
+
     // Nothing older: the end of the list asks nothing more.
     const asked = platform.notificationCalls.filter((call) => call.includes('before=')).length;
     await list.evaluate((element) => element.scrollTo(0, 0));

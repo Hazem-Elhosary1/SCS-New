@@ -215,6 +215,56 @@ describe('the bell’s source, from the platform', () => {
     world.http.expectNone(LIST);
   });
 
+  it('a refresh keeps the older ones the person loaded, and the way to the ones after them', async () => {
+    const world = start();
+    world.state(true, 't1');
+    await settle();
+    world.source.setOpen(true);
+    const first = [item('n-4', { at: '2026-10-11T09:04:00+00:00' }), item('n-3', { at: '2026-10-11T09:03:00+00:00' })];
+    const second = [item('n-2', { at: '2026-10-11T09:02:00+00:00' }), item('n-1', { at: '2026-10-11T09:01:00+00:00' })];
+    world.http.expectOne(LIST).flush({ items: first, unread: true, next: 'c1' });
+    await settle();
+    world.source.loadMore();
+    world.http
+      .expectOne((request) => request.url === LIST && request.params.has('before'))
+      .flush({ items: second, unread: true, next: 'c2' });
+    await settle();
+
+    // A new one arrives, and one of the first page was read elsewhere.
+    vi.advanceTimersByTime(NOTIFICATIONS_POLL_MS);
+    world.state(true, 't2');
+    await settle();
+    world.http.expectOne(LIST).flush({
+      items: [item('n-5', { at: '2026-10-11T09:05:00+00:00' }), { ...first[0], read: true }],
+      unread: true,
+      next: 'c0',
+    });
+    await settle();
+
+    // n-3 fell off the first page and is kept with the older ones; nothing is lost or doubled.
+    expect(world.source.items().map((each) => each.id)).toEqual(['n-5', 'n-4', 'n-3', 'n-2', 'n-1']);
+    expect(world.source.items()[1].read).toBe(true);
+    expect(world.source.hasMore()).toBe(true);
+    world.source.loadMore();
+    const older = world.http.expectOne((request) => request.url === LIST && request.params.has('before'));
+    expect(older.request.params.get('before')).toBe('c2');
+    older.flush({ items: [], unread: true, next: null });
+    await settle();
+
+    // Everything read elsewhere: the older ones are read too.
+    vi.advanceTimersByTime(NOTIFICATIONS_POLL_MS);
+    world.state(false, 't2');
+    await settle();
+    world.http.expectOne(LIST).flush({
+      items: [item('n-5', { at: '2026-10-11T09:05:00+00:00', read: true }), { ...first[0], read: true }],
+      unread: false,
+      next: 'c0',
+    });
+    await settle();
+    expect(world.source.items()).toHaveLength(5);
+    expect(world.source.items().every((each) => each.read)).toBe(true);
+  });
+
   it('marks everything read at once, and tells the platform', async () => {
     const world = start();
     world.state(true, 't1');

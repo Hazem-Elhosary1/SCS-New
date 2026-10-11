@@ -208,8 +208,7 @@ export class PlatformNotifications implements OnDestroy {
           return;
         }
         this.loading = false;
-        this.held.set(page.items);
-        this.next.set(page.next);
+        this.take(page);
         this.dot.set(page.unread);
         this.loadState.set('ready');
       },
@@ -223,6 +222,34 @@ export class PlatformNotifications implements OnDestroy {
         }
       },
     );
+  }
+
+  /**
+   * Puts the newest page in its place. Older ones the person already loaded by scrolling stay
+   * below it, with the way to the ones after them: a refresh never takes the list away from
+   * under the person (FR-022).
+   */
+  private take(page: NotificationPage): void {
+    const fresh = new Set(page.items.map((item) => item.id));
+    const oldest = page.items.at(-1);
+    const older =
+      oldest === undefined
+        ? []
+        : this.held().filter(
+            (item) => !fresh.has(item.id) && Date.parse(item.at) <= Date.parse(oldest.at),
+          );
+
+    if (older.length === 0) {
+      this.held.set(page.items);
+      this.next.set(page.next);
+      return;
+    }
+
+    // Nothing is unread any more: that is true of the older ones too.
+    const kept = page.unread
+      ? older
+      : older.map((item) => (item.read ? item : { ...item, read: true }));
+    this.held.set([...page.items, ...kept]);
   }
 
   private forget(): void {
