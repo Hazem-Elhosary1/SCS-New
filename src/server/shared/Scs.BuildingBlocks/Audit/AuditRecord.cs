@@ -9,6 +9,9 @@ public sealed record AuditTarget(string Kind, Guid? Id, string? Name = null, str
     public const string Role = "role";
     public const string Account = "account";
 
+    /// <summary>An event of the notification table, by its key (spec 008).</summary>
+    public const string NotificationEvent = "notification-event";
+
     public static AuditTarget ForAccount(Guid accountId) => new(Account, accountId);
 }
 

@@ -31,6 +31,17 @@ public partial class SentencesTests
         Sentences.Render(
             Action(AuditActions.SignInFailedRun), new SentenceParts("sara@noor.example", [], attempts, locked, 15), language);
 
+    [Theory]
+    [InlineData("on", "off", "غُيِّر بريد «تذكرة دعم جديدة» من «يعمل» إلى «متوقف»", "Email for “New support ticket” was changed from “on” to “off”")]
+    [InlineData("off", "on", "غُيِّر بريد «تذكرة دعم جديدة» من «متوقف» إلى «يعمل»", "Email for “New support ticket” was changed from “off” to “on”")]
+    public void Switching_an_email_reads_as_what_it_was_and_what_it_became(string before, string after, string arabic, string english)
+    {
+        var change = new AuditChange("enabled", before, after);
+
+        Assert.Equal(arabic, Say(AuditActions.SettingsNotificationEmailChanged, Ar, "تذكرة دعم جديدة", change));
+        Assert.Equal(english, Say(AuditActions.SettingsNotificationEmailChanged, En, "New support ticket", change));
+    }
+
     [GeneratedRegex(@"\p{IsArabic}")]
     private static partial Regex ArabicLetter();
 
@@ -53,6 +64,7 @@ public partial class SentencesTests
     [InlineData(AuditActions.RoleCreated, "إنشاء دور", "Role created")]
     [InlineData(AuditActions.RoleUpdated, "تعديل دور", "Role edited")]
     [InlineData(AuditActions.RoleDeleted, "حذف دور", "Role deleted")]
+    [InlineData(AuditActions.SettingsNotificationEmailChanged, "تغيير بريد تنبيه", "Notification email changed")]
     public void An_action_is_named_by_a_noun_in_each_language(string code, string arabic, string english)
     {
         Assert.Equal(arabic, Sentences.NameOf(Action(code), Ar));
@@ -251,6 +263,7 @@ public partial class SentencesTests
             new AuditChange("role", "طبيب", "مدير العيادة", BeforeKey: "doctor", AfterKey: "manager"),
             AuditChange.Of("name", "Old", "New"),
             AuditChange.OfSet("permissions", PermissionCatalogue.All.Take(12).Select(p => p.Code), Four),
+            new AuditChange("enabled", "on", "off"),
         };
 
         foreach (var action in AuditActions.All)
@@ -274,7 +287,10 @@ public partial class SentencesTests
                 action,
                 new SentenceParts(
                     "الاستقبال",
-                    [new AuditChange("role", "طبيب", "مدير العيادة", BeforeKey: "doctor", AfterKey: "manager")],
+                    [
+                        new AuditChange("role", "طبيب", "مدير العيادة", BeforeKey: "doctor", AfterKey: "manager"),
+                        new AuditChange("enabled", "on", "off"),
+                    ],
                     5,
                     true,
                     15),

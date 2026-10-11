@@ -48,6 +48,7 @@ public static class DeclaredCrossings
     public const string ListClinicIdsForJobs = "list-clinic-ids-for-jobs";
     public const string PurgeAccessRecords = "purge-access-records";
     public const string ReadAuditAsOperator = "read-audit-as-operator";
+    public const string ListClinicsWithEmailWaiting = "list-clinics-with-email-waiting";
 
     /// <summary>Operation, the type that performs it, whether each use is recorded, and why it exists.</summary>
     public static IReadOnlyList<(string Operation, string Type, bool Recorded, string Reason)> All { get; } =
@@ -64,6 +65,8 @@ public static class DeclaredCrossings
             "Access records older than the retention period are removed (FR-032). Logged with the count."),
         (ReadAuditAsOperator, "Scs.Audit.Infrastructure.OperatorAuditReading", false,
             "Operators read what operators did, across clinics (spec 007, FR-031). A read; no caller until the operators' console exists."),
+        (ListClinicsWithEmailWaiting, "Scs.Notifications.Infrastructure.EmailSweepJob", false,
+            "Every minute, which clinics have notification email due (spec 008). Identifiers only; each clinic's email is then sent by its own job."),
     ];
 
     /// <summary>The distinct types that may use the operator connection.</summary>

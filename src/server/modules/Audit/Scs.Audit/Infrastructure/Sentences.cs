@@ -1,8 +1,8 @@
-using System.Globalization;
 using System.Text;
 using Scs.BuildingBlocks.Audit;
 using Scs.SharedKernel.Access;
 using Scs.SharedKernel.Audit;
+using Scs.SharedKernel.Wording;
 
 namespace Scs.Audit.Infrastructure;
 
@@ -23,8 +23,8 @@ internal sealed record SentenceParts(
 /// </summary>
 internal static class Sentences
 {
-    public const string Arabic = "ar";
-    public const string English = "en";
+    public const string Arabic = Words.Arabic;
+    public const string English = Words.English;
 
     /// <summary>How many permissions a sentence names before it says "and n more".</summary>
     public const int NamedPermissions = 3;
@@ -68,17 +68,27 @@ internal static class Sentences
     }
 
     /// <summary>A whole number as the reader's language writes it: Arabic-Indic digits in Arabic.</summary>
-    public static string Number(int value, bool english)
-    {
-        var latin = value.ToString(CultureInfo.InvariantCulture);
-        return english ? latin : string.Concat(latin.Select(digit => char.IsAsciiDigit(digit) ? (char)('٠' + (digit - '0')) : digit));
-    }
+    public static string Number(int value, bool english) => Words.Number(value, english);
 
     /// <summary>A person who held no role before is said to have had none.</summary>
     public static string NoRole(string language) => language == English ? "no role" : "بلا دور";
 
-    private static string Value(string? value, string? readyKey, string field, string language) =>
-        field == "role" ? RoleName(value, readyKey, language) ?? NoRole(language) : value ?? "";
+    /// <summary>A switch reads as people say it, not as it is stored.</summary>
+    public static string OnOff(string? value, string language) => (value, language == English) switch
+    {
+        ("on", true) => "on",
+        ("off", true) => "off",
+        ("on", false) => "يعمل",
+        ("off", false) => "متوقف",
+        _ => value ?? "",
+    };
+
+    private static string Value(string? value, string? readyKey, string field, string language) => field switch
+    {
+        "role" => RoleName(value, readyKey, language) ?? NoRole(language),
+        "enabled" => OnOff(value, language),
+        _ => value ?? "",
+    };
 
     private static string Attempts(int count, bool english) => (count, english) switch
     {

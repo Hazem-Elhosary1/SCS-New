@@ -6,8 +6,10 @@ using Scs.Identity.Domain;
 using Scs.Identity.Infrastructure.Persistence;
 using Scs.IntegrationTests.Fixtures;
 using Scs.IntegrationTests.Identity;
+using Scs.Notifications.Contracts;
 using Scs.SharedKernel.Access;
 using Scs.SharedKernel.Audit;
+using Scs.SharedKernel.Notifications;
 
 namespace Scs.IntegrationTests.Audit;
 
@@ -306,6 +308,10 @@ public sealed class AuditFactsTests(SqlServerFixture sql)
         var spare = await world.Factory.RolesAsAsync(
             world.Clinic, manager, roles => roles.CreateAsync("زائد", null, [Permissions.BookingsView], default));
         await world.Factory.RolesAsAsync(world.Clinic, manager, roles => roles.RemoveAsync(spare, default));
+
+        // And turns the email of a notification off (spec 008).
+        await world.Factory.AsStaffAsync(world.Clinic, manager, services =>
+            services.GetRequiredService<IEmailSwitches>().SetAsync(NotificationEvents.Switchable[0].Key, false, "ar", default));
 
         var entries = await sql.Main.EntriesAsync(world.Clinic);
 

@@ -237,3 +237,75 @@ test.describe('the inbox count and the kinds of clinic', () => {
     await expect(page.getByTestId('page-title')).toHaveText('ملف الطبيب');
   });
 });
+
+/**
+ * Reported by the owner on 11 Oct 2026: after switching the language without a reload, the
+ * bell's panel was sometimes cut off by the window. The overlay toolkit had read the page's
+ * direction once and went on placing panels for the other one.
+ */
+test.describe('panels after the language is switched without a reload', () => {
+  /** The panel is whole inside the window, and its far edge is the bell's. */
+  async function expectWholeUnderTheBell(page: Page): Promise<void> {
+    const panel = page.getByTestId('notification-panel');
+    await expect(panel).toBeVisible();
+    const box = (await panel.boundingBox())!;
+    const bell = (await page.getByTestId('bell').boundingBox())!;
+    const rtl = (await page.locator('html').getAttribute('dir')) === 'rtl';
+
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(1440);
+    expect(box.width).toBe(360);
+    expect(box.y).toBeGreaterThan(bell.y + bell.height);
+
+    // The far end of reading: the left in Arabic, the right in English.
+    if (rtl) {
+      expect(Math.abs(box.x - bell.x)).toBeLessThanOrEqual(1);
+    } else {
+      expect(Math.abs(box.x + box.width - (bell.x + bell.width))).toBeLessThanOrEqual(1);
+    }
+    await expect(panel).toHaveCSS('direction', rtl ? 'rtl' : 'ltr');
+  }
+
+  const switchLanguage = (page: Page) => page.getByTestId('top-bar').getByTestId('language-switch').click();
+
+  test('the bell’s panel is whole and under the bell after each switch', async ({ page }) => {
+    await inside(page, { notifications: ITEMS });
+
+    for (const language of ['en', 'ar', 'en']) {
+      await switchLanguage(page);
+      await expect(page.locator('html')).toHaveAttribute('lang', language);
+      await page.getByTestId('bell').click();
+      await expectWholeUnderTheBell(page);
+      await page.keyboard.press('Escape');
+      await expect(page.getByTestId('notification-panel')).toHaveCount(0);
+    }
+  });
+
+  test('a panel that is open while the language is switched moves to its new place', async ({ page }) => {
+    await inside(page, { notifications: ITEMS });
+    await page.getByTestId('bell').click();
+    await expectWholeUnderTheBell(page);
+
+    await page.evaluate(() => {
+      document.documentElement.lang = 'en';
+      document.documentElement.dir = 'ltr';
+    });
+
+    await expect(async () => expectWholeUnderTheBell(page)).toPass({ timeout: 3000 });
+  });
+
+  test('a language remembered and applied a moment after the page starts places panels rightly', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('scs.language', 'en'));
+    await inside(page, { notifications: ITEMS });
+    await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+
+    await page.getByTestId('bell').click();
+    await expectWholeUnderTheBell(page);
+
+    await page.keyboard.press('Escape');
+    await page.getByTestId('account-chip').click();
+    const menu = (await page.locator('.scs-menu').boundingBox())!;
+    expect(menu.x).toBeGreaterThanOrEqual(0);
+    expect(menu.x + menu.width).toBeLessThanOrEqual(1440);
+  });
+});

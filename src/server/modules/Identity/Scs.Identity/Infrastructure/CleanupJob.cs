@@ -47,6 +47,11 @@ internal sealed partial class CleanupJob(IdentityDbContext db, TimeProvider cloc
         var requests = await db.EmailRequests.Where(r => r.HandledAtUtc != null && r.HandledAtUtc < requestsBefore)
             .ExecuteDeleteAsync(cancellation).ConfigureAwait(false);
 
+        // A browser not seen for thirteen months is forgotten (spec 008).
+        var devicesBefore = now - KnownDevices.ForgetAfter;
+        await db.KnownDevices.Where(d => d.LastSeenAtUtc < devicesBefore)
+            .ExecuteDeleteAsync(cancellation).ConfigureAwait(false);
+
         LogCleaned(logger, codes, sessions);
         LogCleanedPasswords(logger, links, requests);
     }

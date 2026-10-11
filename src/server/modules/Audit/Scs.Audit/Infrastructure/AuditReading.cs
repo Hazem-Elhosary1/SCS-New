@@ -8,6 +8,8 @@ using Scs.BuildingBlocks.Errors;
 using Scs.BuildingBlocks.Tenancy;
 using Scs.Identity.Contracts;
 using Scs.SharedKernel.Audit;
+using Scs.SharedKernel.Notifications;
+using Scs.SharedKernel.Wording;
 
 namespace Scs.Audit.Infrastructure;
 
@@ -190,9 +192,15 @@ internal static class AuditPages
 
         if (entry.TargetKind != AuditTarget.Account)
         {
-            var name = entry.TargetKind == AuditTarget.Role
-                ? Sentences.RoleName(entry.TargetName, entry.TargetReadyKey, language)
-                : entry.TargetName;
+            var name = entry.TargetKind switch
+            {
+                AuditTarget.Role => Sentences.RoleName(entry.TargetName, entry.TargetReadyKey, language),
+
+                // A notification event is stored by its key and named in the reader's language.
+                AuditTarget.NotificationEvent when NotificationEvents.Find(entry.TargetName ?? "") is { } known =>
+                    language == Sentences.English ? known.NameEn : known.NameAr,
+                _ => entry.TargetName,
+            };
             return new AuditTargetView(entry.TargetKind, entry.TargetId, name, Exists: true);
         }
 

@@ -17,6 +17,7 @@ import {
   ScsLinkDirective,
   ScsSkeletonComponent,
 } from 'ui';
+import { ago } from './ago';
 
 const KIND_ICONS: Record<NotificationKind, ScsIconName> = {
   ticket: 'ticket',
@@ -31,7 +32,7 @@ const KIND_ICONS: Record<NotificationKind, ScsIconName> = {
 /**
  * The bell of the top bar and the panel it opens (spec 006, User Story 7; design: Notification
  * Panel, frames "Shell / Notifications Open" and "Notifications Empty"). What it shows comes
- * from `NotificationsSource`, which says "nothing yet" until the notifications spec.
+ * from `NotificationsSource`: the person's own notifications, from the platform (spec 008).
  */
 @Component({
   selector: 'app-bell-panel',
@@ -199,10 +200,10 @@ const KIND_ICONS: Record<NotificationKind, ScsIconName> = {
       aria-haspopup="dialog"
       [attr.aria-expanded]="bellOpen()"
       [attr.aria-label]="'app.shell.notifications.title' | transloco"
-      (click)="bellOpen.set(!bellOpen())"
+      (click)="setOpen(!bellOpen())"
     >
       <scs-icon name="bell" [size]="20" />
-      @if (unread() > 0) {
+      @if (notifications.unread()) {
         <span class="dot" data-testid="bell-dot"></span>
       }
     </button>
@@ -259,7 +260,7 @@ const KIND_ICONS: Record<NotificationKind, ScsIconName> = {
                 [text]="'app.shell.notifications.emptyText' | transloco"
               />
             } @else {
-              <ul class="panel-list">
+              <ul class="panel-list" data-testid="notification-list" (scroll)="scrolled($event)">
                 @for (item of items(); track item.id) {
                   <li>
                     <button
@@ -310,35 +311,36 @@ export class BellPanelComponent {
     [...this.notifications.items()].sort((a, b) => b.at.localeCompare(a.at)),
   );
 
-  protected readonly unread = computed(
-    () => this.notifications.items().filter((item) => !item.read).length,
-  );
-
   /** How long ago, as people say it: «منذ ساعتين», «أمس». The exact time is on hover. */
   protected ago(at: string): string {
-    const seconds = (Date.parse(at) - Date.now()) / 1000;
-    const format = new Intl.RelativeTimeFormat(
-      this.language.language() === 'ar' ? 'ar-EG-u-nu-arab' : 'en-GB',
-      { numeric: 'auto' },
-    );
-    const past = Math.abs(seconds);
-    if (past < 3600) {
-      return format.format(Math.trunc(seconds / 60), 'minute');
+    return ago(at, this.language.language());
+  }
+
+  protected setOpen(open: boolean): void {
+    this.bellOpen.set(open);
+    this.notifications.setOpen(open);
+  }
+
+  /** Reaching the end of the list brings the older ones (spec 008, FR-022). */
+  protected scrolled(event: Event): void {
+    const list = event.target as HTMLElement;
+    if (
+      this.notifications.hasMore() &&
+      list.scrollTop + list.clientHeight >= list.scrollHeight - 48
+    ) {
+      this.notifications.loadMore();
     }
-    return past < 86_400
-      ? format.format(Math.trunc(seconds / 3600), 'hour')
-      : format.format(Math.trunc(seconds / 86_400), 'day');
   }
 
   /** A press anywhere else closes the panel; a press on the bell itself is the bell's own. */
   protected pressedOutside(event: MouseEvent): void {
     if (!this.bellButton().nativeElement.contains(event.target as Node)) {
-      this.bellOpen.set(false);
+      this.setOpen(false);
     }
   }
 
   protected closeBell(): void {
-    this.bellOpen.set(false);
+    this.setOpen(false);
     this.bellButton().nativeElement.focus();
   }
 

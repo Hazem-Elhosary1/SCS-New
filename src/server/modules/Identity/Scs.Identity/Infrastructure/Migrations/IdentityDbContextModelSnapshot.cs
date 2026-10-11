@@ -100,6 +100,38 @@ namespace Scs.Identity.Infrastructure.Migrations
                     b.ToTable("AnonymousSignInAttempt", "security");
                 });
 
+            modelBuilder.Entity("Scs.Identity.Domain.KnownDevice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ClinicId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("FirstSeenAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("LastSeenAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<byte[]>("MarkHash")
+                        .IsRequired()
+                        .HasColumnType("binary(32)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClinicId");
+
+                    b.HasIndex("AccountId", "MarkHash")
+                        .IsUnique()
+                        .HasDatabaseName("UX_KnownDevice_OnePerBrowser");
+
+                    b.ToTable("KnownDevice", "identity");
+                });
+
             modelBuilder.Entity("Scs.Identity.Domain.PasswordLink", b =>
                 {
                     b.Property<Guid>("Id")
@@ -555,6 +587,15 @@ namespace Scs.Identity.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("AccountId")
                         .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Scs.Identity.Domain.KnownDevice", b =>
+                {
+                    b.HasOne("Scs.Identity.Domain.StaffAccount", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 

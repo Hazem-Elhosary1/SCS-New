@@ -49,8 +49,12 @@ describe('the frame’s sources before their specs arrive', () => {
   it('say "nothing yet"', () => {
     TestBed.configureTestingModule({});
 
-    expect(TestBed.inject(NotificationsSource).items()).toEqual([]);
-    expect(TestBed.inject(NotificationsSource).state()).toBe('ready');
+    // The bell has its data since spec 008; the class itself is still the one with nothing.
+    const bell = new NotificationsSource();
+    expect(bell.items()).toEqual([]);
+    expect(bell.state()).toBe('ready');
+    expect(bell.unread()).toBe(false);
+    expect(bell.hasMore()).toBe(false);
     expect(TestBed.inject(BranchesSource).multiBranch()).toBe(false);
     expect(TestBed.inject(BranchesSource).choice()).toBe('all');
     expect(TestBed.inject(SubscriptionSource).notice()).toBeNull();

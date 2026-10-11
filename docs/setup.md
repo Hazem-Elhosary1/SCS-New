@@ -167,6 +167,39 @@ the file the web sites read, or `CatalogueFileTests` fails:
 dotnet run --project src/server/tools/Scs.Migrator -- catalogue src/web/projects/core/src/lib/access/permission-catalogue.json
 ```
 
+### The bell and its emails (spec 008)
+
+The bell of the console shows the signed-in person's own notifications. It asks the platform
+every thirty seconds, so something new shows without a reload. One event has a cause today — a
+sign-in from a browser the account never used:
+
+1. Sign in as `owner@shifa.example` in one browser, then in a second browser (or a private
+   window). Within half a minute the first browser's bell has its dot and «الدخول من جهاز
+   جديد» with the device in words.
+2. The email for it is in Mailpit at <http://localhost:8025> within a minute, in the language
+   the person chose in the console. It is sent by the API's background worker, not by the
+   request: with the worker stopped the notification is still in the bell and the email waits.
+
+The addresses, all the person's own:
+
+```text
+GET  http://localhost:5080/v1/notifications/state
+GET  http://localhost:5080/v1/notifications?size=20&before=<next>
+POST http://localhost:5080/v1/notifications/{id}/read
+POST http://localhost:5080/v1/notifications/read-all
+```
+
+Which events are emailed is the clinic's choice for the events that allow one. There is no page
+for it yet (the settings spec draws it); the addresses are:
+
+```text
+GET http://localhost:5080/v1/settings/notification-emails          «عرض الإعدادات»
+PUT http://localhost:5080/v1/settings/notification-emails/{event}  «إدارة التنبيهات», body { "enabled": false }
+```
+
+A change of a switch is in the audit trail. Notifications older than ninety days are removed
+every night, with the record of their emails.
+
 ### Check the "not ready" behaviour
 
 ```bash

@@ -43,11 +43,23 @@ public sealed class SessionCookies(IDataProtectionProvider protection, IOptions<
 
     public const string RenewalPathSuffix = "/v1/auth";
 
+    /// <summary>
+    /// The browser's own mark (spec 008): how a sign-in from a browser an account never used is
+    /// told from one it has. It outlives sessions and is not removed at sign-out.
+    /// </summary>
+    public const string Device = "__Host-scs-device";
+
+    public const int DeviceMarkLength = 32;
+
+    /// <summary>How long a browser keeps its mark: thirteen months, renewed at every sign-in.</summary>
+    public static readonly TimeSpan DeviceLife = TimeSpan.FromDays(400);
+
     private const byte Version = 1;
 
     private readonly IDataProtector _challenge = protection.CreateProtector("Scs.Auth.Challenge.v1");
     private readonly IDataProtector _access = protection.CreateProtector("Scs.Auth.Access.v1");
     private readonly IDataProtector _renewal = protection.CreateProtector("Scs.Auth.Renewal.v1");
+    private readonly IDataProtector _device = protection.CreateProtector("Scs.Auth.Device.v1");
 
     /// <summary>The path the renewal cookie is limited to: the API's base path plus <c>/v1/auth</c>.</summary>
     public string RenewalPath => options.Value.Auth.CookiePathBase + RenewalPathSuffix;
@@ -146,6 +158,35 @@ public sealed class SessionCookies(IDataProtectionProvider protection, IOptions<
                 new Guid(payload.AsSpan(17, 16)),
                 new Guid(payload.AsSpan(33, 16)),
                 payload.AsSpan(49, RenewalTicket.SecretLength).ToArray());
+    }
+
+    /// <summary>A mark for a browser that has none: thirty-two random bytes, as text.</summary>
+    public static string NewDeviceMark() => WebEncoders.Base64UrlEncode(RandomNumberGenerator.GetBytes(DeviceMarkLength));
+
+    /// <summary>The browser's mark; null when it has none or it is not ours.</summary>
+    public string? ReadDevice(HttpRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var payload = Decode(_device, request.Cookies[Device], 1 + DeviceMarkLength);
+        return payload is null ? null : WebEncoders.Base64UrlEncode(payload, 1, DeviceMarkLength);
+    }
+
+    public void WriteDevice(HttpResponse response, string mark, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(response);
+        ArgumentException.ThrowIfNullOrEmpty(mark);
+
+        var bytes = WebEncoders.Base64UrlDecode(mark);
+        if (bytes.Length != DeviceMarkLength)
+        {
+            throw new ArgumentException("A device mark is 32 bytes.", nameof(mark));
+        }
+
+        var payload = new byte[1 + DeviceMarkLength];
+        payload[0] = Version;
+        bytes.CopyTo(payload.AsSpan(1));
+        response.Cookies.Append(Device, Encode(_device, payload), Options("/", now + DeviceLife));
     }
 
 #pragma warning disable CA1822 // Kept beside the other cookie operations, on the one type that owns them.

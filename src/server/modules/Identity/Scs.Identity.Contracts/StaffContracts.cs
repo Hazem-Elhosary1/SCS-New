@@ -201,6 +201,15 @@ public interface IClinicRoles
     Task AssignAsync(Guid accountId, Guid roleId, CancellationToken cancellation);
 }
 
+/// <param name="Email">Personal data: never logged.</param>
+/// <param name="Language"><c>ar</c> or <c>en</c> when the person chose one; null otherwise.</param>
+/// <param name="CanSignIn">False for an account that is disabled or was never activated.</param>
+public sealed record StaffContact(string Email, string? Language, bool CanSignIn)
+{
+    /// <summary>The type only: this carries an address.</summary>
+    public override string ToString() => nameof(StaffContact);
+}
+
 /// <summary>A run of failed sign-in attempts, named by the request that began it.</summary>
 /// <param name="TraceId">The trace of the request whose wrong password began the run.</param>
 /// <param name="NextTraceId">The trace of the request that began the account's next run, when there is one.</param>
@@ -220,6 +229,13 @@ public interface IStaffDirectory
 {
     /// <summary>The display name of each account that exists: the email address until accounts have names (spec 026).</summary>
     Task<IReadOnlyDictionary<Guid, string>> NamesAsync(IReadOnlyCollection<Guid> accountIds, CancellationToken cancellation);
+
+    /// <summary>
+    /// How to reach each account that exists, at this moment: its address, the language its
+    /// owner chose, and whether it can still sign in (spec 008). For the email of a notification,
+    /// read when the email is sent and never stored.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, StaffContact>> ContactsAsync(IReadOnlyCollection<Guid> accountIds, CancellationToken cancellation);
 
     /// <summary>One answer for each run asked about; a run nothing is known of is one attempt and no lock.</summary>
     Task<IReadOnlyList<FailedRun>> FailedRunsAsync(IReadOnlyCollection<FailedRunRef> runs, CancellationToken cancellation);
