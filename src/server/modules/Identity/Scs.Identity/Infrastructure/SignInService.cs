@@ -368,8 +368,8 @@ internal sealed class SignInService(
         var transaction = await db.Database.BeginTransactionAsync(cancellation).ConfigureAwait(false);
         await using (transaction.ConfigureAwait(false))
         {
-            var locked = (await db.Database
-                .SqlQuery<bool>(
+            var counted = (await db.Database
+                .SqlQuery<WrongPasswordCount>(
                     $"""
                      UPDATE a
                      SET [FailedAttempts] = CASE WHEN n.[Locked] = 1 THEN a.[FailedAttempts]
@@ -378,7 +378,8 @@ internal sealed class SignInService(
                          [LastFailedAtUtc] = CASE WHEN n.[Locked] = 1 THEN a.[LastFailedAtUtc] ELSE {now} END,
                          [LockedUntilUtc] = CASE WHEN n.[Locked] = 0 AND n.[Next] >= {max} THEN {lockUntil}
                                                  ELSE a.[LockedUntilUtc] END
-                     OUTPUT CAST(CASE WHEN n.[Locked] = 0 AND n.[Next] >= {max} THEN 1 ELSE 0 END AS bit) AS [Value]
+                     OUTPUT CAST(CASE WHEN n.[Locked] = 0 AND n.[Next] >= {max} THEN 1 ELSE 0 END AS bit) AS [Locked],
+                            CAST(CASE WHEN n.[Locked] = 0 AND n.[Next] = 1 THEN 1 ELSE 0 END AS bit) AS [StartsRun]
                      FROM [identity].[StaffAccount] a
                      CROSS APPLY (
                          SELECT CASE WHEN a.[LockedUntilUtc] > {now} THEN 1 ELSE 0 END AS [Locked],
@@ -393,7 +394,13 @@ internal sealed class SignInService(
             db.Events.Add(SignInEvent.Record(
                 accountId, SignInEventKinds.WrongPassword, now, origin.TraceId, origin.IpAddress, origin.UserAgent));
 
-            await FinishLockAsync(accountId, locked, now, origin, cancellation).ConfigureAwait(false);
+            // A run of failed attempts is one entry of the trail, written by its first attempt (spec 007).
+            if (counted?.StartsRun == true)
+            {
+                db.Record(TrailEntries.FailedRun(accountId, origin));
+            }
+
+            await FinishLockAsync(accountId, counted?.Locked == true, now, origin, cancellation).ConfigureAwait(false);
             await transaction.CommitAsync(cancellation).ConfigureAwait(false);
         }
     }
@@ -467,6 +474,16 @@ internal sealed class AccountLocation
     public Guid AccountId { get; set; }
 
     public Guid ClinicId { get; set; }
+}
+
+/// <summary>What one wrong password did to the account's count.</summary>
+internal sealed class WrongPasswordCount
+{
+    /// <summary>This attempt locked the account.</summary>
+    public bool Locked { get; set; }
+
+    /// <summary>This attempt is the first of a run: none stood before it, or the last was too long ago.</summary>
+    public bool StartsRun { get; set; }
 }
 
 /// <summary>What one try of a code did to it.</summary>

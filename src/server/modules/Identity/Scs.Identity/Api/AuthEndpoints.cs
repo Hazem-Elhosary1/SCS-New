@@ -89,22 +89,27 @@ internal static class AuthEndpoints
 
         auth.MapPost("/sign-in", SignInAsync)
             .AllowAnonymous().HandlesOwnSession().RefusesBlockedNetworks().RequireRateLimiting(SignInLimit)
+            .RecordedBySignIn()
             .WithName("SignIn");
 
         auth.MapPost("/sign-in/code", ConfirmCodeAsync)
             .AllowAnonymous().HandlesOwnSession().RefusesBlockedNetworks().RequireRateLimiting(SignInLimit)
+            .RecordedBySignIn()
             .WithName("ConfirmCode");
 
         auth.MapPost("/sign-in/code/resend", ResendCodeAsync)
             .AllowAnonymous().HandlesOwnSession().RefusesBlockedNetworks().RequireRateLimiting(SignInLimit)
+            .RecordsNothing("sends a sign-in code again; nothing changes until it is used")
             .WithName("ResendCode");
 
         auth.MapPost("/session/renew", RenewAsync)
             .AllowAnonymous().HandlesOwnSession().RequireRateLimiting(RenewalLimit)
+            .RecordedBySignIn()
             .WithName("RenewSession");
 
         auth.MapPost("/sign-out", SignOutAsync)
             .AllowAnonymous().HandlesOwnSession()
+            .RecordedBySignIn()
             .WithName("SignOut");
 
         auth.MapGet("/session", GetSessionAsync).OwnAccountOnly().AllowsTemporaryPassword().WithName("GetSession");

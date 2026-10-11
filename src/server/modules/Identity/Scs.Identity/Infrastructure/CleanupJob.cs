@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Scs.BuildingBlocks.Jobs;
+using Scs.BuildingBlocks.Security;
 using Scs.Identity.Infrastructure.Persistence;
 
 namespace Scs.Identity.Infrastructure;
@@ -12,6 +13,7 @@ namespace Scs.Identity.Infrastructure;
 /// handled more than a day ago (spec 004). Sign-in events are not touched; their retention is decided with the audit trail
 /// (spec 007). Running it twice has the same result as once.
 /// </summary>
+[RecordsNothing("removes expired codes, ended sessions and spent links; no record a person would trace")]
 internal sealed partial class CleanupJob(IdentityDbContext db, TimeProvider clock, ILogger<CleanupJob> logger) : IClinicJob
 {
     public const string JobName = "identity-cleanup";

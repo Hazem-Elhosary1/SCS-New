@@ -57,6 +57,22 @@ Spec 003 adds six made-up staff accounts, three for each of those clinics (`owne
 They share the password in `SCS_SEED__STAFF_PASSWORD`, a sample value
 that exists only in `.env.example`. The `.example` domain cannot receive mail.
 
+## The audit trail
+
+`audit.Entry` (spec 007) holds who did what, to what, in which clinic, when and from where. It
+is production data like any other and follows the rule above. Three things to know about it:
+
+- **It holds personal data**: the actor's name of the moment (the email address until accounts
+  have names), the network address and the browser's user agent. None of the three is ever
+  written to the operational logs. It never holds a password, a code, a link, a session proof,
+  or anything from a clinical record.
+- **Nothing changes or removes an entry.** The database refuses both, for the application's
+  login and for a person at a query window alike. There is no retention period yet (the legal
+  decision is open, SH-095), so nothing is pruned; do not write a clean-up for it.
+- **Do not "fix" an entry.** An entry that is wrong stays, and what corrects it is a new action
+  that is itself recorded. If an entry must be removed for a legal reason, that is a decision
+  for the data-protection officer and is done by a reviewed migration, not by hand.
+
 ## If it happens anyway
 
 Treat a copy of production patient data outside production as an incident: delete the copy,

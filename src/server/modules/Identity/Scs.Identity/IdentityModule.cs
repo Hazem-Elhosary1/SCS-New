@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
+using Scs.BuildingBlocks.Audit;
 using Scs.BuildingBlocks.Configuration;
 using Scs.BuildingBlocks.Jobs;
 using Scs.BuildingBlocks.Mail;
@@ -59,6 +60,10 @@ public sealed class IdentityModule : IModule, IMigratableModule
         services.AddScoped<IStaffAccessSource>(provider => provider.GetRequiredService<StaffAccessSource>());
         services.AddScoped<IClinicRoles, ClinicRoles>();
         services.AddScoped<IClinicProvisioner, RolesProvisioner>();
+        services.AddScsAudit();
+        services.AddScoped<StaffDirectory>();
+        services.AddScoped<IStaffDirectory>(provider => provider.GetRequiredService<StaffDirectory>());
+        services.AddScoped<IAuditActorNames>(provider => provider.GetRequiredService<StaffDirectory>());
         services.AddAuthRateLimits();
         services.AddSingleton<IRecurringJobRegistration, IdentityJobs>();
     }
@@ -207,6 +212,7 @@ public sealed class IdentityModule : IModule, IMigratableModule
             var custom = Role.Custom(SeedCustomRole, "مكتب المواعيد والخزنة في وظيفة واحدة", null, TimeProvider.System.GetUtcNow());
             custom.Hold(SeedCustomRoleCodes);
             db.Roles.Add(custom);
+            db.Record(RoleEntries.Created(custom, bySystem: true));
             await db.SaveChangesAsync(cancellation).ConfigureAwait(false);
         }
 

@@ -168,9 +168,15 @@ internal sealed class PasswordSetter(
                 account.Id, command.EventKind, now, command.Origin.TraceId, command.Origin.IpAddress,
                 command.Origin.UserAgent, command.KeepSessionId, command.EventDetail, command.ActorAccountId));
 
+            if (TrailEntries.PasswordSet(command.EventKind, account.Id, command.EventDetail, command.Origin) is { } entry)
+            {
+                db.Record(entry);
+            }
+
             // Saves the account and the event together with the ended sessions.
             await sessions.EndForAccountCoreAsync(
-                account.Id, SessionEndReasons.PasswordReset, command.Origin, cancellation, command.KeepSessionId)
+                account.Id, SessionEndReasons.PasswordReset, command.Origin, cancellation, command.KeepSessionId,
+                byOwner: command.ActorAccountId is null && command.EventKind != SignInEventKinds.AccessReissued)
                 .ConfigureAwait(false);
 
             await transaction.CommitAsync(cancellation).ConfigureAwait(false);

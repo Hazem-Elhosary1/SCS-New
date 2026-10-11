@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using Scs.BuildingBlocks.Configuration;
 using Scs.BuildingBlocks.Jobs;
 using Scs.BuildingBlocks.Mail;
+using Scs.BuildingBlocks.Security;
 using Scs.BuildingBlocks.Tenancy;
 using Scs.Identity.Domain;
 using Scs.Identity.Infrastructure.Persistence;
@@ -75,6 +76,7 @@ internal sealed class ForgotPasswordService(
 /// each account by itself: one failed email does not hold up another's. Running it twice has the
 /// same result as once.
 /// </summary>
+[RecordsNothing("sends the emails that were asked for; nothing changes until a link is used")]
 internal sealed partial class AccountEmailJob(
     IdentityDbContext db,
     PasswordLinks links,

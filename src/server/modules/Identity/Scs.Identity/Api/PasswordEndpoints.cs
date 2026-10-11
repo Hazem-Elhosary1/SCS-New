@@ -67,19 +67,23 @@ internal static class PasswordEndpoints
 
         password.MapPost("/forgot", ForgotAsync)
             .AllowAnonymous().HandlesOwnSession().RefusesBlockedNetworks().RequireRateLimiting(AuthEndpoints.SignInLimit)
+            .RecordsNothing("asks for a link; nothing changes until it is used")
             .WithName("ForgotPassword");
 
         password.MapPost("/link", InspectLinkAsync)
             .AllowAnonymous().HandlesOwnSession().RefusesBlockedNetworks().RequireRateLimiting(AuthEndpoints.SignInLimit)
+            .RecordsNothing("looks at a link without using it")
             .WithName("InspectPasswordLink");
 
         password.MapPost("/link/set", SetWithLinkAsync)
             .AllowAnonymous().HandlesOwnSession().RefusesBlockedNetworks().RequireRateLimiting(AuthEndpoints.SignInLimit)
+            .RecordedBySignIn()
             .WithName("SetPasswordWithLink");
 
         password.MapPost("/change", ChangeAsync)
             .OwnAccountOnly()
             .AllowsTemporaryPassword()
+            .RecordedBySignIn()
             .WithName("ChangeTemporaryPassword");
 
         if (v1.ServiceProvider.GetRequiredService<IOptions<ScsOptions>>().Value.IsLocal)
@@ -88,7 +92,8 @@ internal static class PasswordEndpoints
             // invitation until specs 015 and 026, and activation has to be tried somehow.
             v1.MapPost("/dev/staff-invitations", DevInviteAsync)
                 .AllowAnonymous().HandlesOwnSession()
-                .WithName("DevSendInvitation");
+                .RecordsNothing("local and test environments only")
+            .WithName("DevSendInvitation");
         }
 
         return v1;
