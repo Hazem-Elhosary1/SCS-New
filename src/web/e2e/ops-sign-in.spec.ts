@@ -274,6 +274,10 @@ test.describe('a forgotten password, and choosing one from a link', () => {
     await expect(page.getByTestId('forgot-again')).toHaveCount(0);
     await expect(page.getByTestId('forgot-wait')).toContainText('يمكنك إعادة الإرسال خلال');
     await expect(page.getByTestId('forgot-countdown')).toHaveText(/^٠[٠١]:[٠-٩]{2}$/);
+    // The countdown changes every second: it is in no live region, or a screen reader would
+    // be made to speak sixty times a minute.
+    const live = '[role="status"], [role="alert"], [aria-live]';
+    expect(await page.getByTestId('forgot-countdown').evaluate((part, s) => part.closest(s) === null, live)).toBe(true);
     await page.clock.fastForward(20_000);
     await expect(page.getByTestId('forgot-countdown')).toHaveText(/^٠٠:[٣٤][٠-٩]$/);
     expect(sendings()).toBe(1);
@@ -283,6 +287,8 @@ test.describe('a forgotten password, and choosing one from a link', () => {
     await page.clock.fastForward(41_000);
     await expect(page.getByTestId('forgot-wait')).toHaveCount(0);
     await expect(page.getByTestId('forgot-again')).toHaveText('إعادة الإرسال');
+    // Nor is the link: a control is not a status.
+    expect(await page.getByTestId('forgot-again').evaluate((part, s) => part.closest(s) === null, live)).toBe(true);
 
     let answer = () => {};
     const held = new Promise<void>((resolve) => (answer = resolve));
@@ -294,9 +300,13 @@ test.describe('a forgotten password, and choosing one from a link', () => {
     });
     await page.getByTestId('forgot-again').click();
     await expect(page.getByTestId('forgot-sending')).toHaveText('جارٍ الإرسال…');
+    // What happens is announced: "sending", then "sent", in one status that holds nothing else.
+    await expect(page.getByTestId('forgot-said')).toHaveAttribute('role', 'status');
+    await expect(page.getByTestId('forgot-said')).toHaveText('جارٍ الإرسال…');
     await expect(page.getByTestId('forgot-again')).toHaveCount(0);
     answer();
     await expect(page.getByTestId('forgot-resent')).toContainText('أرسلنا رابطًا جديدًا.');
+    await expect(page.getByTestId('forgot-said')).toHaveText('أرسلنا رابطًا جديدًا.');
     await expect(page.getByTestId('forgot-countdown')).toBeVisible();
     expect(sendings()).toBe(2);
 

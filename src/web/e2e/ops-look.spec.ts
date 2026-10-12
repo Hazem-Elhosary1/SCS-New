@@ -184,10 +184,14 @@ for (const language of ['ar', 'en'] as const) {
       await page.getByTestId('forgot-submit').click();
       await look(page, language, 'forgot-empty');
 
-      await page.getByTestId('email').fill('ahmed.sami@smartclinicos.com');
+      await page.getByTestId('email').fill('ahmed-sami.operations@smartclinicos.com');
       await page.getByTestId('forgot-submit').click();
       await expect(page.getByTestId('forgot-sent-title')).toBeVisible();
       await look(page, language, 'forgot-sent');
+
+      // A long address with a hyphen in it is not split over two lines: it is one box.
+      expect(await page.getByTestId('forgot-sent-to').evaluate((address) => address.getClientRects().length)).toBe(1);
+      expect((await box(page.getByTestId('forgot-sent-to'))).height).toBeLessThan(30);
 
       // Everything on "check your email" is in the middle, one under the other.
       const centre = await middle(page.getByTestId('forgot-sent'));
@@ -480,6 +484,96 @@ for (const language of ['ar', 'en'] as const) {
       await look(page, language, 'profile-loading');
       release();
       await expect(page.getByTestId('profile-name')).toBeVisible();
+    });
+
+    test('a request in flight: each form locks its button and shows that it is working', async ({ page }) => {
+      await start(page, language, {
+        link: { status: 200, json: { kind: 'reset', email: 'sarah.ahmed@scs-platform.com' } },
+      });
+
+      /** Holds the next answer of an address until released; pictures the button meanwhile. */
+      const inFlight = async (address: string, button: Locator, state: string, press: () => Promise<void>) => {
+        let release = () => {};
+        const held = new Promise<void>((resolve) => (release = resolve));
+        let sent = 0;
+        let open = true;
+        await page.route(address, async (route) => {
+          if (open && route.request().method() !== 'OPTIONS') {
+            sent++;
+            await held;
+          }
+          await route.fallback();
+        });
+        const before = await box(button);
+
+        await press();
+        await expect(button, state).toHaveAttribute('aria-busy', 'true');
+        await expect(button, state).toBeDisabled();
+        await look(page, language, state);
+
+        // It keeps its place and its size, and pressing again sends nothing more.
+        const during = await box(button);
+        expect(Math.abs(during.width - before.width), state).toBeLessThanOrEqual(1);
+        expect(Math.abs(during.height - before.height), state).toBeLessThanOrEqual(1);
+        await button.click({ force: true });
+        await page.keyboard.press('Enter');
+        expect(sent, state).toBe(1);
+
+        // Later requests to this address pass straight through.
+        open = false;
+        release();
+      };
+      const typeCode = async (scope: Page | Locator) => {
+        await scope.locator('scs-code-input input').first().click();
+        await page.keyboard.type('427913');
+      };
+
+      // Sign in, then its code.
+      await page.goto(`${OPS}/sign-in`);
+      await page.getByTestId('email').fill('ahmed.sami@smartclinicos.com');
+      await page.getByTestId('password').fill('Operator-Horse-9!');
+      await inFlight('**/v1/ops/auth/sign-in', page.getByTestId('sign-in-submit'), 'busy-sign-in', () =>
+        page.getByTestId('sign-in-submit').click(),
+      );
+      await expect(page.getByTestId('code-title')).toBeVisible();
+      await inFlight('**/v1/ops/auth/code', page.getByTestId('code-submit'), 'busy-code', () => typeCode(page));
+      await expect(page.getByTestId('ops-top-bar')).toBeVisible();
+
+      // Changing the password, then its code.
+      await page.goto(`${OPS}/profile`);
+      await page.getByTestId('change-password').click();
+      await page.getByTestId('current-password').fill('Operator-Horse-9!');
+      await page.getByTestId('new-password').fill('Changed-Horse-11!');
+      await page.getByTestId('confirm-password').fill('Changed-Horse-11!');
+      await inFlight('**/v1/ops/profile/password', page.getByTestId('change-save'), 'busy-change', () =>
+        page.getByTestId('change-save').click(),
+      );
+      const dialog = page.getByTestId('change-dialog');
+      await expect(page.getByTestId('change-code-email')).toBeVisible();
+      await inFlight('**/v1/ops/profile/password/confirm', dialog.getByTestId('code-submit'), 'busy-change-code', () =>
+        typeCode(dialog),
+      );
+      await expect(page.getByTestId('change-done')).toBeVisible();
+      await page.getByTestId('change-done-close').click();
+
+      // Before sign-in again: asking for a link, and choosing a password.
+      await page.getByTestId('ops-account').click();
+      await page.getByTestId('ops-menu-sign-out').click();
+      await expect(page.getByTestId('sign-in-title')).toBeVisible();
+      await page.goto(`${OPS}/forgot-password`);
+      await page.getByTestId('email').fill('ahmed.sami@smartclinicos.com');
+      await inFlight('**/v1/ops/password/forgot', page.getByTestId('forgot-submit'), 'busy-forgot', () =>
+        page.getByTestId('forgot-submit').click(),
+      );
+      await expect(page.getByTestId('forgot-sent-title')).toBeVisible();
+
+      await page.goto(`${OPS}/password/reset#token=abc123`);
+      await page.getByTestId('new-password').fill('Replaced-Horse-10!');
+      await page.getByTestId('confirm-password').fill('Replaced-Horse-10!');
+      await inFlight('**/v1/ops/password/set', page.getByTestId('set-password-submit'), 'busy-set-password', () =>
+        page.getByTestId('set-password-submit').click(),
+      );
+      await expect(page.getByTestId('sign-in-notice')).toBeVisible();
     });
 
     test('my profile: when it cannot be read', async ({ page }) => {

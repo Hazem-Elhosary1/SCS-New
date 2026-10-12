@@ -43,3 +43,11 @@ body {
   outline: 2px solid var(--scs-color-feedback-danger-icon);
   outline-offset: 2px;
 }
+
+/* An email named in a sentence stays whole: it goes to the next line rather than break at a
+   hyphen or a dot, and breaks only when it is wider than the line itself. */
+.ops-address {
+  display: inline-block;
+  max-inline-size: 100%;
+  overflow-wrap: anywhere;
+}

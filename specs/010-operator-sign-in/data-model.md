@@ -66,6 +66,12 @@ change of password between the current password and the code (FR-045a).
 | `ConsumedAtUtc` | time | set when the code opens a session, or when the challenge is ended |
 | `ExpiresAtUtc` | time | the challenge itself ends with its last code |
 
+A code is ended (`ReplacedAtUtc`) only by the code sent in its place — "send again" in the same
+step — or by another challenge of the same session (a change of password begun again). A
+sign-in begun in another browser does not end it: an account may have a standing sign-in code
+in each of two browsers, each bound to its own browser, and whichever completes last holds the
+session (spec, edge cases). A completed reset ends them all.
+
 Index on `OperatorId` for what is still open. Platform-wide because: a sign-in in progress of
 the platform's own staff; a hash, never the code.
 

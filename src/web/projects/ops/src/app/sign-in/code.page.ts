@@ -37,7 +37,7 @@ import { CodeProblem, CodeStepComponent } from './code-step.component';
       @if (auth.codeStep(); as step) {
         <h1 data-testid="code-title">{{ 'app.code.title' | transloco }}</h1>
         <p class="subtitle">
-          {{ 'app.code.sentTo' | transloco }} <bdi data-testid="code-email">{{ step.email }}</bdi>
+          {{ 'app.code.sentTo' | transloco }} <bdi class="ops-address" data-testid="code-email">{{ step.email }}</bdi>
         </p>
 
         <app-code-step

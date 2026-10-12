@@ -36,6 +36,13 @@ test.describe('the frame of the console', () => {
     await expect(items).toHaveCount(1);
     await expect(items.first()).toHaveText('الرئيسية');
     await expect(items.first()).toHaveClass(/active/);
+    // Marked for a screen reader as well as for the eye, and only while it is the page shown.
+    await expect(items.first()).toHaveAttribute('aria-current', 'page');
+    await page.goto(`${OPS}/profile`);
+    await expect(page.getByTestId('profile-title')).toBeVisible();
+    await expect(page.getByTestId('ops-nav-home')).not.toHaveAttribute('aria-current', 'page');
+    await page.getByTestId('ops-nav-home').click();
+    await expect(page.getByTestId('ops-nav-home')).toHaveAttribute('aria-current', 'page');
 
     // The side bar is on the right in Arabic.
     const bar = (await page.getByTestId('ops-side-bar').boundingBox())!;
@@ -313,6 +320,37 @@ test.describe('my profile', () => {
     await expect(page.getByTestId('change-dialog')).toBeHidden();
     expect(platform.calls).toContain('POST /v1/ops/profile/password/cancel');
   });
+
+  for (const step of ['form', 'code'] as const) {
+    test(`a session that ends while the change-password dialog is at its ${step} closes it with the sign-in screen`, async ({ page }) => {
+      await page.clock.install();
+      const platform = await inside(page, {}, '/profile');
+      await page.getByTestId('change-password').click();
+      await page.getByTestId('current-password').fill('Operator-Horse-9!');
+      await page.getByTestId('new-password').fill('Changed-Horse-11!');
+      await page.getByTestId('confirm-password').fill('Changed-Horse-11!');
+      if (step === 'code') {
+        await page.getByTestId('change-save').click();
+        await expect(page.getByTestId('change-code-email')).toBeVisible();
+      }
+
+      // Somebody signs in on another device while the dialog is open.
+      platform.signedIn = false;
+      platform.endedFor = 'replaced';
+      await page.clock.fastForward(21_000);
+
+      await expect(page).toHaveURL(`${OPS}/sign-in`);
+      await expect(page.getByTestId('sign-in-notice')).toHaveText('تم تسجيل الدخول من جهاز آخر، فانتهت هذه الجلسة.');
+      // The dialog went with the page: none is open, nothing dims the sign-in form, and the
+      // form can be typed in.
+      await expect(page.getByTestId('change-dialog')).toHaveCount(0);
+      await expect(page.locator('dialog[open]')).toHaveCount(0);
+      await page.getByTestId('email').fill('ahmed.sami@smartclinicos.com');
+      await expect(page.getByTestId('email')).toHaveValue('ahmed.sami@smartclinicos.com');
+      // And nothing was changed.
+      expect(platform.calls).not.toContain('POST /v1/ops/profile/password/confirm');
+    });
+  }
 
   test('the fifth wrong current password ends the session, and the sign-in screen says why', async ({ page }) => {
     const platform = await inside(page, {}, '/profile');

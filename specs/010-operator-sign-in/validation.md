@@ -9,19 +9,26 @@ design, what was built differently from the plan, and what was not done.
 
 | Gate | Result |
 |---|---|
-| `dotnet test src/server/Scs.sln` (Debug) | unit **566** · architecture **58** · integration **747** — all passed |
+| `dotnet test src/server/Scs.sln` (Debug) | unit **566** · architecture **58** · integration **748** — all passed |
 | `npm --prefix src/web run ci` (lint, translation check, tools, unit tests, build of the three apps) | passed — clinic **68**, core **164**, ui **102**, ops **11**, patient 1; clinic's first download **456.86 kB**, ops **313.33 kB**, no size warning |
-| `npx playwright test`, with pictures on | **463 passed**, none skipped, none on a second try |
+| `npx playwright test`, with pictures on | **467 passed**, none skipped, none on a second try (the run before it: see below) |
 
-All three were run again on the final code, after the convergence tasks (section 4b), one after
-the other with nothing else running. On an earlier run spec 005's timing test (`access.spec.ts`,
-"not in your role within a second") needed its second try; it touches nothing of this spec.
+All three were run whole on the final code, after the fourth convergence (section 4e), one
+after the other with nothing else running: the server's 566 · 58 · 748 is a fresh whole run.
+
+The browser suite was run twice then. The first run had one failure and one test that passed on
+its second try, both timing tests of the clinic's console and neither of this spec:
+`clinic.spec.ts` "from asking the platform to the final page takes under half a second" (545 ms)
+and `access.spec.ts` "not in your role within a second". Repeated five times each on their own,
+the first passed every time and the second needed a second try twice; the whole suite run again
+gave 467 passed. They are sensitive to what else the machine is doing and are left as they are;
+the owner may want their limits looked at.
 
 **Baseline (T001)**: the three suites were not run again before starting; nothing had changed
 since spec 009's last run, whose figures are the baseline: 551 · 51 · 712; clinic 68, core 164,
 ui 95; 397 browser tests and 4 skipped. New since: 15 unit, 7 architecture and 32 integration
 tests on the server, then 3 more in convergence; 11 unit tests in the ops application and 7 in
-the shared library; 68 browser tests for the console (45 of what it does, 23 of how it looks —
+the shared library; 72 browser tests for the console (47 of what it does, 25 of how it looks —
 section 4a). Six browser tests of the old ops placeholder page
 went with the page.
 
@@ -97,8 +104,8 @@ already been given a password from the preview.
 
 ## 4. Beside the design
 
-`design-vs-real.png` in this folder: the twenty-two frames the design draws for this spec — eleven
-in Arabic, eleven in English — each beside the application as built: sign-in, refused, the code,
+`design-vs-real.png` in this folder: the twenty-four frames the design draws for this spec — twelve
+in Arabic, twelve in English — each beside the application as built: sign-in, refused, the code,
 forgot, sent, first password, the account menu, the profile, and change password open, wrong
 and done. Every pair was opened.
 
@@ -191,6 +198,58 @@ are read; the account card's name, email and mobile sharing the card's room; the
 The owner then found that "send again" on "check your email" showed nothing: it was a link
 that did nothing for a minute. It now counts the minute down, says "sending", says that a new
 link went, and says when one could not be sent; each state is pictured and held by a test.
+
+## 4c. Second convergence (T069–T072)
+
+A second reading found no fault in what the console does, and four things not yet done; all are.
+
+- **T069, the real stack again.** With the API rebuilt, SQL Server, the mailbox and the console,
+  and an operator invited for the walk:
+
+  | Seen | |
+  |---|---|
+  | Two browsers gave the password before either code | each got its own code; the first browser's, sent before the second asked, still opened its session |
+  | The second then completed | it holds the session; the first, untouched, showed «تم تسجيل الدخول من جهاز آخر، فانتهت هذه الجلسة.» after **20 s** |
+  | An English browser that had chosen nothing | "Sign In", left to right; a French one: «تسجيل الدخول», right to left |
+  | "Check your email" | no link to send again; the countdown ٠١:٠٠, then ٠٠:٥٥ five seconds on; the link back **61 s** after the first sending; pressed: «أرسلنا رابطًا جديدًا.» and the countdown again; **two** reset emails in the mailbox |
+  | The command run for the now-active account | `already-active`, then `not-invited` for a withdrawal; two lines `operator_command_changed_nothing` in `ops.SignInRecord` with the outcome and the machine user, and the email in none |
+  | In the database afterwards | one open session for the account, the other ended `replaced` |
+
+  The walk's picture showed a long email split over two lines at its hyphen; an email named in
+  a sentence now stays whole, and a test holds it.
+- **T070.** A session that ends while the change-password dialog is open, at its form and at
+  its code: the dialog goes with the page, the sign-in screen says why, nothing was changed.
+- **T071.** Frames `1849:2791` and `1850:2824` opened: the profile with a switch the operator
+  may turn. They differ from what is built in that alone — here the switch is on and locked,
+  with its line (FR-008, FR-042) — and are in the picture.
+- **T072.** `contracts/operator-screens.md`, `data-model.md` and `quickstart.md` say what is
+  built: the four states of "send again", the dialog's layout, the language before sign-in,
+  and that a sign-in begun in another browser leaves a standing code good.
+
+## 4d. Third convergence (T073–T075)
+
+Every acceptance scenario of the eleven stories was read against the code and the tests. No
+fault in what the console does; three things were not yet proven or marked:
+
+- **T073.** A request in flight had never been opened or pictured. On each of the six forms —
+  sign in, its code, forgot, choosing a password, saving a change of password, its code — the
+  button is locked, shows its turning mark and its words, keeps its size, and a second press or
+  Enter sends nothing more; pictured in both languages, wide and narrow, and every pair opened.
+- **T074.** The side bar's current page was marked for the eye alone; it now carries
+  `aria-current="page"`, and only while it is the page shown.
+- **T075.** The code of a change of password, ten minutes on: refused, the password unchanged,
+  the session open, and the change can be begun again.
+
+## 4e. Fourth convergence (T076, T077)
+
+- **T076.** A fault of my own making, in what a screen reader hears: when the countdown was
+  added to "send again", the whole block was made a live region, so its seconds — changing
+  every second — would have been spoken sixty times a minute, and a button sat inside a status.
+  Now only what happens is announced, "sending" and "we sent a new link", in a status that holds
+  nothing else; the countdown and the link are read when reached, as on the code step. A test
+  holds that neither is in a live region and that the two messages are. Not heard with a real
+  screen reader: held by the markup.
+- **T077.** The whole server suite run again: 566 · 58 · 748.
 
 ## 5. Built differently from the plan
 

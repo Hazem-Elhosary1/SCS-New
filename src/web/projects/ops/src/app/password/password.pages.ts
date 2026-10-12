@@ -71,6 +71,9 @@ const HEADING = `
   .sent .quiet {
     margin: 0;
   }
+  .sent .said:empty {
+    display: none;
+  }
   .sent .resent {
     display: inline-flex;
     align-items: center;
@@ -133,27 +136,32 @@ export const FORGOT_WAIT_SECONDS = 60;
           <span class="ops-tick" aria-hidden="true"><scs-icon name="check" [size]="32" /></span>
           <h1 data-testid="forgot-sent-title">{{ 'app.forgot.sent.title' | transloco }}</h1>
           <p class="subtitle">
-            {{ 'app.forgot.sent.line' | transloco }} <bdi data-testid="forgot-sent-to">{{ address }}</bdi>
+            {{ 'app.forgot.sent.line' | transloco }} <bdi class="ops-address" data-testid="forgot-sent-to">{{ address }}</bdi>
           </p>
-          <!-- What "send again" is doing is always said: sending, sent, how long until the next,
-               or that it could not be sent. -->
-          <div class="quiet" role="status" aria-live="polite">
-            @if (resent()) {
-              <span class="resent" data-testid="forgot-resent">
-                <scs-icon name="check" [size]="14" />
-                {{ 'app.forgot.sent.resent' | transloco }}
-              </span>
-            } @else {
+          <!-- What "send again" is doing is always shown: sending, sent, how long until the next,
+               or that it could not be sent. Only what happens is announced — "sending", "sent";
+               the countdown changes every second and the link is a control, so neither is in a
+               live region: they are read when reached, as on the code step. -->
+          <div class="quiet">
+            <span class="said" role="status" data-testid="forgot-said">
+              @if (busy()) {
+                <span data-testid="forgot-sending">{{ 'app.forgot.sent.sending' | transloco }}</span>
+              } @else if (resent()) {
+                <span class="resent" data-testid="forgot-resent">
+                  <scs-icon name="check" [size]="14" />
+                  {{ 'app.forgot.sent.resent' | transloco }}
+                </span>
+              }
+            </span>
+            @if (!busy() && !resent()) {
               <span>{{ 'app.forgot.sent.notArrived' | transloco }}</span>
             }
-            @if (busy()) {
-              <span data-testid="forgot-sending">{{ 'app.forgot.sent.sending' | transloco }}</span>
-            } @else if (seconds() > 0) {
+            @if (!busy() && seconds() > 0) {
               <span data-testid="forgot-wait">
                 {{ 'app.forgot.sent.waitBefore' | transloco }}
                 <bdi data-testid="forgot-countdown">{{ countdown() }}</bdi>
               </span>
-            } @else {
+            } @else if (!busy()) {
               <button type="button" scsLink data-testid="forgot-again" (click)="send()">
                 {{ 'app.forgot.sent.again' | transloco }}
               </button>

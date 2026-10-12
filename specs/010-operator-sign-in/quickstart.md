@@ -32,9 +32,13 @@ the operators console (`npm --prefix src/web run start:ops`, port 4203). The mai
    email. A wrong code, then the right one: inside the frame, name and role in the top bar.
 4. **The single answer.** An unknown email, and a wrong password, give the same banner.
 5. **The lock.** Five wrong passwords, then the right one: the lock warning with its time.
-   "Forgot password", the link, a new password: the lock is gone.
+   "Forgot password": "check your email" counts a minute down before "send again" returns;
+   sent again, a second email arrives and says so on the screen. The link, a new password: the
+   lock is gone.
 6. **One session.** Sign in in a second browser: the first, left untouched, shows the
-   sign-in screen with the "another device" line within thirty seconds; time it.
+   sign-in screen with the "another device" line within thirty seconds; time it. Then give the
+   password in both browsers before either code: the first browser's code is still good after
+   the second asked for its own, and whichever completes last is the one left inside.
 7. **A new browser.** The second browser's sign-in sent a "new browser" email; signing in
    there again sends none.
 8. **«تذكرني».** Unticked: close the browser, open it — the sign-in screen. Ticked: still
@@ -46,7 +50,8 @@ the operators console (`npm --prefix src/web run start:ops`, port 4203). The mai
     email and only the right code changes it.
     "Sign out of all devices": the sign-in screen.
 11. **Two tabs.** Sign out in one; the other shows the sign-in screen.
-12. **English**, and **the keyboard alone**, through sign-in, the code and the profile.
+12. **English**, and **the keyboard alone**, through sign-in, the code and the profile. A
+    browser set to English that has chosen no language opens the console in English.
 13. **The other console.** With an operator's session, ask a clinic's address: no session.
     With a clinic's session, ask `/v1/ops/profile`: no session.
 

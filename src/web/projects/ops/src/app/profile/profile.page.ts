@@ -408,7 +408,7 @@ export function agoLabel(from: string, now: number, language: ScsLanguage): stri
         @switch (changeStep()) {
           @case ('code') {
             <p class="centre">
-              {{ 'app.profile.change.codeSentTo' | transloco }} <bdi data-testid="change-code-email">{{ codeStep()?.email }}</bdi>
+              {{ 'app.profile.change.codeSentTo' | transloco }} <bdi class="ops-address" data-testid="change-code-email">{{ codeStep()?.email }}</bdi>
             </p>
             @if (codeStep(); as step) {
               <app-code-step

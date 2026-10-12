@@ -657,6 +657,42 @@ public sealed class OperatorConvergenceTests(SqlServerFixture sql)
     }
 
     [Fact]
+    public async Task The_code_of_a_change_of_password_is_refused_after_its_ten_minutes_and_nothing_changes()
+    {
+        using var world = await OpsWorld.CreateAsync(sql);
+        using var browser = await world.SignInAsync();
+        const string Next = "Changed-Horse-11!";
+
+        using var begun = await browser.OpsPostAsync("/v1/ops/profile/password", new { current = OpsWorld.Password, password = Next });
+        Assert.Equal(HttpStatusCode.Accepted, begun.StatusCode);
+        var code = world.Factory.Mail.LatestCodeFor(world.Email);
+
+        // Ten minutes pass with the dialog left open. The session itself is kept alive, as an
+        // open console keeps it.
+        world.Factory.Clock.Advance(TimeSpan.FromMinutes(10.1));
+        using var renewed = await browser.OpsPostAsync("/v1/ops/auth/session/renew");
+        Assert.Equal(HttpStatusCode.NoContent, renewed.StatusCode);
+
+        // The right code, too late: refused, and said to be over rather than wrong.
+        using var late = await browser.OpsPostAsync("/v1/ops/profile/password/confirm", new { code });
+        var refused = await late.ReadAsync();
+        Assert.True(refused.Code is "STEP_EXPIRED" or "CODE_INVALID", $"Answered {refused.Status} {refused.Code}.");
+        Assert.Empty(await world.RecordsAsync(SignInRecordKinds.PasswordChanged));
+
+        // Nothing changed: the session is open, the old password is the account's, the new is not.
+        using var alive = await browser.OpsGetAsync("/v1/ops/profile");
+        Assert.Equal(HttpStatusCode.OK, alive.StatusCode);
+        using var old = await world.Factory.Browser().OpsStepOneAsync(world.Email);
+        Assert.Equal(HttpStatusCode.OK, old.StatusCode);
+        using var fresh = await world.Factory.Browser().OpsStepOneAsync(world.Email, Next);
+        Assert.Equal("INVALID_CREDENTIALS", (await fresh.ReadAsync()).Code);
+
+        // And the change can be begun again.
+        using var again = await browser.OpsPostAsync("/v1/ops/profile/password", new { current = OpsWorld.Password, password = Next });
+        Assert.Equal(HttpStatusCode.Accepted, again.StatusCode);
+    }
+
+    [Fact]
     public async Task A_command_that_changes_nothing_is_recorded_with_who_ran_it_and_not_the_email()
     {
         using var world = await OpsWorld.CreateAsync(sql);
