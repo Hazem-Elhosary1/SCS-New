@@ -307,6 +307,7 @@ export function initialsOf(name: string): string {
           <a
             [routerLink]="section.path"
             routerLinkActive="active"
+            ariaCurrentWhenActive="page"
             [routerLinkActiveOptions]="{ exact: section.path === '/' }"
             [attr.data-testid]="'ops-nav-' + section.key"
             (click)="navOpen.set(false)"

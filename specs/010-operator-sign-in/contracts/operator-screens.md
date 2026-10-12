@@ -9,7 +9,9 @@ the words are marked **(owner)**: taken from the BRD or the clinic's sign-in, to
 Every screen before sign-in is 1440 × 900 in the design: the form in one half, a brand panel
 in the other with the mark, a title and a line. In Arabic the form is on the right; in
 English on the left. Below 900 wide the panel is dropped and the form is centred. The footer
-of the form's half holds «سياسة الخصوصية» and the language control **(owner)**.
+of the form's half holds «سياسة الخصوصية» and the language control **(owner)**. The language
+before sign-in is the one last chosen in that browser; when none was chosen, the browser's own
+if it is Arabic or English; else Arabic (FR-054).
 
 | Screen | Route | Frames (AR · EN) | Panel |
 |---|---|---|---|
@@ -51,8 +53,15 @@ of the form's half holds «سياسة الخصوصية» and the language contro
 - «نسيت كلمة المرور» / «أدخل بريدك الإلكتروني وسنرسل لك رابط إعادة التعيين»; «البريد
   الإلكتروني»; «إرسال رابط إعادة التعيين»; «→ الرجوع لتسجيل الدخول».
 - Sent: «تحقق من بريدك الإلكتروني» / «أرسلنا رابط إعادة تعيين كلمة المرور إلى ‹البريد›» /
-  «لم يصلك البريد الإلكتروني؟ إعادة الإرسال» / the way back. "Send again" is quiet for a
-  minute after each sending.
+  «لم يصلك البريد الإلكتروني؟ إعادة الإرسال» / the way back, all in the middle. "Send again"
+  always says what it is doing, in one of four states **(owner: the words of the last three)**:
+  - for a minute after each sending, in place of the link: «يمكنك إعادة الإرسال خلال ‹د:ث›» /
+    "Resend email in ‹m:ss›", counting down in the reader's digits;
+  - while a sending is on its way: «جارٍ الإرسال…» / "Sending…";
+  - after a link was sent again, in place of the question: «أرسلنا رابطًا جديدًا.» / "We sent a
+    new link.", with the countdown under it;
+  - when it could not be sent: the line of the failure (no connection, too many attempts,
+    unexpected), with the link there to try again and nothing said of an earlier sending.
 
 ### 1.4 Choosing a password — first, and from a reset
 
@@ -109,6 +118,11 @@ Frames open `1851:2003` · `1853:2115`, error `1852:2042` · `1853:2207`, succes
 - Under the field: «كلمة المرور الحالية غير صحيحة.» · «يجب أن تختلف كلمة المرور الجديدة عن
   الحالية.» · «كلمتا المرور غير متطابقتين، يرجى المحاولة مرة أخرى.»; rules not met — the hint
   turns red.
+- The dialog is 480 wide with no ×; its heading and its first line begin at the start of the
+  line, as frame `1853:2115` (the Arabic frame has the heading at neither edge). «حفظ كلمة
+  المرور» is at the right and «إلغاء» at the left in both languages, as both frames draw them,
+  the two of one width across the dialog; the keyboard meets them in the order they are read.
+  "Done" is 440 wide, in the middle, with one button across it.
 - After «حفظ كلمة المرور» with a right current password and a valid new one, the dialog asks
   for the code sent by email: a line naming the address, the six boxes, the countdown and
   "send again", a button to confirm and «إلغاء» **(owner: its words)**. Not drawn; it reuses
