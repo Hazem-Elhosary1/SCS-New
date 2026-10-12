@@ -25,6 +25,9 @@ public class ApiFactory : WebApplicationFactory<Program>
     /// <summary>Where links in emails lead, in tests.</summary>
     public const string StaffApp = "https://app.scs.test";
 
+    /// <summary>The operators console's address, as its emails write it (spec 010).</summary>
+    public const string OpsApp = "https://ops.scs.test";
+
     private readonly Dictionary<string, string?> _settings = new(StringComparer.OrdinalIgnoreCase)
     {
         ["Scs:ENVIRONMENT"] = "local",
@@ -34,6 +37,7 @@ public class ApiFactory : WebApplicationFactory<Program>
         ["Scs:ROLE"] = "api",
         ["Scs:AUTH:CODE_KEY"] = TestCodeKey,
         ["Scs:AUTH:STAFF_APP_URL"] = StaffApp,
+        ["Scs:OPS:APP_URL"] = OpsApp,
         ["Scs:MAIL:HOST"] = "localhost",
         ["Scs:MAIL:PORT"] = "1",
         ["Scs:MAIL:USE_TLS"] = "false",

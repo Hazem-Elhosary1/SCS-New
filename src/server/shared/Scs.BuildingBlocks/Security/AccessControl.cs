@@ -213,6 +213,14 @@ public static partial class AccessControlExtensions
                 return;
             }
 
+            // A route of the operators console: its own scheme has already let in a signed-in
+            // operator and nobody else (spec 010). Operators' permissions arrive with spec 011.
+            if (endpoint.Metadata.GetMetadata<OperatorRouteMetadata>() is not null)
+            {
+                await next(context);
+                return;
+            }
+
             var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("Scs.Access");
             var route = (endpoint as RouteEndpoint)?.RoutePattern.RawText ?? endpoint.DisplayName ?? "";
             var rule = endpoint.Metadata.GetMetadata<AccessRuleMetadata>();

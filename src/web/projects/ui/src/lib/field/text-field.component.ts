@@ -86,6 +86,11 @@ let nextId = 0;
     .has-eye input {
       padding-inline-end: 0;
     }
+    /* Edge draws its own eye and its own × inside the box; the field has its own eye. */
+    input::-ms-reveal,
+    input::-ms-clear {
+      display: none;
+    }
     input::placeholder {
       color: var(--scs-color-text-tertiary);
     }
@@ -93,6 +98,15 @@ let nextId = 0;
        begin at the start of the line, beside the icon. */
     :host-context([dir='rtl']) input[dir='ltr'] {
       text-align: right;
+    }
+    /* Without a leading mark, an email or a password in an Arabic page begins at the box's own
+       edge: its room there is the input's right side, whatever follows it on the left. */
+    :host-context([dir='rtl']) .plain input[dir='ltr'] {
+      padding-inline: var(--scs-spacing-md);
+    }
+    :host-context([dir='rtl']) .plain.has-eye input[dir='ltr'],
+    :host-context([dir='rtl']) .plain.invalid input[dir='ltr'] {
+      padding-left: 0;
     }
     .eye {
       display: inline-grid;
@@ -121,10 +135,10 @@ let nextId = 0;
     <div
       class="box"
       [class.invalid]="error() !== ''"
-      [class.plain]="kind() === 'text'"
+      [class.plain]="kind() === 'text' || !lead()"
       [class.has-eye]="kind() === 'password'"
     >
-      @if (kind() !== 'text') {
+      @if (kind() !== 'text' && lead()) {
         <scs-icon class="lead" [name]="kind() === 'email' ? 'mail' : 'lock'" [size]="20" />
       }
       <input
@@ -192,6 +206,12 @@ export class ScsTextFieldComponent {
   readonly testId = input('');
 
   readonly autofocus = input(false, { transform: booleanAttribute });
+
+  /**
+   * The mark before an email or a password (an envelope, a lock). On by default, as the clinic's
+   * design draws it; the operators' design draws its fields without one.
+   */
+  readonly lead = input(true, { transform: booleanAttribute });
 
   protected readonly revealed = signal(false);
 

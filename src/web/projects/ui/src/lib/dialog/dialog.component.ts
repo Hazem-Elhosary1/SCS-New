@@ -3,6 +3,7 @@ import {
   Component,
   ElementRef,
   afterNextRender,
+  booleanAttribute,
   effect,
   input,
   model,
@@ -24,7 +25,7 @@ let nextId = 0;
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     dialog {
-      inline-size: min(400px, calc(100vw - 2 * var(--scs-spacing-md)));
+      inline-size: min(var(--scs-dialog-width, 400px), calc(100vw - 2 * var(--scs-spacing-md)));
       /* Centred: the page reset removes the margin the browser would give it. */
       margin: auto;
       padding: 0;
@@ -73,19 +74,30 @@ let nextId = 0;
     }
   `,
   template: `
-    <dialog #dialog [attr.aria-labelledby]="id" data-testid="dialog" (close)="open.set(false)">
-      <header>
-        <h2 [id]="id" data-testid="dialog-title">{{ heading() }}</h2>
-        <button
-          type="button"
-          class="close"
-          data-testid="dialog-close"
-          [attr.aria-label]="'ui.dialog.close' | transloco"
-          (click)="open.set(false)"
-        >
-          <scs-icon name="close" [size]="18" />
-        </button>
-      </header>
+    <dialog
+      #dialog
+      data-testid="dialog"
+      [style.--scs-dialog-width.px]="width()"
+      [attr.aria-labelledby]="heading() ? id : null"
+      [attr.aria-label]="heading() ? null : label() || null"
+      (close)="open.set(false)"
+    >
+      @if (heading()) {
+        <header>
+          <h2 [id]="id" data-testid="dialog-title">{{ heading() }}</h2>
+          @if (closable()) {
+            <button
+              type="button"
+              class="close"
+              data-testid="dialog-close"
+              [attr.aria-label]="'ui.dialog.close' | transloco"
+              (click)="open.set(false)"
+            >
+              <scs-icon name="close" [size]="18" />
+            </button>
+          }
+        </header>
+      }
       <div class="body"><ng-content /></div>
     </dialog>
   `,
@@ -95,6 +107,18 @@ export class ScsDialogComponent {
 
   /** Already translated. */
   readonly heading = input.required<string>();
+
+  /**
+   * Whether the heading has a × beside it. The operators' design draws none: its dialogs close
+   * by their own buttons, by Escape and by the dimmed area.
+   */
+  readonly closable = input(true, { transform: booleanAttribute });
+
+  /** How wide, in pixels, when the window allows it. */
+  readonly width = input(400);
+
+  /** Already translated: the dialog's name when it shows no heading. */
+  readonly label = input('');
 
   readonly open = model(false);
 

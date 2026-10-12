@@ -47,6 +47,9 @@ function digitsOf(text: string): string {
     }
     input {
       inline-size: 48px;
+      /* In a narrow place the six give way together rather than run past its edge. */
+      min-inline-size: 0;
+      flex: 0 1 auto;
       block-size: 56px;
       border: 1px solid var(--scs-color-border-default);
       border-radius: var(--scs-radius-md);

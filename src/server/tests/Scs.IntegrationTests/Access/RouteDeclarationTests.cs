@@ -60,14 +60,40 @@ public sealed class RouteDeclarationTests(SqlServerFixture sql)
         var offenders = routes
             .Where(e =>
                 (e.Metadata.GetMetadata<IAllowAnonymous>() is null ? 0 : 1)
-                + e.Metadata.OfType<AccessRuleMetadata>().Count() != 1)
+                + e.Metadata.OfType<AccessRuleMetadata>().Count()
+                + e.Metadata.OfType<OperatorRouteMetadata>().Count() != 1)
             .Select(Describe)
             .ToList();
 
         Assert.True(
             offenders.Count == 0,
-            "Say who may call each of these — AllowAnonymous(), OwnAccountOnly(), Requires(...) or RequiresOrOwner(...), and only one: "
+            "Say who may call each of these — AllowAnonymous(), OwnAccountOnly(), Requires(...), RequiresOrOwner(...) or, in the operators console, OperatorsOnly(), and only one: "
             + string.Join(", ", offenders));
+    }
+
+    /// <summary>
+    /// Spec 010 (FR-037, FR-039): the operators console is its own room. Every route under
+    /// <c>/v1/ops/</c> is open to anyone or to a signed-in operator, and never to a clinic's
+    /// session; and no route outside it is declared for operators.
+    /// </summary>
+    [Fact]
+    public async Task The_routes_of_the_operators_console_are_for_operators_and_no_others_are()
+    {
+        await sql.EnsureMigratedAsync();
+        using var factory = sql.CreateApi();
+        var routes = Routes(factory, probes: false);
+
+        var ops = routes.Where(e => e.RoutePattern.RawText!.StartsWith("/v1/ops/", StringComparison.Ordinal)).ToList();
+        Assert.NotEmpty(ops);
+        Assert.All(ops, e => Assert.Empty(e.Metadata.OfType<AccessRuleMetadata>()));
+        Assert.All(
+            ops.Where(e => e.Metadata.GetMetadata<IAllowAnonymous>() is null),
+            e => Assert.Contains(
+                OperatorSessionAuthenticationHandler.SchemeName,
+                e.Metadata.OfType<Microsoft.AspNetCore.Authorization.AuthorizationPolicy>().SelectMany(p => p.AuthenticationSchemes)));
+
+        Assert.DoesNotContain(
+            routes.Except(ops), e => e.Metadata.GetMetadata<OperatorRouteMetadata>() is not null);
     }
 
     [Fact]

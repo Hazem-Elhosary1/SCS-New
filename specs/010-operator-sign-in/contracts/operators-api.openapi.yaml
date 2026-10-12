@@ -1,0 +1,284 @@
+openapi: 3.1.0
+info:
+  title: SCS — Operator sign-in
+  version: 0.10.0
+  description: >
+    The addresses of spec 010. All are under `/v1/ops/`. Errors are problem documents with a
+    `code`, as everywhere in the platform. Words follow `Accept-Language`. Cookies are set and
+    read by the platform; the console never handles a session's value. Addresses that change
+    something require the platform's request header, as the clinic's do.
+paths:
+  /v1/ops/auth/sign-in:
+    post:
+      summary: Step one — email and password. Opens no session; sends a code.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, maxLength: 254 }
+                password: { type: string, maxLength: 200 }
+                remember: { type: boolean, default: false }
+      responses:
+        '200':
+          description: The code was sent; the sign-in cookie is set.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CodeStep' }
+        '400': { description: '`VALIDATION_FAILED`' }
+        '401': { description: '`INVALID_CREDENTIALS` — the single answer: unknown email, wrong password, an invited account, and a wrong password for a locked or suspended one' }
+        '403': { description: 'After a correct password only: `ACCOUNT_DISABLED` · `ACCOUNT_LOCKED` with `until`' }
+        '429': { description: '`RATE_LIMITED` with `retryAfterSeconds`' }
+        '503': { description: '`SIGN_IN_CODE_NOT_SENT` — the password was right and the code could not be sent; nothing is open' }
+  /v1/ops/auth/code:
+    post:
+      summary: Step two — the code. Opens the session and ends any earlier one of the account.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string, pattern: '^[0-9]{6}$' }
+      responses:
+        '200':
+          description: Signed in; the session cookies are set and the sign-in cookie cleared.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OperatorSession' }
+        '401': { description: '`CODE_INVALID` with `attemptsLeft` — wrong, expired, used or replaced · `STEP_EXPIRED` — no sign-in in progress, or its tries are spent: start again from the password' }
+        '403': { description: '`ACCOUNT_DISABLED` · `ACCOUNT_LOCKED` — changed since the password' }
+        '429': { description: '`RATE_LIMITED`' }
+  /v1/ops/auth/code/resend:
+    post:
+      summary: Send a new code for the sign-in in progress; the earlier one stops working.
+      security: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CodeStep' }
+        '401': { description: '`STEP_EXPIRED`' }
+        '429': { description: '`RATE_LIMITED` with `retryAfterSeconds` — before the wait is over, or after the last allowed resend' }
+        '503': { description: '`SIGN_IN_CODE_NOT_SENT` — the earlier code stays good' }
+  /v1/ops/auth/code/cancel:
+    post:
+      summary: Leave the code step; the sign-in in progress is ended.
+      security: []
+      responses:
+        '204': { description: Done, whether or not there was one. }
+  /v1/ops/auth/session:
+    get:
+      summary: Who is signed in.
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OperatorSession' }
+        '401': { description: '`UNAUTHENTICATED`, with `reason` when the session was ended by something other than the operator: `replaced` · `idle` · `expired` · `password-reset` · `suspended` · `role-changed` · `reuse`' }
+  /v1/ops/auth/session/renew:
+    post:
+      summary: Renew the session in use. Refused when idle too long, ended, or presenting an old secret.
+      security: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OperatorSession' }
+        '401': { description: '`UNAUTHENTICATED` with `reason`' }
+  /v1/ops/auth/sign-out:
+    post:
+      summary: End this session.
+      responses:
+        '204': { description: Ended; the cookies are cleared. Also the answer when there was none. }
+  /v1/ops/auth/sign-out-everywhere:
+    post:
+      summary: End every session of the account, this one too.
+      responses:
+        '204': { description: Ended. }
+        '401': { description: '`UNAUTHENTICATED`' }
+  /v1/ops/password/forgot:
+    post:
+      summary: Ask for a reset link. The answer is the same for every email.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, maxLength: 254 }
+      responses:
+        '202': { description: Accepted. An email is sent only to an active account, at most one a minute. }
+        '400': { description: '`VALIDATION_FAILED`' }
+        '429': { description: '`RATE_LIMITED`' }
+  /v1/ops/password/link:
+    post:
+      summary: Read a link before showing its screen. Changes nothing.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token: { type: string, maxLength: 1024 }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [kind, email]
+                properties:
+                  kind: { type: string, enum: [reset, first] }
+                  email: { type: string, description: The account's email, shown and not editable. }
+        '410': { description: '`LINK_INVALID` with `kind` when it can be told (`reset` offers a new link; `first` points to whoever sent it) — expired, used, replaced or not a link' }
+        '429': { description: '`RATE_LIMITED`' }
+  /v1/ops/password/set:
+    post:
+      summary: Choose the password from a link. A reset ends every session and lifts a lock; a first password makes the account active. Opens no session.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, password]
+              properties:
+                token: { type: string, maxLength: 1024 }
+                password: { type: string, maxLength: 200 }
+      responses:
+        '204': { description: Saved. }
+        '400': { description: '`VALIDATION_FAILED` (password: the rules not met) with the rules not met' }
+        '409': { description: '`VALIDATION_FAILED` (password: `SAME_AS_CURRENT`) — a reset to the current password' }
+        '410': { description: '`LINK_INVALID`' }
+        '429': { description: '`RATE_LIMITED`' }
+  /v1/ops/profile:
+    get:
+      summary: The signed-in operator's own account and recent sessions.
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Profile' }
+        '401': { description: '`UNAUTHENTICATED`' }
+  /v1/ops/profile/password:
+    post:
+      summary: Step one of changing the signed-in operator's password. Changes nothing; sends a code.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current, password]
+              properties:
+                current: { type: string, maxLength: 200 }
+                password: { type: string, maxLength: 200 }
+      responses:
+        '202':
+          description: The current password was right and the new one valid; a code was sent.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CodeStep' }
+        '400': { description: '`VALIDATION_FAILED` (password: the rules not met)' }
+        '401': { description: '`UNAUTHENTICATED` with `reason: locked` — the fifth wrong current password signed the operator out' }
+        '409': { description: '`VALIDATION_FAILED` (password: `SAME_AS_CURRENT`)' }
+        '422': { description: '`VALIDATION_FAILED` (current: `WRONG`) — counts as a wrong try' }
+        '503': { description: '`SIGN_IN_CODE_NOT_SENT` — nothing is pending' }
+  /v1/ops/profile/password/confirm:
+    post:
+      summary: Step two — the code. Changes the password; this session stays open.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string, pattern: '^[0-9]{6}$' }
+      responses:
+        '204': { description: Changed. }
+        '401': { description: '`CODE_INVALID` with `attemptsLeft` · `STEP_EXPIRED` — no change pending, or its tries are spent: start the change again' }
+  /v1/ops/profile/password/resend:
+    post:
+      summary: Send a new code for the pending change; the earlier one stops working.
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CodeStep' }
+        '401': { description: '`STEP_EXPIRED`' }
+        '429': { description: '`RATE_LIMITED` with `retryAfterSeconds`' }
+  /v1/ops/profile/password/cancel:
+    post:
+      summary: Abandon the pending change (the dialog was closed).
+      responses:
+        '204': { description: Done, whether or not there was one. }
+components:
+  schemas:
+    CodeStep:
+      type: object
+      required: [email, expiresAt, resendAt]
+      properties:
+        email: { type: string, description: The address the code went to, as typed. }
+        expiresAt: { type: string, format: date-time }
+        resendAt: { type: string, format: date-time, description: When a new code may be asked for; the countdown is computed from the platform's time. }
+        resendsLeft: { type: integer }
+        now: { type: string, format: date-time, description: The platform's time, so a wrong clock does not spoil the countdown. }
+    OperatorSession:
+      type: object
+      required: [operator, expiresAt, idleMinutes]
+      properties:
+        operator:
+          type: object
+          required: [id, fullName, language, roleName]
+          properties:
+            id: { type: string, format: uuid }
+            fullName: { type: string }
+            language: { type: string, enum: [ar, en] }
+            roleName: { type: string, description: The role's name in the reader's language. Fixed until spec 011. }
+        expiresAt: { type: string, format: date-time, description: Twelve hours from sign-in. }
+        idleMinutes: { type: integer, description: The idle period, for the console's own clock. }
+        newBrowser: { type: boolean, description: True on the answer that opened the session when the browser was new. }
+    Profile:
+      type: object
+      required: [fullName, roleName, email, twoFactor, sessions]
+      properties:
+        fullName: { type: string }
+        roleName: { type: string }
+        email: { type: string }
+        mobile: { type: [string, 'null'] }
+        twoFactor:
+          type: object
+          required: [on, locked]
+          properties:
+            on: { type: boolean, const: true }
+            locked: { type: boolean, const: true }
+        sessions:
+          type: array
+          maxItems: 10
+          items:
+            type: object
+            required: [browser, system, address, current, startedAt]
+            properties:
+              browser: { type: string }
+              system: { type: string }
+              address: { type: string }
+              current: { type: boolean }
+              startedAt: { type: string, format: date-time }
+              endedAt: { type: [string, 'null'], format: date-time }

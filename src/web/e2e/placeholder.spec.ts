@@ -9,7 +9,8 @@ const apps = [
   { name: 'clinic', url: 'http://localhost:4201/dev/platform', ar: 'لوحة العيادة', en: 'Clinic console' },
   // The patient site is served under a clinic's path.
   { name: 'patient', url: 'http://localhost:4202/noor', ar: 'واجهات المريض', en: 'Patient pages' },
-  { name: 'ops', url: 'http://localhost:4203/', ar: 'لوحة المشغّلين', en: 'Operators console' },
+  // The operators console is no longer a placeholder (spec 010): its screens, languages and
+  // states are checked by ops-sign-in.spec.ts and ops-console.spec.ts.
 ] as const;
 
 const languages = ['ar', 'en'] as const;

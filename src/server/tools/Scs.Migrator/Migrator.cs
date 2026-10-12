@@ -23,6 +23,7 @@ public static class Migrator
         new Scs.Notifications.NotificationsModule(),
         new Scs.Files.FilesModule(),
         new Scs.Identity.IdentityModule(),
+        new Scs.Operators.OperatorsModule(),
         new PlatformModule(),
     ];
 

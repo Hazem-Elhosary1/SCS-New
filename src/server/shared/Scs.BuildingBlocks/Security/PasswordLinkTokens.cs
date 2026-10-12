@@ -29,6 +29,12 @@ public sealed class PasswordLinkTokens(IDataProtectionProvider protection)
     public const string Reset = "reset";
     public const string NewAccount = "new-account";
 
+    /// <summary>An operator's reset link (spec 010). Operators have no clinic: the token's clinic is empty.</summary>
+    public const string OperatorReset = "ops-reset";
+
+    /// <summary>An operator's first-password link (spec 010).</summary>
+    public const string OperatorFirst = "ops-first";
+
     public const int SecretLength = 32;
 
     /// <summary>Longer than any token we issue; anything above it is refused unread.</summary>
@@ -62,6 +68,8 @@ public sealed class PasswordLinkTokens(IDataProtectionProvider protection)
         {
             Reset => 1,
             NewAccount => 2,
+            OperatorReset => 3,
+            OperatorFirst => 4,
             _ => throw new ArgumentOutOfRangeException(nameof(token)),
         };
         token.ClinicId.TryWriteBytes(payload.AsSpan(2));
@@ -91,6 +99,8 @@ public sealed class PasswordLinkTokens(IDataProtectionProvider protection)
             {
                 1 => Reset,
                 2 => NewAccount,
+                3 => OperatorReset,
+                4 => OperatorFirst,
                 _ => null,
             };
 

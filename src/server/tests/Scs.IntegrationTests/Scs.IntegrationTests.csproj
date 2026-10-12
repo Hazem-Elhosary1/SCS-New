@@ -17,6 +17,7 @@
     <ProjectReference Include="..\..\host\Scs.Api\Scs.Api.csproj" />
     <ProjectReference Include="..\..\tools\Scs.Migrator\Scs.Migrator.csproj" />
     <ProjectReference Include="..\..\modules\Files\Scs.Files\Scs.Files.csproj" />
+    <ProjectReference Include="..\..\modules\Operators\Scs.Operators\Scs.Operators.csproj" />
   </ItemGroup>
 
 </Project>

@@ -44,6 +44,8 @@ public sealed class ScsOptions
 
     public ScanOptions Scan { get; set; } = new();
 
+    public OpsOptions Ops { get; set; } = new();
+
     /// <summary><c>SCS_VERSION</c>, set at build.</summary>
     public string Version { get; set; } = "0.0.0-dev";
 
@@ -281,6 +283,42 @@ public sealed class MailOptions
     /// <summary><c>SCS_MAIL__TIMEOUT_SECONDS</c>: how long a request waits for the mail server.</summary>
     [ConfigurationKeyName("TIMEOUT_SECONDS")]
     public int TimeoutSeconds { get; set; } = 10;
+}
+
+/// <summary>The operators console (spec 010).</summary>
+public sealed class OpsOptions
+{
+    public const string LocalAppUrl = "http://localhost:4203";
+
+    /// <summary>
+    /// <c>SCS_OPS__IDLE_MINUTES</c>: no activity for this long ends an operator's session.
+    /// Fifteen minutes to a week (FR-031, FR-032).
+    /// </summary>
+    [ConfigurationKeyName("IDLE_MINUTES")]
+    public int IdleMinutes { get; set; } = 30;
+
+    /// <summary>
+    /// <c>SCS_OPS__APP_URL</c>: the operators console's address, for links in emails. No path.
+    /// Required outside the local environment.
+    /// </summary>
+    [ConfigurationKeyName("APP_URL")]
+    public string AppUrl { get; set; } = "";
+
+    /// <summary><c>SCS_OPS__RESET_LINK_MINUTES</c>: life of a reset link (SH-048).</summary>
+    [ConfigurationKeyName("RESET_LINK_MINUTES")]
+    public int ResetLinkMinutes { get; set; } = 30;
+
+    /// <summary><c>SCS_OPS__FIRST_LINK_HOURS</c>: life of a first-password link (SH-048).</summary>
+    [ConfigurationKeyName("FIRST_LINK_HOURS")]
+    public int FirstLinkHours { get; set; } = 72;
+
+    /// <summary><c>SCS_OPS__RECORD_MONTHS</c>: how long sign-in records are kept (FR-052a).</summary>
+    [ConfigurationKeyName("RECORD_MONTHS")]
+    public int RecordMonths { get; set; } = 12;
+
+    /// <summary>The console's address without a trailing slash.</summary>
+    public string AppBase() =>
+        string.IsNullOrWhiteSpace(AppUrl) ? LocalAppUrl : AppUrl.Trim().TrimEnd('/');
 }
 
 /// <summary>Where file content is kept (spec 009).</summary>

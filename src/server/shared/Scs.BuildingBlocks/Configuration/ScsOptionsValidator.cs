@@ -69,6 +69,16 @@ public sealed class ScsOptionsValidator : IValidateOptions<ScsOptions>
 
         Range(options.Mail.TimeoutSeconds, 1, 60, "SCS_MAIL__TIMEOUT_SECONDS", failures);
 
+        Range(options.Ops.IdleMinutes, 15, 10_080, "SCS_OPS__IDLE_MINUTES", failures);
+        Range(options.Ops.ResetLinkMinutes, 5, 1_440, "SCS_OPS__RESET_LINK_MINUTES", failures);
+        Range(options.Ops.FirstLinkHours, 1, 168, "SCS_OPS__FIRST_LINK_HOURS", failures);
+        Range(options.Ops.RecordMonths, 1, 120, "SCS_OPS__RECORD_MONTHS", failures);
+
+        if (!options.IsLocal && string.IsNullOrWhiteSpace(options.Ops.AppUrl))
+        {
+            failures.Add("Missing required configuration value SCS_OPS__APP_URL.");
+        }
+
         if (!options.IsLocal && string.IsNullOrWhiteSpace(options.Files.Root))
         {
             failures.Add("Missing required configuration value SCS_FILES__ROOT.");
