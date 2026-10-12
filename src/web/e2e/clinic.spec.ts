@@ -216,8 +216,20 @@ test('the staff and operators sites never send a clinic name', async ({ page }) 
 
   await page.goto('http://localhost:4201/dev/platform');
   await expect(page.getByTestId('placeholder')).toBeVisible();
+  // The operators console is behind its own sign-in (spec 010): nobody is signed in there.
+  await page.route('**/v1/ops/auth/session', (route) =>
+    route.fulfill({
+      status: 401,
+      headers: {
+        'access-control-allow-origin': route.request().headers()['origin'] ?? '*',
+        'access-control-allow-credentials': 'true',
+        'content-type': 'application/problem+json',
+      },
+      json: { type: 'urn:scs:error:unauthenticated', title: '', status: 401, code: 'UNAUTHENTICATED', traceId: '0' },
+    }),
+  );
   await page.goto('http://localhost:4203/noor');
-  await expect(page.getByTestId('placeholder')).toBeVisible();
+  await expect(page.getByTestId('sign-in-title')).toBeVisible();
 
   expect(sent).toEqual([]);
 });

@@ -43,7 +43,8 @@ public class IdentityRulesTests
                 // their own purpose and their own class; neither writes a cookie.
                 var name = Path.GetFileName(file);
                 var text = File.ReadAllText(file);
-                if (name == "SessionCookies.cs")
+                // The clinic's cookies, and the operators' own (spec 010): each in its one file.
+                if (name is "SessionCookies.cs" or "OperatorCookies.cs")
                 {
                     return false;
                 }

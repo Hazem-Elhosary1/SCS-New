@@ -121,6 +121,12 @@ public static class ErrorCodes
     /// <summary>Removed, or past the time it is kept for.</summary>
     public const string FileNotKept = "FILE_NOT_KEPT";
 
+    /// <summary>
+    /// Spec 010: the step in progress — a sign-in between the password and the code, or a change
+    /// of password waiting for its code — is over: expired, cancelled, or its tries are spent.
+    /// </summary>
+    public const string StepExpired = "STEP_EXPIRED";
+
     public static IReadOnlyList<string> All { get; } =
     [
         ValidationFailed, MalformedRequest, Unauthenticated, Forbidden, NotFound,
@@ -133,5 +139,6 @@ public static class ErrorCodes
         PermissionRequired, RoleFixed, RoleInUse, LastOwner, OwnRole,
         FileEmpty, FileTooLarge, FileTypeNotAccepted, FileNotStored, FileLimitReached,
         FileCountReached, FileNotAttachable, FileBeingChecked, FileRefused, FileNotKept,
+        StepExpired,
     ];
 }

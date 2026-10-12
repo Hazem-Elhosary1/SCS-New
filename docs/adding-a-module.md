@@ -250,6 +250,33 @@ for what everyone may see, never anything about a patient; whether a file may be
 is your rule; a private file is a download — a page that previews one does so from the
 downloaded bytes. The contract is `specs/009-file-storage/contracts/files-engine.md`.
 
+## A route of the operators console (spec 010)
+
+The operators console is a room of its own. A route for operators:
+
+- lives under `/v1/ops/` and declares **`.OperatorsOnly()`** — any signed-in operator, and
+  nobody else. It is authenticated by the operators' scheme alone: a clinic's session presented
+  there is no session. Never give such a route `.Requires(...)` or `.OwnAccountOnly()`: those
+  are the clinic's. Operators' permissions arrive with spec 011 and will replace
+  `OperatorsOnly()` route by route;
+- reads who is asking from `ICurrentOperator` (the operator's id and the session's), never from
+  a cookie;
+- declares what it records, like every route. An operator's own sign-in events are kept in
+  `ops.SignInRecord`, not in a clinic's audit trail;
+- when it changes something, is refused unless the request carries the header our own sites
+  send — nothing to do: every route that needs a session is covered.
+
+A module that must end an operator's sessions (suspending, changing a role) asks
+`IOperatorSessions.EndAllAsync(operatorId, reason)` from `Scs.Operators.Contracts`; to show who
+did something, `IOperatorDirectory.FindAsync(id)`. No module reads `ops.*` tables, and a new
+table in that schema is entered in `PlatformWideTables` by name, with its reason.
+
+On the front end, a page of the console goes under the frame in
+`src/web/projects/ops/src/app/app.routes.ts`, and its line in the side bar in
+`shell/sections.ts`. What a page asks for by itself — polling, a background refresh — carries the
+header `X-Scs-Background: 1`, so that it is not taken for the operator's activity and does not
+keep an unattended console signed in.
+
 ## Conventions to follow
 
 These are decided once in `specs/001-platform-foundation/contracts/` and are not re-decided in

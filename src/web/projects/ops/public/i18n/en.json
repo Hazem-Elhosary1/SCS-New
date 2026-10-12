@@ -1,7 +1,186 @@
 {
   "app": {
     "shell": {
-      "name": "Operators console"
+      "name": "SCS — Ops Console",
+      "sections": "Console sections",
+      "account": "Account menu",
+      "offline": "No internet connection — what is shown is the last copy loaded.",
+      "menu": {
+        "profile": "My Profile",
+        "signOut": "Log Out"
+      },
+      "nav": {
+        "home": "Home"
+      }
+    },
+    "signIn": {
+      "title": "Sign In",
+      "subtitle": "Enter your operator account details",
+      "panel": {
+        "title": "SCS Ops Console",
+        "line": "Manage every clinic, plan, ticket, and team member from one place."
+      },
+      "email": {
+        "label": "Email address",
+        "required": "The email is required",
+        "invalid": "Not a valid email — like name@company.com"
+      },
+      "password": {
+        "label": "Password",
+        "required": "The password is required"
+      },
+      "remember": "Remember me",
+      "forgot": "Forgot password?",
+      "submit": "Sign In",
+      "submitting": "Signing in…",
+      "banner": {
+        "invalidTitle": "Invalid email or password",
+        "invalid": "Check your credentials and try again.",
+        "suspended": "This account is suspended.",
+        "unreachable": "The server could not be reached. Try again in a moment.",
+        "codeNotSent": "The verification code could not be sent. Try again in a moment.",
+        "unexpected": "Something unexpected went wrong. Try again.",
+        "rateLimited": "Too many attempts from this address. Try again in a minute.",
+        "lockedBefore": "The account is locked until",
+        "lockedAfter": " after wrong sign-in attempts. Resetting the password opens it now."
+      },
+      "notice": {
+        "replaced": "You signed in on another device, so this session ended.",
+        "idle": "The session ended. Sign in again to continue.",
+        "expired": "The session ended. Sign in again to continue.",
+        "reuse": "The session ended. Sign in again to continue.",
+        "password-reset": "Your password was reset, so you were signed out. Sign in with the new password.",
+        "suspended": "Your account was locked for security reasons. Sign in again.",
+        "role-changed": "Your role was changed, so you were signed out. Sign in again to continue.",
+        "locked": "The account was locked after wrong attempts. Resetting the password opens it now.",
+        "password-changed": "The password was changed. Sign in with the new password.",
+        "account-ready": "The account is active. Sign in now."
+      }
+    },
+    "code": {
+      "title": "Two-Factor Verification",
+      "sentTo": "Enter the 6-digit code sent to",
+      "panel": {
+        "title": "Two-Factor Verification",
+        "line": "An extra layer of security for your operator account."
+      },
+      "boxes": "Verification code, six digits",
+      "waitBefore": "Resend code in",
+      "resend": "Resend code",
+      "submit": "Verify",
+      "back": "Back to Sign In",
+      "problem": {
+        "wrong": "The code is wrong or has expired. You can ask for a new one.",
+        "notResent": "A new code could not be sent. The earlier code stays valid until it expires.",
+        "resendLimit": "No more codes can be sent. Sign in again from the start.",
+        "unexpected": "Something unexpected went wrong. Try again."
+      }
+    },
+    "forgot": {
+      "title": "Forgot Password",
+      "subtitle": "Enter your email and we'll send you a reset link",
+      "submit": "Send Reset Link",
+      "back": "Back to Login",
+      "sent": {
+        "title": "Check your email",
+        "line": "We've sent a password reset link to",
+        "notArrived": "Didn't receive the email?",
+        "again": "Resend email",
+        "resent": "We sent a new link.",
+        "sending": "Sending…",
+        "waitBefore": "Resend email in"
+      }
+    },
+    "password": {
+      "reading": "Checking the link…",
+      "new": "New Password",
+      "confirm": "Confirm Password",
+      "mismatch": "Passwords do not match. Please try again.",
+      "same": "The new password must be different from the current one.",
+      "rules": {
+        "length": "At least 10 characters",
+        "cases": "An uppercase and a lowercase letter",
+        "digit": "At least one number",
+        "symbol": "At least one special character"
+      },
+      "first": {
+        "title": "Set your password",
+        "subtitle": "You've been invited to join SCS Ops Console. Create a password to activate your account.",
+        "submit": "Activate Account"
+      },
+      "reset": {
+        "title": "New password",
+        "subtitle": "Choose a new password for your operator account.",
+        "submit": "Save Password"
+      },
+      "gone": {
+        "title": "This link no longer works",
+        "reset": "The link has expired or was already used. You can ask for a new one.",
+        "first": "The invitation has expired or was already used. Ask whoever sent it for a new one.",
+        "unknown": "The link is wrong or has expired.",
+        "askNew": "Ask for a new link"
+      }
+    },
+    "home": {
+      "greeting": "Welcome,",
+      "line": "The console's sections appear here as they are built."
+    },
+    "notFound": {
+      "title": "Page not found",
+      "line": "That address is not a page of the ops console.",
+      "home": "Back to Home"
+    },
+    "notYet": {
+      "title": "Not available yet",
+      "line": "This page is coming soon."
+    },
+    "profile": {
+      "title": "My Profile",
+      "lead": "Manage your personal account information and security settings.",
+      "cancel": "Cancel",
+      "account": {
+        "title": "Account Information",
+        "mobile": "Phone Number",
+        "changePassword": "Change Password",
+        "email": "Email"
+      },
+      "security": {
+        "title": "Security & Sessions",
+        "twoFactor": "Enable two-factor authentication (2FA) for my account",
+        "twoFactorLocked": "Required for every operator in Settings → Security, so it can’t be turned off here."
+      },
+      "sessions": {
+        "title": "Recent Sessions",
+        "one": "One session at a time — signing in on another device ends this one.",
+        "device": "Device & IP Address",
+        "state": "Status",
+        "action": "Action",
+        "activeNow": "Active now",
+        "ended": "Ended",
+        "current": "Current session"
+      },
+      "everywhere": {
+        "button": "Sign Out of All Devices",
+        "title": "Sign out of all devices?",
+        "line": "Every session of your account ends, this one too, and you sign in again."
+      },
+      "change": {
+        "lead": "Make sure to use a strong password to protect your account.",
+        "current": "Current Password",
+        "currentWrong": "The current password is incorrect.",
+        "new": "New Password",
+        "same": "The new password must be different from the current one.",
+        "hint": "At least 10 characters, with upper and lower case letters, a number and a symbol.",
+        "confirmNew": "Confirm New Password",
+        "mismatch": "Passwords do not match. Please try again.",
+        "save": "Save Password",
+        "failed": "The password was not changed. Start again.",
+        "codeSentTo": "To confirm, enter the 6-digit code sent to",
+        "confirm": "Confirm change",
+        "doneTitle": "Password Changed Successfully",
+        "doneLine": "You can now use your new password to sign in.",
+        "done": "Done"
+      }
     }
   }
 }

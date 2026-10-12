@@ -20,6 +20,7 @@ public class ScsOptionsValidatorTests
             Mail = new MailOptions { Host = "mail", Port = 587, From = "no-reply@scs.test" },
             Files = new FilesOptions { Root = OperatingSystem.IsWindows() ? @"D:\scs\files" : "/var/scs/files" },
             Scan = new ScanOptions { Host = "scanner.internal" },
+            Ops = new OpsOptions { AppUrl = "https://ops.scs.test" },
         };
         change?.Invoke(options);
         return options;

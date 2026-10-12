@@ -11,7 +11,7 @@
   --scs-color-text-secondary: #4b5563;
   --scs-color-text-tertiary: #6b7280;
   --scs-color-text-inverse: #ffffff;
-  --scs-color-text-link: #1f2937;
+  --scs-color-text-link: #6d28d9;
 
   --scs-color-bg-surface: #ffffff;
   --scs-color-bg-canvas: #f8fafb;
@@ -21,8 +21,8 @@
   --scs-color-bg-muted: #f1f4f6;
   --scs-color-icon-default: #374151;
 
-  --scs-color-brand-default: #374151;
-  --scs-color-brand-active: #111827;
+  --scs-color-brand-default: #7c3aed;
+  --scs-color-brand-active: #6d28d9;
   --scs-color-brand-on-brand: #ffffff;
   --scs-color-brand-subtle: #f3edfe;
 

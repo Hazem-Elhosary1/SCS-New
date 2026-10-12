@@ -239,6 +239,36 @@ the web sites read, or `FileKindsFileTests` fails:
 dotnet run --project src/server/tools/Scs.Migrator -- file-kinds src/web/projects/core/src/lib/files/file-kinds.json
 ```
 
+### The operators console (spec 010)
+
+The console of the people who run the platform is its own application, at
+`http://localhost:4203`, with its own sign-in. Nothing of it is reached with a clinic's session,
+and nothing of a clinic with an operator's.
+
+- **The made-up operator.** Seeding invites `operator@heta.example`. Within a minute the local
+  mailbox (`http://localhost:8025`) holds an email "انضم إلى لوحة التشغيل" with a link, good for
+  72 hours, to choose a password. Nobody is given a password: the operator chooses theirs.
+- **Another operator.** From `src/server`, with the variables of `deploy/compose/.env` set:
+
+  ```bash
+  dotnet run --project tools/Scs.Migrator -c Release --no-build -- operator invite --name "Sara Ahmed" --email sara@heta.example
+  ```
+
+  Run again for someone still invited, it sends a new link and ends the earlier one; for an
+  active account it changes nothing. A mistaken invitation is taken back, before its link is
+  used, with `operator withdraw --email sara@heta.example`.
+- **Signing in.** Email and password, then the six digits sent by email — every time; it cannot
+  be switched off. Five wrong passwords lock the account for fifteen minutes; "forgot password"
+  opens it at once.
+- **One session.** Signing in on a second browser ends the first, which shows the sign-in screen
+  with its reason within half a minute. Thirty minutes without activity end a session too; to
+  see it sooner, lower `SCS_OPS__IDLE_MINUTES` (fifteen at the least).
+- **My profile** (the account menu): the account, its recent sessions, "sign out of all
+  devices", and changing the password, which asks for a code by email before anything changes.
+
+Operators have no roles yet (spec 011): every operator sees the frame, the home and their own
+profile, and is shown as «مسؤول عام».
+
 ### Check the "not ready" behaviour
 
 ```bash

@@ -110,6 +110,22 @@ const BANNER_ICONS: Record<ScsBannerTone, ScsIconName> = {
       font-weight: 600;
       line-height: 1.5;
     }
+    .body {
+      flex: 1;
+      min-inline-size: 0;
+    }
+    button.dismiss {
+      display: grid;
+      place-items: center;
+      flex: none;
+      inline-size: 24px;
+      block-size: 24px;
+      border-radius: var(--scs-radius-sm);
+      color: inherit;
+    }
+    button.dismiss:focus-visible {
+      outline: 2px solid currentcolor;
+    }
     button {
       padding: 0;
       border: 0;
@@ -134,6 +150,11 @@ const BANNER_ICONS: Record<ScsBannerTone, ScsIconName> = {
         </button>
       }
     </div>
+    @if (closeLabel(); as label) {
+      <button type="button" class="dismiss" data-testid="banner-close" [attr.aria-label]="label" (click)="closed.emit()">
+        <scs-icon name="close" [size]="16" />
+      </button>
+    }
   `,
 })
 export class ScsBannerComponent {
@@ -146,6 +167,14 @@ export class ScsBannerComponent {
   readonly actionLabel = input<string>('');
 
   readonly action = output<void>();
+
+  /**
+   * Already translated: the name of the control that closes the banner. When set, the banner
+   * can be closed; the page takes it away on `closed`.
+   */
+  readonly closeLabel = input<string>('');
+
+  readonly closed = output<void>();
 
   protected readonly icon = computed(() => BANNER_ICONS[this.tone()]);
 

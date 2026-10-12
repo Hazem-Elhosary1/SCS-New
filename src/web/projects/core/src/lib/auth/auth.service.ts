@@ -407,7 +407,12 @@ const HANDLES_ITS_OWN = ['/v1/auth/sign-in', '/v1/auth/session/renew', '/v1/auth
  */
 export const sessionInterceptor: HttpInterceptorFn = (request, next) => {
   const app = inject(SCS_APP, { optional: true });
-  if (app === 'patient' || HANDLES_ITS_OWN.some((path) => request.url.includes(path))) {
+  // The patient site has no staff session; the operators console keeps its own (spec 010).
+  if (
+    app === 'patient' ||
+    app === 'ops' ||
+    HANDLES_ITS_OWN.some((path) => request.url.includes(path))
+  ) {
     return next(request);
   }
 

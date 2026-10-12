@@ -56,6 +56,7 @@ public static class ErrorMessages
         [ErrorCodes.FileBeingChecked] = ("الملف قيد الفحص", "The file is still being checked"),
         [ErrorCodes.FileRefused] = ("الملف مرفوض: لم يجتز الفحص الأمني", "The file was refused: it did not pass the security check"),
         [ErrorCodes.FileNotKept] = ("الملف لم يعد محفوظًا", "The file is no longer kept"),
+        [ErrorCodes.StepExpired] = ("انتهت هذه الخطوة. تُعاد من بدايتها", "This step is over. It starts again from the beginning"),
     };
 
     public static string Title(string code, string language)
