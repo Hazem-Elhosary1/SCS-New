@@ -31,7 +31,8 @@ public sealed class OperatorSignInTests(SqlServerFixture sql)
         Assert.Equal(HttpStatusCode.Unauthorized, early.StatusCode);
 
         var message = Assert.Single(world.Factory.Mail.To(world.Email));
-        Assert.Contains("Smart Clinic OS", message.Subject, StringComparison.Ordinal);
+        // The sender names the platform, in the account's language; the subject is plain (spec 094).
+        Assert.Equal(("رمز التحقق", "سمارت كلينك أو إس"), (message.Subject, message.SenderName));
         Assert.DoesNotContain("http", message.TextBody, StringComparison.OrdinalIgnoreCase);
 
         using var second = await browser.OpsStepTwoAsync(world.Factory.Mail.LatestCodeFor(world.Email));

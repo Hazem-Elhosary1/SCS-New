@@ -132,6 +132,7 @@ internal sealed partial class OperatorInviteJob(
     OperatorsDbContext db,
     OperatorPasswords passwords,
     IEmailSender mail,
+    EmailRenderer renderer,
     TimeProvider clock,
     IOptions<ScsOptions> options,
     ILogger<OperatorInviteJob> logger)
@@ -165,12 +166,13 @@ internal sealed partial class OperatorInviteJob(
 
                 try
                 {
-                    await mail.SendAsync(OperatorEmails.FirstPassword(account.Email, account.Language, link, hours), cancellation)
+                    await mail.SendAsync(renderer.Render(OperatorEmails.FirstPassword(account.Email, account.Language, link, hours)), cancellation)
                         .ConfigureAwait(false);
                 }
-                catch (EmailNotSentException)
+                catch (Exception notLeft) when (notLeft is EmailNotSentException or EmailCompositionException)
                 {
-                    // Nothing is kept of a link nobody received; the next run tries again.
+                    // Nothing is kept of a link nobody received; the next run tries again, and
+                    // the others owed an invitation are not held up.
                     await transaction.RollbackAsync(cancellation).ConfigureAwait(false);
                     db.ChangeTracker.Clear();
                     LogNotSent(logger, account.Id);

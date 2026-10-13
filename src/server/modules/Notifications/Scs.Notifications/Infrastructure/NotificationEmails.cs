@@ -1,4 +1,3 @@
-using System.Net;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -16,43 +15,42 @@ using Scs.SharedKernel.Wording;
 namespace Scs.Notifications.Infrastructure;
 
 /// <summary>
-/// The one layout of every notification email (spec 008, FR-033, FR-034; research R8): one
-/// language, the event's title as its subject, the line, and a way to the same place the bell
-/// leads. It names a record by its identifier and holds nothing clinical, no password and no
-/// code. No frame draws it; it is recorded as undrawn.
+/// What a notification's email says (spec 008, FR-033, FR-034; spec 094): one language, the
+/// event's title as its subject, the line, when it happened, and a way to the same place the
+/// bell leads. Only the words are here — the layout and the footer are the template's. It names
+/// a record by its identifier and holds nothing clinical, no password and no code. The words
+/// are in specs/094-email-template/contracts/emails.md §B.
 /// </summary>
 internal static class NotificationEmails
 {
-    private const string Product = "Smart Clinic OS";
+    private const string Platform = EmailContent.Platform;
 
+    /// <param name="title">The event's title, as the bell shows it.</param>
+    /// <param name="line">The event's line; left out when empty.</param>
     /// <param name="when">When it happened, in words; left out when empty.</param>
-    public static EmailMessage Build(string to, string language, string title, string line, string address, string when = "")
+    public static EmailContent Notification(string to, string language, string title, string line, string address, string when = "")
     {
         var english = language == Words.English;
-        var open = english ? $"Open in {Product}" : $"فتح في {Product}";
-        var closing = english
+
+        // An email writes Western digits in both languages (spec 094, FR-011); the bell keeps its own.
+        title = Words.Western(title);
+        var parts = new List<EmailPart> { new EmailParagraph(Words.Western(line ?? "")) };
+
+        if (!string.IsNullOrWhiteSpace(when))
+        {
+            parts.Add(new EmailFacts([new EmailFact(english ? "When" : "الوقت", Words.Western(when))]));
+        }
+
+        parts.Add(new EmailButton(english ? $"Open in {Platform}" : $"فتح في {Platform}", address));
+        parts.Add(new EmailNote(english
             ? "This message was sent automatically; replies to it are not read."
-            : "أُرسلت هذه الرسالة تلقائيًّا، ولا تُقرأ الردود عليها.";
+            : "أُرسلت هذه الرسالة تلقائيًّا، ولا تُقرأ الردود عليها."));
 
-        var text = string.Join("\n\n", new[] { title, line, when, $"{open}: {address}", closing }.Where(part => part.Length > 0));
-
-        var html =
-            $"""
-             <!doctype html>
-             <html>
-             <body style="font-family: Arial, sans-serif; color: #1f2937;">
-               <div dir="{(english ? "ltr" : "rtl")}" lang="{language}">
-                 <h1 style="font-size: 18px;">{WebUtility.HtmlEncode(title)}</h1>
-                 <p>{WebUtility.HtmlEncode(line)}</p>
-                 <p style="color: #6b7280;">{WebUtility.HtmlEncode(when)}</p>
-                 <p><a href="{WebUtility.HtmlEncode(address)}">{WebUtility.HtmlEncode(open)}</a></p>
-                 <p style="color: #6b7280; font-size: 12px;">{WebUtility.HtmlEncode(closing)}</p>
-               </div>
-             </body>
-             </html>
-             """;
-
-        return new EmailMessage(to, title, text, html);
+        return new(
+            to, english ? "en" : "ar", title, english ? "NOTIFICATION" : "إشعار", title, parts,
+            english
+                ? $"You’re receiving this email because email notifications are on for your {Platform} account."
+                : $"وصلتك هذه الرسالة لأن تنبيهات البريد مفعّلة لحسابك في {Platform}.");
     }
 }
 
@@ -69,6 +67,7 @@ internal sealed partial class NotificationEmailJob(
     IStaffDirectory directory,
     INotificationCatalogue catalogue,
     IEmailSender mail,
+    EmailRenderer renderer,
     TimeProvider clock,
     IOptions<ScsOptions> options,
     ILogger<NotificationEmailJob> logger) : IClinicJob
@@ -122,19 +121,25 @@ internal sealed partial class NotificationEmailJob(
             {
                 var language = Words.Language(contact.Language);
                 var known = catalogue.Find(notification.EventKey);
-                var message = NotificationEmails.Build(
-                    contact.Email,
-                    language,
-                    NotificationWords.Title(known, notification.EventKey, language),
-                    NotificationWords.Line(known, notification.SubjectLabel, notification.Facts, language),
-                    options.Value.Auth.StaffAppBase() + "/" + (notification.Link ?? "").TrimStart('/'),
-                    Words.Moment(notification.RaisedAtUtc, language == Words.English));
-
                 try
                 {
+                    var message = renderer.Render(NotificationEmails.Notification(
+                        contact.Email,
+                        language,
+                        NotificationWords.Title(known, notification.EventKey, language),
+                        NotificationWords.Line(known, notification.SubjectLabel, notification.Facts, language),
+                        options.Value.Auth.StaffAppBase() + "/" + (notification.Link ?? "").TrimStart('/'),
+                        Words.Moment(notification.RaisedAtUtc, language == Words.English)));
+
                     await mail.SendAsync(message, cancellation).ConfigureAwait(false);
                     email.Settle(NotifySql.Sent, now);
                     sent++;
+                }
+                catch (EmailCompositionException)
+                {
+                    // It can never be whole, so it is not tried again and holds up nobody else's.
+                    email.Settle(NotifySql.GaveUp, now);
+                    gaveUp++;
                 }
                 catch (EmailNotSentException)
                 {

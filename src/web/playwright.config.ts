@@ -17,6 +17,8 @@ const apps = [
  */
 export default defineConfig({
   testDir: './e2e',
+  // The catalogue of emails is exported from the server's built tests before anything runs (spec 094).
+  globalSetup: './e2e/emails-setup.ts',
   fullyParallel: true,
   forbidOnly: !!process.env['CI'],
   retries: process.env['CI'] ? 1 : 0,

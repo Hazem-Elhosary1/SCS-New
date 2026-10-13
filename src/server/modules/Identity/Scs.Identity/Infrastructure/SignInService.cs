@@ -48,6 +48,7 @@ internal sealed class SignInService(
     IClinicContext clinic,
     IClinicProfile profile,
     IEmailSender mail,
+    EmailRenderer renderer,
     SessionService sessions,
     KnownDevices devices,
     TimeProvider clock,
@@ -317,7 +318,10 @@ internal sealed class SignInService(
         // one, and the earlier code stays valid for a resend (FR-014, FR-027).
         try
         {
-            await mail.SendAsync(CodeEmail.Build(account.Email, code, Auth.CodeMinutes), cancellation).ConfigureAwait(false);
+            var language = await AccountLanguage.OfAsync(db, account.Id, cancellation).ConfigureAwait(false);
+            await mail.SendAsync(
+                    renderer.Render(AccountEmails.SignInCode(account.Email, language, code, Auth.CodeMinutes)), cancellation)
+                .ConfigureAwait(false);
         }
         catch (EmailNotSentException)
         {

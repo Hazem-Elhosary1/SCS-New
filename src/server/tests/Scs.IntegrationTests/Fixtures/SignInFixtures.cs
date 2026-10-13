@@ -22,6 +22,12 @@ public sealed class FakeEmailSender : IEmailSender
     /// <summary>Addresses the mail server refuses while everyone else's mail goes through.</summary>
     public ConcurrentDictionary<string, bool> FailingFor { get; } = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Addresses whose email can never be whole (spec 094): the send fails as composing does,
+    /// which the jobs catch in the same place as a refusal by the mail server.
+    /// </summary>
+    public ConcurrentDictionary<string, bool> UncomposableFor { get; } = new(StringComparer.OrdinalIgnoreCase);
+
     public IReadOnlyCollection<EmailMessage> Sent => _sent;
 
     public Task SendAsync(EmailMessage message, CancellationToken cancellation)
@@ -31,6 +37,11 @@ public sealed class FakeEmailSender : IEmailSender
         if (Failing || FailingFor.ContainsKey(message.To))
         {
             throw new EmailNotSentException();
+        }
+
+        if (UncomposableFor.ContainsKey(message.To))
+        {
+            throw new EmailCompositionException();
         }
 
         _sent.Enqueue(message);
@@ -50,6 +61,35 @@ public sealed class FakeEmailSender : IEmailSender
         }
 
         return SignIn.CodePattern().Match(messages[^1].TextBody).Value;
+    }
+
+    /// <summary>
+    /// Spec 094, FR-036: nothing an email said is in the logs — not its subject, not the name it
+    /// was sent under, not a line of its body. At least <paramref name="atLeast"/> emails must
+    /// have been sent for the check to mean something.
+    /// </summary>
+    public void AssertNothingOfAnEmailIsIn(string logs, int atLeast = 1)
+    {
+        Assert.True(_sent.Count >= atLeast, $"Only {_sent.Count} emails were sent.");
+
+        foreach (var message in _sent)
+        {
+            // The template made it: a name it was sent under, and both forms.
+            Assert.NotEqual("", message.SenderName);
+            Assert.Contains("data-part=\"footer\"", message.HtmlBody, StringComparison.Ordinal);
+
+            var said = message.TextBody.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(line => line.Length >= 12)
+                .Append(message.Subject)
+                .Append(message.SenderName);
+
+            foreach (var words in said)
+            {
+                Assert.False(
+                    logs.Contains(words, StringComparison.Ordinal),
+                    $"The logs contain words of an email: '{words[..Math.Min(24, words.Length)]}…'");
+            }
+        }
     }
 }
 

@@ -19,6 +19,7 @@ namespace Scs.Operators.Infrastructure;
 internal sealed partial class OperatorSessions(
     OperatorsDbContext db,
     IEmailSender mail,
+    EmailRenderer renderer,
     TimeProvider clock,
     IOptions<ScsOptions> options,
     ILogger<OperatorSessions> logger) : IOperatorSessionCheck, IOperatorSessions
@@ -352,7 +353,7 @@ internal sealed partial class OperatorSessions(
         try
         {
             await mail.SendAsync(
-                    OperatorEmails.NewBrowser(account.Email, account.Language, origin.UserAgent, origin.Address, now), cancellation)
+                    renderer.Render(OperatorEmails.NewBrowser(account.Email, account.Language, origin.UserAgent, origin.Address, now)), cancellation)
                 .ConfigureAwait(false);
         }
         catch (EmailNotSentException)

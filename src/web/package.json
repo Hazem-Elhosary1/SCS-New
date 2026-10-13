@@ -12,7 +12,8 @@
     "i18n:check": "node tools/i18n-check.mjs",
     "ci": "npm run lint && npm run i18n:check && npm run test:tools && npm run test && npm run build:all",
     "e2e": "playwright test",
-    "test:tools": "node --test tools/i18n-check.spec.mjs"
+    "test:tools": "node --test tools/i18n-check.spec.mjs",
+    "emails": "node tools/emails.mjs"
   },
   "private": true,
   "packageManager": "npm@10.8.3",

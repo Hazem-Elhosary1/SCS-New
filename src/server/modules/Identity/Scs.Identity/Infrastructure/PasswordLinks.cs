@@ -114,8 +114,9 @@ internal sealed class PasswordLinks(
             {
                 await mail.SendAsync(message(AddressFor(token)), cancellation).ConfigureAwait(false);
             }
-            catch (EmailNotSentException)
+            catch (Exception notLeft) when (notLeft is EmailNotSentException or EmailCompositionException)
             {
+                // Not sent, or never whole enough to send: either way nothing is stored.
                 return LinkSendResult.NotSent;
             }
 

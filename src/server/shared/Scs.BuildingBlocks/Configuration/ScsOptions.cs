@@ -46,6 +46,8 @@ public sealed class ScsOptions
 
     public OpsOptions Ops { get; set; } = new();
 
+    public PlatformOptions Platform { get; set; } = new();
+
     /// <summary><c>SCS_VERSION</c>, set at build.</summary>
     public string Version { get; set; } = "0.0.0-dev";
 
@@ -319,6 +321,66 @@ public sealed class OpsOptions
     /// <summary>The console's address without a trailing slash.</summary>
     public string AppBase() =>
         string.IsNullOrWhiteSpace(AppUrl) ? LocalAppUrl : AppUrl.Trim().TrimEnd('/');
+}
+
+/// <summary>
+/// Who the platform is when it writes to someone (spec 094): its two names, how to reach
+/// support, and where it is. Read by the email template alone; spec 024 will make these
+/// settings, and these keys stay as the deployment's defaults.
+/// </summary>
+public sealed class PlatformOptions
+{
+    public const string LocalNameAr = "سمارت كلينك أو إس";
+    public const string LocalNameEn = "Smart Clinic OS";
+    public const string LocalSupportEmail = "support@scs.localhost";
+
+    public const int NameMaxLength = 80;
+    public const int PhoneMaxLength = 40;
+    public const int AddressMaxLength = 200;
+
+    /// <summary><c>SCS_PLATFORM__NAME_AR</c>: the platform's name in Arabic. Required outside local.</summary>
+    [ConfigurationKeyName("NAME_AR")]
+    public string NameAr { get; set; } = "";
+
+    /// <summary><c>SCS_PLATFORM__NAME_EN</c>: the platform's name in English. Required outside local.</summary>
+    [ConfigurationKeyName("NAME_EN")]
+    public string NameEn { get; set; } = "";
+
+    /// <summary><c>SCS_PLATFORM__SUPPORT_EMAIL</c>: shown in every email's footer. Required outside local.</summary>
+    [ConfigurationKeyName("SUPPORT_EMAIL")]
+    public string SupportEmail { get; set; } = "";
+
+    /// <summary><c>SCS_PLATFORM__SUPPORT_PHONE</c>: beside the support email; left out when empty.</summary>
+    [ConfigurationKeyName("SUPPORT_PHONE")]
+    public string SupportPhone { get; set; } = "";
+
+    /// <summary><c>SCS_PLATFORM__ADDRESS_AR</c>: the postal address in Arabic; left out when neither is set.</summary>
+    [ConfigurationKeyName("ADDRESS_AR")]
+    public string AddressAr { get; set; } = "";
+
+    /// <summary><c>SCS_PLATFORM__ADDRESS_EN</c>: the postal address in English; left out when neither is set.</summary>
+    [ConfigurationKeyName("ADDRESS_EN")]
+    public string AddressEn { get; set; } = "";
+
+    /// <summary>The platform's name in a language; the design's names where none is set (local only).</summary>
+    public string Name(string language)
+    {
+        var english = language == "en";
+        var set = (english ? NameEn : NameAr).Trim();
+        return set.Length > 0 ? set : english ? LocalNameEn : LocalNameAr;
+    }
+
+    public string Support() =>
+        string.IsNullOrWhiteSpace(SupportEmail) ? LocalSupportEmail : SupportEmail.Trim();
+
+    public string Phone() => SupportPhone.Trim();
+
+    /// <summary>The address of a language, else the other's, else nothing.</summary>
+    public string Address(string language)
+    {
+        var (own, other) = language == "en" ? (AddressEn, AddressAr) : (AddressAr, AddressEn);
+        return own.Trim().Length > 0 ? own.Trim() : other.Trim();
+    }
 }
 
 /// <summary>Where file content is kept (spec 009).</summary>

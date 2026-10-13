@@ -27,6 +27,7 @@ internal sealed class AccountHandover(
     PasswordLinks links,
     PasswordSetter setter,
     IEmailSender mail,
+    EmailRenderer renderer,
     IClinicProfile profile,
     TimeProvider clock,
     IOptions<ScsOptions> options) : IAccountHandover
@@ -82,6 +83,7 @@ internal sealed class AccountHandover(
         }
 
         var actor = staff.IsSignedIn ? staff.AccountId : (Guid?)null;
+        var language = await AccountLanguage.OfAsync(db, accountId, cancellation).ConfigureAwait(false);
 
         if (method == HandoverMethods.Link)
         {
@@ -93,7 +95,7 @@ internal sealed class AccountHandover(
                     accountId,
                     PasswordLinkKinds.Reset,
                     enforceResetCaps: false,
-                    address => AccountEmails.ResetLink(account.Email, address, Auth.ResetLinkMinutes),
+                    address => renderer.Render(AccountEmails.PasswordReset(account.Email, language, address, Auth.ResetLinkMinutes)),
                     cancellation).ConfigureAwait(false) == LinkSendResult.Sent;
 
             db.Events.Add(SignInEvent.Record(
@@ -123,7 +125,7 @@ internal sealed class AccountHandover(
             throw new ScsProblemException(StatusCodes.Status404NotFound, ErrorCodes.NotFound);
         }
 
-        var told = await TrySendAsync(AccountEmails.AccessReset(account.Email, links.SignInAddress), cancellation)
+        var told = await TrySendAsync(AccountEmails.AccessReset(account.Email, language, links.SignInAddress), cancellation)
             .ConfigureAwait(false);
         return new AccountHandoverResult(accountId, told, generated);
     }
@@ -151,7 +153,9 @@ internal sealed class AccountHandover(
 
         var own = await profile.GetOwnAsync(cancellation).ConfigureAwait(false);
         var sent = await TrySendAsync(
-            AccountEmails.AccountCreated(EmailAddress.Normalize(email), own.NameAr, own.NameEn, links.SignInAddress),
+            AccountEmails.AccountCreated(
+                EmailAddress.Normalize(email), await AccountLanguage.OfAsync(db, id, cancellation).ConfigureAwait(false),
+                own.NameAr, own.NameEn, links.SignInAddress),
             cancellation).ConfigureAwait(false);
 
         return (id, sent);
@@ -160,25 +164,26 @@ internal sealed class AccountHandover(
     private async Task<bool> SendInvitationAsync(Guid accountId, string email, CancellationToken cancellation)
     {
         var own = await profile.GetOwnAsync(cancellation).ConfigureAwait(false);
+        var language = await AccountLanguage.OfAsync(db, accountId, cancellation).ConfigureAwait(false);
         var result = await links.SendAsync(
             accountId,
             PasswordLinkKinds.NewAccount,
             enforceResetCaps: false,
-            address => AccountEmails.Invitation(
-                email, address, own.NameAr, own.NameEn, links.SignInAddress, Auth.InviteLinkHours),
+            address => renderer.Render(AccountEmails.Invitation(
+                email, language, address, own.NameAr, own.NameEn, Auth.InviteLinkHours)),
             cancellation).ConfigureAwait(false);
 
         return result == LinkSendResult.Sent;
     }
 
-    private async Task<bool> TrySendAsync(EmailMessage message, CancellationToken cancellation)
+    private async Task<bool> TrySendAsync(EmailContent content, CancellationToken cancellation)
     {
         try
         {
-            await mail.SendAsync(message, cancellation).ConfigureAwait(false);
+            await mail.SendAsync(renderer.Render(content), cancellation).ConfigureAwait(false);
             return true;
         }
-        catch (EmailNotSentException)
+        catch (Exception notLeft) when (notLeft is EmailNotSentException or EmailCompositionException)
         {
             return false;
         }

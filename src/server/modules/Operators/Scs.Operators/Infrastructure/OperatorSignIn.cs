@@ -253,6 +253,7 @@ internal sealed class OperatorCodes(
     OperatorsDbContext db,
     OperatorSessions sessions,
     IEmailSender mail,
+    EmailRenderer renderer,
     TimeProvider clock,
     IOptions<ScsOptions> options)
 {
@@ -275,7 +276,7 @@ internal sealed class OperatorCodes(
         try
         {
             await mail.SendAsync(
-                    OperatorEmails.Code(account.Email, account.Language, code, Auth.CodeMinutes, purpose), cancellation)
+                    renderer.Render(OperatorEmails.Code(account.Email, account.Language, code, Auth.CodeMinutes, purpose)), cancellation)
                 .ConfigureAwait(false);
         }
         catch (EmailNotSentException)

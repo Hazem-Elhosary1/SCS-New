@@ -16,7 +16,9 @@ the platform is deployed, by whoever deploys it.
    ```
 
    It prints `Operator: invited.` and nothing secret. It never shows, takes or sets a password.
-3. Within a minute the platform sends the invitation: a link, good for 72 hours, where the
+3. Within a minute the platform sends the invitation — an email with the subject «دعوة إلى لوحة
+   التشغيل» ("Invitation to the Ops Console" for an account in English), sent under the
+   platform's name: a link, good for 72 hours, where the
    operator chooses their password. If the email cannot leave, it stays owed and is tried again
    every minute; the platform's log says so, naming the account's identifier only.
 4. The operator opens the link, chooses a password, and signs in with it and the code sent by
