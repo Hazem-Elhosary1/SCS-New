@@ -71,7 +71,8 @@ public sealed class EmailTests(SqlServerFixture sql)
 
         // Nobody chose Arabic: it is what a person who chose nothing reads.
         var toArabic = world.Factory.Mail.To(arabicEmail).Single(m => m.Subject == "حدث لصاحبه");
-        Assert.Contains("التذكرة T-1046 · Printer offline · ٣", toArabic.TextBody, StringComparison.Ordinal);
+        // An email writes Western digits in both languages (spec 094, FR-011).
+        Assert.Contains("التذكرة T-1046 · Printer offline · 3", toArabic.TextBody, StringComparison.Ordinal);
         Assert.Contains($"{ApiFactory.StaffApp}/tickets/{ticket.Id}", toArabic.TextBody, StringComparison.Ordinal);
         Assert.DoesNotContain("Event for its owner", toArabic.TextBody + toArabic.HtmlBody, StringComparison.Ordinal);
         Assert.Contains("dir=\"rtl\"", toArabic.HtmlBody, StringComparison.Ordinal);
@@ -201,6 +202,39 @@ public sealed class EmailTests(SqlServerFixture sql)
     }
 
     [Fact]
+    public async Task An_email_that_cannot_be_composed_is_given_up_and_holds_up_nobody_elses()
+    {
+        // Spec 094, T051: composing used to happen outside what the job catches, so one such
+        // email failed the job on every run and nothing after it in the batch was ever sent.
+        using var world = await WorldAsync();
+        var (first, firstEmail) = await world.AccountAsync();
+        var (second, secondEmail) = await world.AccountAsync();
+
+        Assert.Null(await world.Factory.RaiseAsync(world.Clinic, new RaisedEvent(TestEvents.Unsendable, Notify.Ticket("T-BAD"), Owners: [first])));
+        world.Factory.Clock.Advance(TimeSpan.FromSeconds(1));
+        Assert.Null(await world.Factory.RaiseAsync(world.Clinic, ToOwner(second, "T-GOOD")));
+
+        await world.Factory.SendNotificationEmailsAsync(world.Clinic);
+
+        Assert.Empty(world.Factory.Mail.To(firstEmail));
+        Assert.Single(world.Factory.Mail.To(secondEmail));
+
+        var stored = await sql.Main.NotificationsAsync(world.Clinic);
+        Assert.Equal("gave-up", stored.Single(n => n.SubjectLabel == "T-BAD").EmailState);
+        Assert.Equal("sent", stored.Single(n => n.SubjectLabel == "T-GOOD").EmailState);
+
+        // It is not tried again, and the bell has it all the same.
+        var sent = world.Factory.Mail.Sent.Count;
+        world.Factory.Clock.Advance(TimeSpan.FromHours(2));
+        await world.Factory.SendNotificationEmailsAsync(world.Clinic);
+        Assert.Equal(sent, world.Factory.Mail.Sent.Count);
+
+        // The log says how many, and nothing of what the email would have said.
+        Assert.Contains(world.Factory.Logs.Lines, line => line.Contains("Notification emails:", StringComparison.Ordinal) && line.Contains("\"gaveUp\":1", StringComparison.Ordinal));
+        Assert.DoesNotContain("T-BAD", world.Factory.Logs.All, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Neither_an_address_nor_anything_secret_is_stored_or_logged()
     {
         const string password = "Zzq-Secret-Pass-9!";
@@ -227,15 +261,18 @@ public sealed class EmailTests(SqlServerFixture sql)
             Assert.DoesNotContain(secret, world.Factory.Logs.All, StringComparison.Ordinal);
         }
 
+        world.Factory.Mail.AssertNothingOfAnEmailIsIn(world.Factory.Logs.All);
+
         // No column that could hold an address or a text of the email exists at all.
         Assert.DoesNotContain(columns, name => name.Contains("Email", StringComparison.OrdinalIgnoreCase)
                                                || name.Contains("Address", StringComparison.OrdinalIgnoreCase)
                                                || name.Contains("Body", StringComparison.OrdinalIgnoreCase));
 
-        // And the email itself holds no password: only the title, the line, the moment and the way in.
+        // And the email itself holds no password: only the title, the line, the moment and the way
+        // in, then the note that replies are not read and the template's footer.
         var email = Assert.Single(world.Factory.Mail.Sent, m => m.Subject == "حدث لصاحبه");
         Assert.DoesNotContain(password, email.TextBody + email.HtmlBody, StringComparison.Ordinal);
-        Assert.Equal(5, email.TextBody.Split("\n\n").Length);
+        Assert.Equal(6, email.TextBody.Split("\n\n").Length);
     }
 
     [Fact]

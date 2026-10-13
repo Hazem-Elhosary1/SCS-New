@@ -30,6 +30,7 @@ internal sealed partial class OperatorPasswords(
     OperatorCodes codes,
     PasswordLinkTokens tokens,
     IEmailSender mail,
+    EmailRenderer renderer,
     TimeProvider clock,
     IOptions<ScsOptions> options,
     ILogger<OperatorPasswords> logger)
@@ -75,7 +76,7 @@ internal sealed partial class OperatorPasswords(
         try
         {
             await mail.SendAsync(
-                    OperatorEmails.ResetLink(account.Email, account.Language, link, Ops.ResetLinkMinutes), cancellation)
+                    renderer.Render(OperatorEmails.ResetLink(account.Email, account.Language, link, Ops.ResetLinkMinutes)), cancellation)
                 .ConfigureAwait(false);
         }
         catch (EmailNotSentException)

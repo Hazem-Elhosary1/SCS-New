@@ -28,3 +28,6 @@ Thumbs.db
 *.swp
 .idea/
 .vscode/
+
+# The exported catalogue of emails (spec 094)
+src/web/e2e/.emails/

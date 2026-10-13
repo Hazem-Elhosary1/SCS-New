@@ -246,7 +246,7 @@ The console of the people who run the platform is its own application, at
 and nothing of a clinic with an operator's.
 
 - **The made-up operator.** Seeding invites `operator@heta.example`. Within a minute the local
-  mailbox (`http://localhost:8025`) holds an email "انضم إلى لوحة التشغيل" with a link, good for
+  mailbox (`http://localhost:8025`) holds an email "دعوة إلى لوحة التشغيل" with a link, good for
   72 hours, to choose a password. Nobody is given a password: the operator chooses theirs.
 - **Another operator.** From `src/server`, with the variables of `deploy/compose/.env` set:
 
@@ -268,6 +268,40 @@ and nothing of a clinic with an operator's.
 
 Operators have no roles yet (spec 011): every operator sees the frame, the home and their own
 profile, and is shown as «مسؤول عام».
+
+### The emails (spec 094)
+
+Every email is laid out by one template, in the recipient's language only, with a text-only
+form beside it. Locally they arrive in the mailbox at `http://localhost:8025`, sent under the
+platform's name.
+
+- **Looking at all of them.** After `dotnet build src/server/Scs.sln`, from `src/web`:
+
+  ```bash
+  npm run emails
+  ```
+
+  exports the catalogue into `src/web/e2e/.emails/` and opens its index: every email the
+  platform can send, with sample values, in Arabic, in English and as text only. Nothing of the
+  running platform serves it. `npx playwright test emails` checks each one as an eye would.
+- **The platform's identity.** The footer and the sender's name are read from configuration:
+
+  | Variable | Required outside local | Local value |
+  |---|---|---|
+  | `SCS_PLATFORM__NAME_AR` | yes | سمارت كلينك أو إس |
+  | `SCS_PLATFORM__NAME_EN` | yes | Smart Clinic OS |
+  | `SCS_PLATFORM__SUPPORT_EMAIL` | yes | support@scs.localhost |
+  | `SCS_PLATFORM__SUPPORT_PHONE` | no | (not shown) |
+  | `SCS_PLATFORM__ADDRESS_AR`, `SCS_PLATFORM__ADDRESS_EN` | no | (not shown) |
+
+  A line that is not set is left out of the footer; an address set in one language is shown in
+  both. The address and phone in the design's frames are samples: the real ones are the
+  owner's to supply. Spec 024 will make these values settings of the operators console.
+- **Where a link may lead.** `SCS_AUTH__STAFF_APP_URL` and `SCS_OPS__APP_URL` are what the
+  emails' buttons open, so each must be `https://…`, or — on a developer's machine only —
+  `http://localhost:…` (or `127.0.0.1`). A plain `http://` address on another machine is
+  refused when the platform starts, with the variable named, rather than when an email is sent.
+- **Adding one.** See `docs/adding-an-email.md`.
 
 ### Check the "not ready" behaviour
 

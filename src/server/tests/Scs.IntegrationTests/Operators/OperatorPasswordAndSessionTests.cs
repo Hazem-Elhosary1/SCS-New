@@ -603,6 +603,7 @@ public sealed class OperatorProfileTests(SqlServerFixture sql)
         Assert.DoesNotContain(token, logs, StringComparison.Ordinal);
         Assert.DoesNotContain(world.Email, logs, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain($"\"{code}\"", logs, StringComparison.Ordinal);
+        world.Factory.Mail.AssertNothingOfAnEmailIsIn(logs, atLeast: 2);
 
         var facts = (await world.RecordsAsync()).Select(r => r.Facts ?? "").ToList();
         Assert.DoesNotContain(facts, f => f.Contains(world.Email, StringComparison.OrdinalIgnoreCase) || f.Contains(code, StringComparison.Ordinal));
@@ -716,5 +717,45 @@ public sealed class OperatorConvergenceTests(SqlServerFixture sql)
             .ToListAsync());
         Assert.Contains(unowned, facts => facts!.StartsWith(OperatorInvite.NothingToWithdraw + ";", StringComparison.Ordinal));
         Assert.DoesNotContain(unowned, facts => facts!.Contains(nobody, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task An_invitation_that_cannot_be_composed_stays_owed_and_holds_up_no_other()
+    {
+        // Spec 094, T051 and T055: the job treats an email that can never be whole like one the
+        // mail server refused — nothing is kept of a link nobody received, and the others owed
+        // an invitation receive theirs in the same run.
+        using var world = await OpsWorld.CreateAsync(sql);
+        var unlucky = $"unlucky-{Guid.NewGuid():N}@heta.example";
+        var lucky = $"lucky-{Guid.NewGuid():N}@heta.example";
+
+        await world.Factory.InviteAsync("منى يوسف", unlucky);
+        await world.Factory.InviteAsync("أحمد سامي", lucky);
+        world.Factory.Mail.UncomposableFor[unlucky] = true;
+
+        await world.Factory.SendInvitationsAsync();
+
+        Assert.Empty(world.Factory.Mail.To(unlucky));
+        Assert.Single(world.Factory.Mail.To(lucky));
+
+        var (owed, links, id) = await world.Factory.OpsAsync(db =>
+        {
+            var account = db.Operators.Single(o => o.Email == unlucky);
+            return Task.FromResult((account.InvitationOwedSinceUtc is not null, db.Links.Count(l => l.OperatorId == account.Id), account.Id));
+        });
+        Assert.True(owed);
+        Assert.Equal(0, links);
+        Assert.Equal(1, await world.Factory.OpsAsync(db => Task.FromResult(db.Links.Count(l => db.Operators.Any(o => o.Email == lucky && o.Id == l.OperatorId)))));
+
+        // The log names the account by its identifier and says nothing else of it.
+        var logs = world.Factory.Logs.All;
+        Assert.Contains(world.Factory.Logs.Lines, line => line.Contains("stays owed", StringComparison.Ordinal) && line.Contains(id.ToString(), StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(unlucky, logs, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("منى يوسف", logs, StringComparison.Ordinal);
+
+        // Once it can be made, the next run sends it.
+        world.Factory.Mail.UncomposableFor.Clear();
+        await world.Factory.SendInvitationsAsync();
+        Assert.Contains("/password/first#token=", Assert.Single(world.Factory.Mail.To(unlucky)).TextBody, StringComparison.Ordinal);
     }
 }

@@ -41,6 +41,25 @@ public static class Words
             string.Concat(Convert.ToString(value, CultureInfo.InvariantCulture)!.Select(digit => (char)('٠' + (digit - '0'))));
     }
 
+    /// <summary>
+    /// The same words with Western digits, as every email writes them in both languages
+    /// (spec 094, FR-011): «١١ أكتوبر ٢٠٢٦» becomes «11 أكتوبر 2026». Both ranges of Arabic
+    /// digits are turned: ٠–٩ and the eastern ۰–۹.
+    /// </summary>
+    public static string Western(string words)
+    {
+        ArgumentNullException.ThrowIfNull(words);
+        var span = words.AsSpan();
+        return span.IndexOfAnyInRange('٠', '٩') < 0 && span.IndexOfAnyInRange('۰', '۹') < 0
+            ? words
+            : string.Concat(words.Select(letter => letter switch
+            {
+                >= '٠' and <= '٩' => (char)('0' + (letter - '٠')),
+                >= '۰' and <= '۹' => (char)('0' + (letter - '۰')),
+                _ => letter,
+            }));
+    }
+
     /// <summary>A whole number as the reader's language writes it: Arabic-Indic digits in Arabic.</summary>
     public static string Number(int value, bool english)
     {

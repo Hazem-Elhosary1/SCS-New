@@ -81,6 +81,7 @@ internal sealed partial class AccountEmailJob(
     IdentityDbContext db,
     PasswordLinks links,
     IEmailSender mail,
+    EmailRenderer renderer,
     TimeProvider clock,
     IOptions<ScsOptions> options,
     ILogger<AccountEmailJob> logger) : IClinicJob
@@ -157,15 +158,18 @@ internal sealed partial class AccountEmailJob(
             return AccountEmailOutcomes.SkippedState;
         }
 
+        var language = await AccountLanguage.OfAsync(db, accountId, cancellation).ConfigureAwait(false);
+
         if (kind == AccountEmailKinds.PasswordChanged)
         {
             try
             {
-                await mail.SendAsync(AccountEmails.PasswordChanged(account.Email, clock.GetUtcNow()), cancellation)
+                await mail.SendAsync(
+                        renderer.Render(AccountEmails.PasswordChanged(account.Email, language, clock.GetUtcNow())), cancellation)
                     .ConfigureAwait(false);
                 return AccountEmailOutcomes.Sent;
             }
-            catch (EmailNotSentException)
+            catch (Exception notLeft) when (notLeft is EmailNotSentException or EmailCompositionException)
             {
                 return null;
             }
@@ -176,7 +180,7 @@ internal sealed partial class AccountEmailJob(
             accountId,
             PasswordLinkKinds.Reset,
             enforceResetCaps: true,
-            address => AccountEmails.ResetLink(account.Email, address, minutes),
+            address => renderer.Render(AccountEmails.PasswordReset(account.Email, language, address, minutes)),
             cancellation).ConfigureAwait(false);
 
         return result switch

@@ -33,8 +33,10 @@ public sealed class ActivationTests(SqlServerFixture sql)
 
         var message = Assert.Single(world.Factory.Mail.To(email));
         Assert.Contains("عيادة تجريبية", message.TextBody, StringComparison.Ordinal);
-        Assert.Contains("Test clinic", message.TextBody, StringComparison.Ordinal);
-        Assert.Contains($"{ApiFactory.StaffApp}/sign-in", message.TextBody, StringComparison.Ordinal);
+
+        // One language, the recipient's (spec 094): a new account has kept none, so Arabic.
+        Assert.DoesNotContain("Test clinic", message.TextBody + message.Subject, StringComparison.Ordinal);
+        Assert.Contains("dir=\"rtl\"", message.HtmlBody, StringComparison.Ordinal);
         Assert.Contains("72", message.TextBody, StringComparison.Ordinal);
         var token = world.Factory.Mail.LatestLinkTokenFor(email);
 
