@@ -59,10 +59,21 @@ internal sealed class CurrentOperator(IHttpContextAccessor http) : ICurrentOpera
             : throw new ScsProblemException(StatusCodes.Status401Unauthorized, ErrorCodes.Unauthenticated);
 }
 
-/// <summary>Marks a route of the operators console that any signed-in operator may call.</summary>
+/// <summary>
+/// What a route of the operators console declares about who may call it (spec 011, FR-003):
+/// the permission its caller's role must hold, or — for the short list of things an operator
+/// does to their own account — none.
+/// </summary>
 public sealed class OperatorRouteMetadata
 {
-    public static OperatorRouteMetadata Instance { get; } = new();
+    internal OperatorRouteMetadata(string? permission) => Permission = permission;
+
+    /// <summary>The code needed; null for a route of the operator's own account.</summary>
+    public string? Permission { get; }
+
+    public bool IsOwnAccount => Permission is null;
+
+    public static OperatorRouteMetadata OwnAccount { get; } = new(null);
 }
 
 /// <summary>
@@ -156,6 +167,7 @@ public static class OperatorSessionExtensions
         services.TryAddSingleton<OperatorCookies>();
         services.AddHttpContextAccessor();
         services.TryAddScoped<ICurrentOperator, CurrentOperator>();
+        services.TryAddScoped<IOperatorAccess, OperatorAccess>();
 
         services
             .AddAuthentication()
@@ -163,21 +175,5 @@ public static class OperatorSessionExtensions
                 OperatorSessionAuthenticationHandler.SchemeName, _ => { });
 
         return services;
-    }
-
-    /// <summary>
-    /// Any signed-in operator may call the route, and nobody else: it is authenticated by the
-    /// operators' scheme alone. Until operators have roles (spec 011) this is the only
-    /// declaration a route of the console can make besides "anyone".
-    /// </summary>
-    public static TBuilder OperatorsOnly<TBuilder>(this TBuilder builder)
-        where TBuilder : IEndpointConventionBuilder
-    {
-        builder.RequireAuthorization(policy => policy
-            .AddAuthenticationSchemes(OperatorSessionAuthenticationHandler.SchemeName)
-            .RequireAuthenticatedUser()
-            .RequireClaim(OperatorClaims.OperatorId));
-        builder.WithMetadata(OperatorRouteMetadata.Instance);
-        return builder;
     }
 }

@@ -14,6 +14,7 @@ import { OpsAuthService, OpsCodeStep, OpsCodes } from '../auth/ops-auth.service'
 import { passwordRules } from '../password/password.pages';
 import { CodeProblem, CodeStepComponent } from '../sign-in/code-step.component';
 import { initialsOf } from '../shell/ops-shell.component';
+import { opsAgo } from '../i18n/ops-format';
 
 interface RecentSession {
   readonly device: string;
@@ -32,19 +33,9 @@ interface Profile {
   readonly sessions: readonly RecentSession[];
 }
 
-/** "Two hours ago", as the design writes it: «منذ ساعتين», in the reader's digits. */
+/** "Two hours ago", as the design writes it: «منذ ساعتين», in Western digits (spec 011, FR-049). */
 export function agoLabel(from: string, now: number, language: ScsLanguage): string {
-  const seconds = Math.max(0, Math.round((now - Date.parse(from)) / 1000));
-  const [value, unit] =
-    seconds < 3600
-      ? [Math.max(1, Math.round(seconds / 60)), 'minute' as const]
-      : seconds < 86_400
-        ? [Math.round(seconds / 3600), 'hour' as const]
-        : [Math.round(seconds / 86_400), 'day' as const];
-  const text = new Intl.RelativeTimeFormat(language === 'ar' ? 'ar-EG' : 'en-GB', {
-    numeric: 'always',
-  }).format(-value, unit);
-  return language === 'ar' ? text.replace(/^قبل\s/u, 'منذ ') : text;
+  return opsAgo(from, now, language);
 }
 
 /**

@@ -1,12 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Scs.BuildingBlocks.Audit;
 using Scs.BuildingBlocks.Configuration;
 using Scs.BuildingBlocks.Jobs;
 using Scs.BuildingBlocks.Mail;
 using Scs.BuildingBlocks.Security;
 using Scs.Operators.Domain;
 using Scs.Operators.Infrastructure.Persistence;
+using Scs.SharedKernel.Access;
+using Scs.SharedKernel.Audit;
 
 namespace Scs.Operators.Infrastructure;
 
@@ -49,7 +52,10 @@ internal sealed class OperatorInvite(OperatorsDbContext db, TimeProvider clock)
         var again = account is not null;
         if (account is null)
         {
-            account = Operator.Invite(fullName, normalized, now);
+            // Whoever the deployment tool invites is «مسؤول عام»: it is how the first operator
+            // comes to exist, and the way back in when no super admin can sign in (spec 011, FR-027a).
+            account = Operator.Invite(
+                fullName, normalized, OperatorPermissions.SystemRoles.IdOf(OperatorPermissions.SystemRoles.SuperAdmin), now);
             db.Operators.Add(account);
         }
 
@@ -69,6 +75,21 @@ internal sealed class OperatorInvite(OperatorsDbContext db, TimeProvider clock)
             db.Records.Add(SignInRecord.Of(
                 SignInRecordKinds.InvitedByDeployment, account.Id, now, null, null, OpsOrigin.None.TraceId, facts: ranBy));
             await db.SaveChangesAsync(cancellation).ConfigureAwait(false);
+
+            // And in the platform's trail, beside the invitations operators make (spec 011, FR-027a):
+            // nobody is signed in here, so the actor is the platform itself.
+            await db.RecordForPlatformAsync(
+                    new AuditRecord(
+                        AuditActions.OperatorInvited,
+                        new AuditTarget(AuditTarget.Operator, account.Id, account.FullName),
+                        new Dictionary<string, object?>(StringComparer.Ordinal)
+                        {
+                            ["systemRole"] = OperatorPermissions.SystemRoles.SuperAdmin,
+                            ["sent"] = true,
+                            ["by"] = "deployment",
+                        }),
+                    cancellation)
+                .ConfigureAwait(false);
             await transaction.CommitAsync(cancellation).ConfigureAwait(false);
         }
 
@@ -164,10 +185,17 @@ internal sealed partial class OperatorInviteJob(
                 account.InvitationSent();
                 await db.SaveChangesAsync(cancellation).ConfigureAwait(false);
 
+                // Who invited and in what role, when an operator did (spec 011, FR-032): the
+                // role by the name it has in the invited person's language.
+                var role = await db.Roles.AsNoTracking().Where(r => r.Id == account.RoleId)
+                    .Select(r => new { r.Name, r.SystemKey }).SingleAsync(cancellation).ConfigureAwait(false);
+                var content = OperatorEmails.FirstPassword(
+                    account.Email, account.Language, link, hours, account.InvitedByName,
+                    RoleRef.NameIn(role.SystemKey, role.Name, account.Language));
+
                 try
                 {
-                    await mail.SendAsync(renderer.Render(OperatorEmails.FirstPassword(account.Email, account.Language, link, hours)), cancellation)
-                        .ConfigureAwait(false);
+                    await mail.SendAsync(renderer.Render(content), cancellation).ConfigureAwait(false);
                 }
                 catch (Exception notLeft) when (notLeft is EmailNotSentException or EmailCompositionException)
                 {

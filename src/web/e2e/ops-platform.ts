@@ -95,6 +95,8 @@ export interface OpsPlatform {
   /** Calls that carried the background header. */
   background: string[];
   lastHeaders: Record<string, string>;
+  /** What the operator's role holds now (spec 011); the session read returns it. */
+  permissions?: string[];
 }
 
 async function fulfil(route: Route, answer: OpsAnswer): Promise<void> {
@@ -146,10 +148,13 @@ export async function opsPlatform(page: Page, start: Partial<OpsPlatform> = {}):
   };
 
   const pick = (answer: OpsAnswer | (() => OpsAnswer)) => (typeof answer === 'function' ? answer() : answer);
+  // The role's codes are set by the team's fake (spec 011, `ops-team-platform.ts`); without it
+  // the session names none, as before roles existed.
   const described = () => ({
     operator: state.operator,
     expiresAt: '2030-01-01T12:00:00Z',
     idleMinutes: state.idleMinutes,
+    permissions: state.permissions ?? [],
   });
 
   const on = async (pattern: string, handler: (route: Route) => Promise<void>) => {

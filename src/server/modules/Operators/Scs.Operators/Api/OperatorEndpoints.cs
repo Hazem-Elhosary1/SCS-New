@@ -96,10 +96,10 @@ internal static class OperatorEndpoints
             .AllowAnonymous().HandlesOwnSession().RecordsNothing(OwnRecord)
             .WithName("OpsSignOut");
 
-        auth.MapGet("/session", GetSessionAsync).OperatorsOnly().WithName("OpsGetSession");
+        auth.MapGet("/session", GetSessionAsync).OperatorOwnAccount().WithName("OpsGetSession");
 
         auth.MapPost("/sign-out-everywhere", SignOutEverywhereAsync)
-            .OperatorsOnly().RecordsNothing(OwnRecord)
+            .OperatorOwnAccount().RecordsNothing(OwnRecord)
             .WithName("OpsSignOutEverywhere");
 
         var password = ops.MapGroup("/password");
@@ -108,11 +108,11 @@ internal static class OperatorEndpoints
         password.MapPost("/set", SetPasswordAsync).Open().WithName("OpsSetPassword");
 
         var profile = ops.MapGroup("/profile");
-        profile.MapGet("", GetProfileAsync).OperatorsOnly().WithName("OpsGetProfile");
-        profile.MapPost("/password", BeginChangeAsync).OperatorsOnly().RecordsNothing(OwnRecord).WithName("OpsChangePassword");
-        profile.MapPost("/password/confirm", ConfirmChangeAsync).OperatorsOnly().RecordsNothing(OwnRecord).WithName("OpsConfirmPasswordChange");
-        profile.MapPost("/password/resend", ResendChangeAsync).OperatorsOnly().RecordsNothing(OwnRecord).WithName("OpsResendPasswordChange");
-        profile.MapPost("/password/cancel", CancelChangeAsync).OperatorsOnly().RecordsNothing(OwnRecord).WithName("OpsCancelPasswordChange");
+        profile.MapGet("", GetProfileAsync).OperatorOwnAccount().WithName("OpsGetProfile");
+        profile.MapPost("/password", BeginChangeAsync).OperatorOwnAccount().RecordsNothing(OwnRecord).WithName("OpsChangePassword");
+        profile.MapPost("/password/confirm", ConfirmChangeAsync).OperatorOwnAccount().RecordsNothing(OwnRecord).WithName("OpsConfirmPasswordChange");
+        profile.MapPost("/password/resend", ResendChangeAsync).OperatorOwnAccount().RecordsNothing(OwnRecord).WithName("OpsResendPasswordChange");
+        profile.MapPost("/password/cancel", CancelChangeAsync).OperatorOwnAccount().RecordsNothing(OwnRecord).WithName("OpsCancelPasswordChange");
 
         return v1;
     }

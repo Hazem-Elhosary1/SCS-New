@@ -36,6 +36,29 @@ public class CatalogueFileTests
             + "dotnet run --project src/server/tools/Scs.Migrator -- catalogue " + PermissionCatalogueFile.RepositoryPath);
     }
 
+    /// <summary>Spec 011: the operators' console reads its own catalogue the same way.</summary>
+    [Fact]
+    public void The_operators_checked_in_file_is_what_their_catalogue_writes()
+    {
+        string? found = null;
+        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null && found is null; directory = directory.Parent)
+        {
+            var candidate = Path.Combine([directory.FullName, .. OperatorPermissionsFile.RepositoryPath.Split('/')]);
+            found = File.Exists(candidate) ? candidate : null;
+        }
+
+        const string How = "Regenerate it: dotnet run --project src/server/tools/Scs.Migrator -- ops-catalogue " + OperatorPermissionsFile.RepositoryPath;
+        Assert.True(found is not null, $"{OperatorPermissionsFile.RepositoryPath} was not found. {How}");
+        Assert.True(
+            File.ReadAllText(found!).ReplaceLineEndings("\n") == OperatorPermissionsFile.Write(),
+            "The console's catalogue differs from the server's. " + How);
+
+        using var document = JsonDocument.Parse(OperatorPermissionsFile.Write());
+        Assert.Equal(9, document.RootElement.GetProperty("groups").GetArrayLength());
+        Assert.Equal(28, document.RootElement.GetProperty("permissions").GetArrayLength());
+        Assert.Equal(3, document.RootElement.GetProperty("systemRoles").GetArrayLength());
+    }
+
     [Fact]
     public void The_file_carries_every_group_and_permission_with_both_names()
     {

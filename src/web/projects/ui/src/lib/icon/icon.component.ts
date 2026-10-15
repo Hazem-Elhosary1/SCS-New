@@ -52,7 +52,8 @@ export type ScsIconName =
   | 'upload'
   | 'download'
   | 'image'
-  | 'paperclip';
+  | 'paperclip'
+  | 'pencil';
 
 /**
  * The line icons of the design system, drawn inline so they take the colour of the text around
@@ -293,6 +294,10 @@ export type ScsIconName =
         @case ('plus') {
           <path d="M5 12h14" />
           <path d="M12 5v14" />
+        }
+        @case ('pencil') {
+          <path d="M12 20h9" />
+          <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
         }
         @case ('trash') {
           <path d="M3 6h18" />

@@ -22,6 +22,13 @@ internal sealed class OperatorEmailSamples : IEmailSamples
         .. Both("Code", language => OperatorEmails.Code(To, language, "742906", 10, ChallengePurposes.PasswordChange), "change"),
         .. Both("ResetLink", language => OperatorEmails.ResetLink(To, language, $"{Ops}/password/reset#t=v1.sample-token-of-a-reset-link", 30)),
         .. Both("FirstPassword", language => OperatorEmails.FirstPassword(To, language, $"{Ops}/password/first#t=v1.sample-token-of-an-invitation", 72)),
+        .. Both(
+            "FirstPassword",
+            language => OperatorEmails.FirstPassword(
+                To, language, $"{Ops}/password/first#t=v1.sample-token-of-an-invitation", 72,
+                language == "en" ? "Hazem Elhosary" : "حازم الحصري",
+                language == "en" ? "Billing Manager" : "مسؤول الفوترة"),
+            "invited"),
         .. Both("NewBrowser", language => OperatorEmails.NewBrowser(To, language, Chrome, "41.233.14.89", When)),
     ];
 

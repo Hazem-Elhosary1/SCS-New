@@ -26,6 +26,9 @@ public static class PlatformWideTables
         ("ops.PasswordLink", "Operators' first-password and reset links: a hash and times."),
         ("ops.KnownBrowser", "Browsers an operator has signed in from: a hash of a random mark and two times."),
         ("ops.SignInRecord", "Security events of operators' sign-in: identifiers, addresses and times; kept as written, removed by age."),
+        ("ops.Role", "The roles of the platform's own staff (spec 011): names and descriptions; no clinic's data."),
+        ("ops.RolePermission", "Which codes of the operators' catalogue a role holds."),
+        ("audit.PlatformEntry", "What operators and the platform did to the platform itself (spec 011): its team and roles; no clinic's data; append-only."),
         ("security.AnonymousSignInAttempt", "Sign-in attempts on emails that match no account; a keyed hash, never the email; insert-only for the application."),
     ];
 

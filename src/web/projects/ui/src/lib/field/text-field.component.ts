@@ -31,8 +31,8 @@ let nextId = 0;
       display: block;
       margin-block-end: var(--scs-spacing-sm);
       font-size: var(--scs-text-body-sm);
-      font-weight: 600;
-      color: var(--scs-color-text-primary);
+      font-weight: var(--scs-field-label-weight, 600);
+      color: var(--scs-field-label-color, var(--scs-color-text-primary));
     }
     .box {
       display: flex;
@@ -146,7 +146,7 @@ let nextId = 0;
         [id]="id"
         [type]="shownType()"
         [value]="value()"
-        [attr.dir]="kind() === 'text' ? null : 'ltr'"
+        [attr.dir]="kind() === 'text' && !ltr() ? null : 'ltr'"
         [attr.placeholder]="shownPlaceholder()"
         [attr.autocomplete]="autocomplete() || null"
         [attr.inputmode]="kind() === 'email' ? 'email' : null"
@@ -206,6 +206,9 @@ export class ScsTextFieldComponent {
   readonly testId = input('');
 
   readonly autofocus = input(false, { transform: booleanAttribute });
+
+  /** A plain text that is always written left to right: a phone number, a code. */
+  readonly ltr = input(false, { transform: booleanAttribute });
 
   /**
    * The mark before an email or a password (an envelope, a lock). On by default, as the clinic's

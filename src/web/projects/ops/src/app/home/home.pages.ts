@@ -56,6 +56,57 @@ export class HomePage {
 export class NotFoundPage {}
 
 /**
+ * An address of the console the operator's role does not open (spec 011, FR-007): said in the
+ * frame, with a way back, and nothing of the page itself.
+ */
+@Component({
+  selector: 'app-no-access-page',
+  imports: [RouterLink, TranslocoPipe, ScsIconComponent, ScsLinkDirective],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  styles: `
+    :host {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 96px var(--scs-spacing-lg);
+      border: 1px solid var(--scs-color-border-default);
+      border-radius: var(--scs-radius-md);
+      background: var(--scs-color-bg-surface);
+      text-align: center;
+    }
+    .mark {
+      display: grid;
+      place-items: center;
+      inline-size: 64px;
+      block-size: 64px;
+      border-radius: var(--scs-radius-full);
+      background: var(--scs-color-feedback-danger-bg);
+      color: var(--scs-color-feedback-danger-icon);
+    }
+    h1 {
+      margin: var(--scs-spacing-md) 0 0;
+      font-size: var(--scs-text-heading-sm);
+      font-weight: 600;
+      line-height: 1.5;
+    }
+    p {
+      max-inline-size: 320px;
+      margin: var(--scs-spacing-12) 0 var(--scs-spacing-md);
+      font-size: var(--scs-text-body-sm);
+      line-height: 24px;
+      color: var(--scs-color-text-secondary);
+    }
+  `,
+  template: `
+    <span class="mark"><scs-icon name="lock" [size]="24" /></span>
+    <h1 data-testid="ops-no-access">{{ 'app.noAccess.title' | transloco }}</h1>
+    <p data-testid="ops-no-access-line">{{ 'app.noAccess.line' | transloco }}</p>
+    <a scsLink routerLink="/" data-testid="ops-no-access-home">{{ 'app.noAccess.home' | transloco }}</a>
+  `,
+})
+export class NoAccessPage {}
+
+/**
  * A page that is not available yet: the privacy policy until its own spec builds it (spec 010,
  * FR-056). It needs no session, so it stands in the frame of the screens before sign-in.
  */

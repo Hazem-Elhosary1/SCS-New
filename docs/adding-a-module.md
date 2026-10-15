@@ -254,11 +254,23 @@ downloaded bytes. The contract is `specs/009-file-storage/contracts/files-engine
 
 The operators console is a room of its own. A route for operators:
 
-- lives under `/v1/ops/` and declares **`.OperatorsOnly()`** — any signed-in operator, and
-  nobody else. It is authenticated by the operators' scheme alone: a clinic's session presented
-  there is no session. Never give such a route `.Requires(...)` or `.OwnAccountOnly()`: those
-  are the clinic's. Operators' permissions arrive with spec 011 and will replace
-  `OperatorsOnly()` route by route;
+- lives under `/v1/ops/` and declares **exactly one** of three things (spec 011,
+  `specs/011-operators-roles/contracts/operator-access.md`):
+  **`.Open()`** — before sign-in only; **`.OperatorOwnAccount()`** — what an operator does to
+  their own account, a short list held by a test; or
+  **`.RequiresOperator(OperatorPermissions.X)`** — everything else. The gate answers 403
+  `PERMISSION_REQUIRED` with the code before the handler runs, the same whether or not the
+  record exists. It is authenticated by the operators' scheme alone: a clinic's session
+  presented there is no session. Never give such a route `.Requires(...)` or
+  `.OwnAccountOnly()`: those are the clinic's;
+- asks about a permission inside a handler through `IOperatorAccess` (`HasAsync(code)`,
+  `IsSuperAdminAsync()`), never by a role's name and never by counting what a role holds;
+- records what it changes in the platform's own trail, inside the transaction of the change:
+  `await db.RecordForPlatformAsync(new AuditRecord(AuditActions.X, target, facts, changes), ct)`,
+  and declares it with `.Records(AuditActions.X)`. Who did it is taken from the request;
+- in the console, puts its page behind `guarded(path, code, load)` in `app.routes.ts`, its
+  line in `shell/sections.ts` with its `permission`, and its write controls behind `*appCan`;
+  every number, date and time goes through `i18n/ops-format.ts`;
 - reads who is asking from `ICurrentOperator` (the operator's id and the session's), never from
   a cookie;
 - declares what it records, like every route. An operator's own sign-in events are kept in

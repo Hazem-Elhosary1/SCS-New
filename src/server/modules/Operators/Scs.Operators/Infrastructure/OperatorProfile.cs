@@ -9,15 +9,36 @@ using Scs.Operators.Domain;
 using Scs.Operators.Infrastructure.Persistence;
 using Scs.SharedKernel;
 using Scs.SharedKernel.Wording;
+using Scs.BuildingBlocks.Audit;
+using Scs.SharedKernel.Access;
 
 namespace Scs.Operators.Infrastructure;
 
+/// <summary>A role as a screen names it: a system role by its key, a custom one by its name as written.</summary>
+internal sealed record RoleRef(Guid? Id, string Name, string? SystemKey)
+{
+    /// <summary>The name in a language: the platform's own for a system role.</summary>
+    public static string NameIn(string? systemKey, string name, string language)
+    {
+        if (systemKey is null)
+        {
+            return name;
+        }
+
+        var (arabic, english) = OperatorPermissions.SystemRoles.NameOf(systemKey);
+        return language == "en" ? english : arabic;
+    }
+}
+
 /// <summary>Who is signed in, as the console's frame shows them.</summary>
-internal sealed record SessionOperator(Guid Id, string FullName, string Language, string RoleName);
+/// <param name="RoleName">The role's name in the account's language.</param>
+internal sealed record SessionOperator(Guid Id, string FullName, string Language, string RoleName, RoleRef Role);
 
 /// <param name="IdleMinutes">The idle period, for the console's own clock (FR-032).</param>
 /// <param name="NewBrowser">True on the answer that opened the session when the browser was new.</param>
-internal sealed record OperatorSessionView(SessionOperator Operator, DateTimeOffset ExpiresAt, int IdleMinutes, bool NewBrowser);
+/// <param name="Permissions">The codes the operator's role holds now (spec 011): what the console may show.</param>
+internal sealed record OperatorSessionView(
+    SessionOperator Operator, DateTimeOffset ExpiresAt, int IdleMinutes, bool NewBrowser, IReadOnlyList<string> Permissions);
 
 internal sealed record TwoFactorView(bool On, bool Locked);
 
@@ -28,6 +49,7 @@ internal sealed record RecentSessionView(
 internal sealed record ProfileView(
     string FullName,
     string RoleName,
+    RoleRef Role,
     [property: PersonalData] string Email,
     [property: PersonalData] string? Mobile,
     TwoFactorView TwoFactor,
@@ -40,16 +62,16 @@ internal sealed record ProfileView(
 /// What the console reads about the signed-in operator: only ever their own account — no
 /// address of the console takes an account's identifier (FR-039).
 /// </summary>
-internal sealed class OperatorProfile(OperatorsDbContext db, IOptions<ScsOptions> options) : IOperatorDirectory
+internal sealed class OperatorProfile(OperatorsDbContext db, IOperatorAccessSource access, IOptions<ScsOptions> options)
+    : IOperatorDirectory, IOperatorActorNames
 {
     /// <summary>How many sessions the profile lists (FR-043).</summary>
     public const int RecentSessions = 10;
 
-    /// <summary>
-    /// Until operators have roles (spec 011) every operator is shown as the first one is: a
-    /// general administrator.
-    /// </summary>
-    public static string RoleName(string language) => language == "en" ? "Super Admin" : "مسؤول عام";
+    /// <summary>The name an entry of the platform's trail keeps for who did it.</summary>
+    public async Task<string?> NameOfAsync(Guid operatorId, CancellationToken cancellation) =>
+        await db.Operators.AsNoTracking().Where(o => o.Id == operatorId).Select(o => o.FullName)
+            .SingleOrDefaultAsync(cancellation).ConfigureAwait(false);
 
     public async Task<OperatorSessionView?> DescribeSessionAsync(
         Guid operatorId, Guid sessionId, string language, bool newBrowser, CancellationToken cancellation)
@@ -62,13 +84,22 @@ internal sealed class OperatorProfile(OperatorsDbContext db, IOptions<ScsOptions
             .ConfigureAwait(false);
 
         _ = language;
-        return found is null
-            ? null
-            : new OperatorSessionView(
-                new SessionOperator(operatorId, found.FullName, found.Language, RoleName(found.Language)),
-                found.ExpiresAtUtc,
-                options.Value.Ops.IdleMinutes,
-                newBrowser);
+        if (found is null)
+        {
+            return null;
+        }
+
+        // What the role holds at this moment: the console asks again on every page.
+        var grant = await access.LoadAsync(operatorId, cancellation).ConfigureAwait(false);
+        return new OperatorSessionView(
+            new SessionOperator(
+                operatorId, found.FullName, found.Language,
+                RoleRef.NameIn(grant.SystemKey, grant.RoleName, found.Language),
+                new RoleRef(grant.RoleId, grant.RoleName, grant.SystemKey)),
+            found.ExpiresAtUtc,
+            options.Value.Ops.IdleMinutes,
+            newBrowser,
+            OperatorPermissions.InOrder(grant.Codes));
     }
 
     public async Task<ProfileView> ReadAsync(Guid operatorId, Guid sessionId, string language, CancellationToken cancellation)
@@ -88,9 +119,11 @@ internal sealed class OperatorProfile(OperatorsDbContext db, IOptions<ScsOptions
             .ConfigureAwait(false);
 
         _ = language;
+        var grant = await access.LoadAsync(operatorId, cancellation).ConfigureAwait(false);
         return new ProfileView(
             account.FullName,
-            RoleName(account.Language),
+            RoleRef.NameIn(grant.SystemKey, grant.RoleName, account.Language),
+            new RoleRef(grant.RoleId, grant.RoleName, grant.SystemKey),
             account.Email,
             account.Mobile,
             new TwoFactorView(On: true, Locked: true),

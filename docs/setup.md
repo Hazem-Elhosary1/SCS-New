@@ -266,8 +266,35 @@ and nothing of a clinic with an operator's.
 - **My profile** (the account menu): the account, its recent sessions, "sign out of all
   devices", and changing the password, which asks for a code by email before anything changes.
 
-Operators have no roles yet (spec 011): every operator sees the frame, the home and their own
-profile, and is shown as «مسؤول عام».
+#### The team and its roles (spec 011)
+
+What an operator sees and may do is what their **role** holds, checked by the platform on every
+request. The catalogue is closed: 28 permissions in nine groups
+(`src/server/shared/Scs.SharedKernel/Access/OperatorPermissions.cs`; the console reads the same
+list from `projects/ops/src/app/access/operator-permissions.json`, regenerated with
+`dotnet run --project src/server/tools/Scs.Migrator -- ops-catalogue <that path>` — a test fails
+while the file is out of date).
+
+- **Three roles are the platform's own** and cannot be edited or deleted: «مسؤول عام» (all 28),
+  «مسؤول الفوترة» (11) and «مشاهد فقط» (the 11 views). Others are made in the console, under
+  «المشغلون» → «الأدوار والصلاحيات».
+- **Whoever the command invites is «مسؤول عام»** — the made-up operator, and any
+  `operator invite`. Everyone who was an operator before roles existed became one too.
+- **«المشغلون»** in the side bar (with `operators.view`): the team's list with its cards, search
+  and filter; an operator's page; and, with `operators.manage`, adding an operator, editing one,
+  suspending, reactivating, sending a password link and unlocking. An operator added from the
+  console gets the invitation by email within a minute, naming who invited them and in what
+  role; no screen ever shows the link.
+- **Guards worth trying**: nobody changes their own role; nobody grants a role that holds a
+  permission they lack; the last active «مسؤول عام» cannot be moved to another role or
+  suspended; a role that operators hold cannot be deleted. A changed role signs its holder out
+  with the reason; an edit to a role's permissions reaches its holders at their next request,
+  without signing anyone out.
+- **To look at it as someone else**, invite a second account with the command, sign in as it,
+  and from the first account give it another role. Keep such accounts apart from
+  `operator@heta.example`, whose password is the developer's own.
+- **Digits.** The operators console writes Western digits in Arabic too (the clinic's console
+  keeps its own rule).
 
 ### The emails (spec 094)
 

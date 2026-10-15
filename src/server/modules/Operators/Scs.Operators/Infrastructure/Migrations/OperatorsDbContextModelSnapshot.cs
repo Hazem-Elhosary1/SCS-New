@@ -48,8 +48,16 @@ namespace Scs.Operators.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTimeOffset?>("ActivatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Department")
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -66,6 +74,17 @@ namespace Scs.Operators.Infrastructure.Migrations
 
                     b.Property<DateTimeOffset?>("InvitationOwedSinceUtc")
                         .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("InvitedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("InvitedByName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("JobTitle")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
 
                     b.Property<string>("Language")
                         .IsRequired()
@@ -94,6 +113,9 @@ namespace Scs.Operators.Infrastructure.Migrations
                         .IsUnicode(false)
                         .HasColumnType("varchar(256)");
 
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
@@ -109,14 +131,31 @@ namespace Scs.Operators.Infrastructure.Migrations
                         .IsUnicode(false)
                         .HasColumnType("varchar(16)");
 
+                    b.Property<DateTimeOffset?>("SuspendedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("TwoStepRequired")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedAtUtc")
+                        .IsDescending()
+                        .HasDatabaseName("IX_Operator_Newest");
 
                     b.HasIndex("Email")
                         .IsUnique()
                         .HasDatabaseName("UX_Operator_Email");
 
+                    b.HasIndex("RoleId")
+                        .HasDatabaseName("IX_Operator_Role");
+
                     b.ToTable("Operator", "ops", t =>
                         {
+                            t.HasCheckConstraint("CK_Operator_Department", "[Department] IS NULL OR [Department] IN ('support', 'billing', 'success', 'sales', 'management')");
+
                             t.HasCheckConstraint("CK_Operator_Language", "[Language] IN ('ar', 'en')");
 
                             t.HasCheckConstraint("CK_Operator_Password", "[State] = 'invited' OR [PasswordHash] IS NOT NULL");
@@ -230,6 +269,81 @@ namespace Scs.Operators.Infrastructure.Migrations
                         {
                             t.HasCheckConstraint("CK_PasswordLink_Kind", "[Kind] IN ('reset', 'first')");
                         });
+                });
+
+            modelBuilder.Entity("Scs.Operators.Domain.Role", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("CreatedById")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("NameKey")
+                        .IsRequired()
+                        .HasMaxLength(140)
+                        .HasColumnType("nvarchar(140)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("SystemKey")
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NameKey")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Role_Name");
+
+                    b.HasIndex("SystemKey")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Role_SystemKey")
+                        .HasFilter("[SystemKey] IS NOT NULL");
+
+                    b.ToTable("Role", "ops", t =>
+                        {
+                            t.HasCheckConstraint("CK_Role_Named", "[SystemKey] IS NOT NULL OR LEN([Name]) > 0");
+
+                            t.HasCheckConstraint("CK_Role_SystemKept", "[SystemKey] IS NULL OR [DeletedAtUtc] IS NULL");
+
+                            t.HasCheckConstraint("CK_Role_SystemKey", "[SystemKey] IS NULL OR [SystemKey] IN ('super-admin', 'billing-admin', 'viewer')");
+                        });
+                });
+
+            modelBuilder.Entity("Scs.Operators.Domain.RolePermission", b =>
+                {
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .HasMaxLength(40)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(40)");
+
+                    b.HasKey("RoleId", "Code");
+
+                    b.ToTable("RolePermission", "ops");
                 });
 
             modelBuilder.Entity("Scs.Operators.Domain.SignInChallenge", b =>
@@ -356,6 +470,29 @@ namespace Scs.Operators.Infrastructure.Migrations
                         });
 
                     b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
+                });
+
+            modelBuilder.Entity("Scs.Operators.Domain.Operator", b =>
+                {
+                    b.HasOne("Scs.Operators.Domain.Role", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Scs.Operators.Domain.RolePermission", b =>
+                {
+                    b.HasOne("Scs.Operators.Domain.Role", null)
+                        .WithMany("Permissions")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Scs.Operators.Domain.Role", b =>
+                {
+                    b.Navigation("Permissions");
                 });
 #pragma warning restore 612, 618
         }

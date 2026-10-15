@@ -698,6 +698,13 @@ export class ScsTabsComponent {
       outline: 2px solid var(--scs-color-brand-default);
       outline-offset: 2px;
     }
+    /* 32 at a desk; 40 where a finger presses them. */
+    @media (max-width: 720px) {
+      button {
+        min-inline-size: 40px;
+        block-size: 40px;
+      }
+    }
   `,
   template: `
     <span data-testid="table-count">{{ count() }}</span>

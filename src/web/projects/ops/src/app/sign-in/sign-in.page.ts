@@ -11,6 +11,7 @@ import {
   ScsTextFieldComponent,
 } from 'ui';
 import { OpsAuthService, OpsCodes, OpsNotice, problemField } from '../auth/ops-auth.service';
+import { opsTime } from '../i18n/ops-format';
 
 /** What the banner between the line and the fields says. One at most. */
 type Banner =
@@ -203,19 +204,13 @@ export class SignInPage {
     return TONES[banner?.kind ?? 'invalid'];
   });
 
-  /** The time the lock ends, in the reader's digits, kept on one line with its AM/PM. */
+  /** The time the lock ends, in Western digits (spec 011, FR-049), kept on one line with its AM/PM. */
   protected readonly lockedUntil = computed(() => {
     const banner = this.banner();
     if (banner?.kind !== 'locked') {
       return '';
     }
-    return new Intl.DateTimeFormat(this.language.language() === 'ar' ? 'ar-EG' : 'en-GB', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    })
-      .format(new Date(banner.until))
-      .replace(/\s/g, ' ');
+    return opsTime(banner.until, this.language.language()).replace(/\s/g, ' ');
   });
 
   constructor() {

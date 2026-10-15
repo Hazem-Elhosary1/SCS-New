@@ -14,6 +14,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { LanguageService } from 'core';
 import { ScsButtonDirective, ScsCodeInputComponent, ScsCodeState, ScsLinkDirective } from 'ui';
 import { OpsCodeStep } from '../auth/ops-auth.service';
+import { opsCountdown } from '../i18n/ops-format';
 
 /** What the code boxes have to say under them. */
 export type CodeProblem = 'wrong' | 'notResent' | 'resendLimit' | 'unexpected' | null;
@@ -108,15 +109,8 @@ export class CodeStepComponent {
 
   protected readonly state = computed<ScsCodeState>(() => (this.problem() === 'wrong' ? 'error' : 'idle'));
 
-  /** Minutes and seconds, in the reader's digits. */
-  protected readonly countdown = computed(() => {
-    const total = this.seconds();
-    const digits = new Intl.NumberFormat(this.language.language() === 'ar' ? 'ar-EG' : 'en-GB', {
-      minimumIntegerDigits: 2,
-      useGrouping: false,
-    });
-    return `${digits.format(Math.floor(total / 60))}:${digits.format(total % 60)}`;
-  });
+  /** Minutes and seconds, in Western digits in both languages (spec 011, FR-049). */
+  protected readonly countdown = computed(() => opsCountdown(this.seconds()));
 
   private readonly boxes = viewChild.required<ScsCodeInputComponent>('boxes');
   private waitEndsAt = 0;

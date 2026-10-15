@@ -23,6 +23,9 @@ public sealed class ProbeEndpoints : IEndpointContributor
     /// <summary>How many times the handler of each <c>/probe/needs/&lt;code&gt;</c> route ran.</summary>
     public static ConcurrentDictionary<string, int> Runs { get; } = new(StringComparer.Ordinal);
 
+    /// <summary>The same, for the routes of the operators console.</summary>
+    public static System.Collections.Concurrent.ConcurrentDictionary<string, int> OpsRuns { get; } = new(StringComparer.Ordinal);
+
     public static SemaphoreSlim SlowEntered { get; } = new(0);
 
     public static SemaphoreSlim SlowRelease { get; } = new(0);
@@ -69,6 +72,53 @@ public sealed class ProbeEndpoints : IEndpointContributor
         }
 
         // Needs a permission and names a record; only record 1 exists.
+        // The same for the operators console (spec 011): one route per permission of its own
+        // catalogue, and one that an operator of any role may call.
+        foreach (var permission in OperatorPermissions.All)
+        {
+            var code = permission.Code;
+            root.MapGet($"/probe/ops/needs/{code}", () =>
+                {
+                    OpsRuns.AddOrUpdate(code, 1, (_, ran) => ran + 1);
+                    return Results.Ok(new { code });
+                })
+                .RequiresOperator(code);
+        }
+
+        root.MapGet("/probe/ops/own", (ICurrentOperator current) => Results.Ok(new { id = current.OperatorId })).OperatorOwnAccount();
+
+        // A change to the platform with its entry in the platform's own trail (spec 011): the
+        // change here is nothing but the entry, written inside a transaction that is then
+        // committed — or, when asked, abandoned.
+        root.MapGet("/probe/ops/record/{id:guid}", async (
+                Guid id, bool? abandon, Scs.Operators.Infrastructure.Persistence.OperatorsDbContext db, CancellationToken cancellation) =>
+            {
+                var transaction = await db.Database.BeginTransactionAsync(cancellation);
+                await using (transaction)
+                {
+                    await Scs.BuildingBlocks.Audit.PlatformAudit.RecordForPlatformAsync(
+                        db,
+                        new Scs.BuildingBlocks.Audit.AuditRecord(
+                            Scs.SharedKernel.Audit.AuditActions.OperatorSuspended,
+                            new Scs.BuildingBlocks.Audit.AuditTarget(Scs.BuildingBlocks.Audit.AuditTarget.Operator, id, "سارة أحمد"),
+                            new Dictionary<string, object?> { ["reason"] = "probe" }),
+                        cancellation);
+
+                    if (abandon == true)
+                    {
+                        throw new InvalidOperationException("The change did not go through.");
+                    }
+
+                    await transaction.CommitAsync(cancellation);
+                }
+
+                return Results.Ok(new { id });
+            })
+            .RequiresOperator(OperatorPermissions.OperatorsManage);
+
+        root.MapGet("/probe/ops/needs-record/{id}", (string id) => id == "1" ? Results.Ok(new { id }) : Results.NotFound())
+            .RequiresOperator(OperatorPermissions.OperatorsManage);
+
         root.MapGet("/probe/needs-record/{id}", (string id) => id == "1" ? Results.Ok(new { id }) : Results.NotFound())
             .Requires(Permissions.PatientsManage);
 

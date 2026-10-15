@@ -53,12 +53,32 @@ suspend it (spec 011) and read its records.
   because the owner always has that way in.
 - **A forgotten password**: "forgot password" on the sign-in screen. The link lives thirty
   minutes.
+- **Locked, and cannot wait.** An operator with «إضافة وتعديل المشغلين» opens the account's
+  page and presses «فك قفل الحساب»; the same page sends a password link («إعادة تعيين كلمة
+  المرور») — to an invited account, the invitation anew. One link a minute for an account.
 - **The mailbox is gone too.** Nothing in the product gets them in: the code and the link both
-  go to that mailbox. Another operator replaces the account's access once spec 011 exists.
+  go to that mailbox. Another operator who manages operators suspends the lost account and adds
+  the person again under their new address (an account's email never changes).
   **For the only operator there is no way in through the product.** It is then a matter for
   whoever deploys the platform: restore the mailbox, or — with the owner's written word —
   invite a second operator with the command above and suspend the lost account. Do not edit
   `ops.Operator` by hand.
+
+## Roles, and the command after spec 011
+
+- Whoever `operator invite` invites holds **«مسؤول عام»**, always: it is how the first operator
+  comes to exist, and the way back in when no «مسؤول عام» can sign in. The invitation is
+  recorded in the platform's trail as the platform's own, `by: deployment`. Use it for those two
+  things only; everyone else is added from the console, by someone who answers for it.
+- **No «مسؤول عام» can sign in** (all suspended, or their mailboxes lost): the console refuses to
+  let the last active one be suspended or moved to another role, so this happens only by losing
+  mailboxes. Invite a new one with the command, on the owner's written word; they suspend the
+  lost accounts from the console.
+- Everyone who was an operator before roles existed became «مسؤول عام» in the migration. Review
+  that list on the first day and move people to narrower roles.
+- What operators do to the team and its roles is in `audit.PlatformEntry` — invited, edited,
+  role changed, suspended, reactivated, link sent, unlocked; a role created, edited, deleted —
+  with who did it. It holds no link, no token and no password. Nothing changes or removes a row.
 
 ## What the records say
 

@@ -52,6 +52,19 @@ public static class AuditActions
     public const string FileDownloaded = "file.downloaded";
     public const string FileScanRefused = "file.scan-refused";
 
+    // Spec 011: what an operator does to the platform's own team and its roles. These are
+    // written to the platform's own trail, which has no clinic.
+    public const string OperatorInvited = "operator.invited";
+    public const string OperatorEdited = "operator.edited";
+    public const string OperatorRoleChanged = "operator.role-changed";
+    public const string OperatorSuspended = "operator.suspended";
+    public const string OperatorReactivated = "operator.reactivated";
+    public const string OperatorLinkSent = "operator.link-sent";
+    public const string OperatorUnlocked = "operator.unlocked";
+    public const string OperatorRoleCreated = "opsrole.created";
+    public const string OperatorRoleEdited = "opsrole.edited";
+    public const string OperatorRoleDeleted = "opsrole.deleted";
+
     /// <summary>Fact keys no action may allow: nothing secret and no email address is ever a fact (FR-016, FR-018).</summary>
     public static IReadOnlyList<string> NeverKeys { get; } =
         ["password", "code", "token", "link", "secret", "key", "email", "proof", "cookie"];
@@ -93,6 +106,29 @@ public static class AuditActions
         new(FileScanRefused, AuditCategories.Security, "رفض ملف", "File refused",
             "رُفض الملف «{target}» في الفحص الأمني", "File “{target}” was refused by the security check",
             ["kind", "reason", "record", "recordId", "uploadedBy"], NeedsBeforeAfter: false),
+
+        // Spec 011: the operators console's own team and roles.
+        new(OperatorInvited, AuditCategories.Users, "دعوة مشغل", "Operator invited",
+            "دُعي {target} إلى لوحة التشغيل", "{target} was invited to the Ops Console", ["role", "systemRole", "sent", "by"], NeedsBeforeAfter: false),
+        new(OperatorEdited, AuditCategories.Users, "تعديل بيانات مشغل", "Operator edited",
+            "عُدِّلت بيانات {target}{changes}", "{target}’s details were edited{changes}", ["note"], NeedsBeforeAfter: true),
+        new(OperatorRoleChanged, AuditCategories.Users, "تغيير دور مشغل", "Operator’s role changed",
+            "غُيِّر دور المشغل {target}{changes}", "The operator {target}’s role was changed{changes}",
+            ["note"], NeedsBeforeAfter: true),
+        new(OperatorSuspended, AuditCategories.Users, "تعليق حساب مشغل", "Operator suspended",
+            "عُلِّق حساب {target}", "{target}’s account was suspended", ["reason"], NeedsBeforeAfter: false),
+        new(OperatorReactivated, AuditCategories.Users, "إعادة تفعيل حساب مشغل", "Operator reactivated",
+            "أُعيد تفعيل حساب {target}", "{target}’s account was reactivated", [], NeedsBeforeAfter: false),
+        new(OperatorLinkSent, AuditCategories.Security, "إرسال رابط كلمة المرور", "Password link sent",
+            "أُرسل رابط كلمة المرور إلى {target}", "{target} was sent a password link", ["kind"], NeedsBeforeAfter: false),
+        new(OperatorUnlocked, AuditCategories.Security, "فك قفل حساب مشغل", "Operator unlocked",
+            "فُكَّ قفل حساب {target}", "{target}’s account was unlocked", [], NeedsBeforeAfter: false),
+        new(OperatorRoleCreated, AuditCategories.Users, "إنشاء دور مشغلين", "Operators’ role created",
+            "أُنشئ دور المشغلين «{target}»", "The operators’ role “{target}” was created", ["basedOn"], NeedsBeforeAfter: true),
+        new(OperatorRoleEdited, AuditCategories.Users, "تعديل دور مشغلين", "Operators’ role edited",
+            "عُدِّل دور المشغلين «{target}»{changes}", "The operators’ role “{target}” was edited{changes}", ["note"], NeedsBeforeAfter: true),
+        new(OperatorRoleDeleted, AuditCategories.Users, "حذف دور مشغلين", "Operators’ role deleted",
+            "حُذف دور المشغلين «{target}»", "The operators’ role “{target}” was deleted", ["note"], NeedsBeforeAfter: false),
     ];
 
     private static readonly Dictionary<string, AuditAction> ByCode = All.ToDictionary(a => a.Code, StringComparer.Ordinal);

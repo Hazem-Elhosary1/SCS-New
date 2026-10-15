@@ -9,11 +9,14 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { OnlineService } from 'core';
-import { ScsIconComponent } from 'ui';
+import { filter } from 'rxjs';
+import { ScsIconComponent, ScsToastOutletComponent } from 'ui';
 import { OpsAuthService } from '../auth/ops-auth.service';
+import { OpsAccess } from '../access/ops-access.service';
 import { OPS_SECTIONS } from './sections';
 
 /** The first letters of the first two words of a name: what the round mark shows. */
@@ -35,7 +38,7 @@ export function initialsOf(name: string): string {
  */
 @Component({
   selector: 'app-ops-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, TranslocoPipe, ScsIconComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, TranslocoPipe, ScsIconComponent, ScsToastOutletComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -198,8 +201,14 @@ export function initialsOf(name: string): string {
       font-weight: 600;
     }
     main {
+      position: relative;
       min-inline-size: 0;
       padding: var(--scs-spacing-lg);
+    }
+    scs-toast-outlet {
+      position: absolute;
+      inset-inline-end: var(--scs-spacing-lg);
+      z-index: 5;
     }
     .offline {
       margin: 0 0 var(--scs-spacing-md);
@@ -279,7 +288,7 @@ export function initialsOf(name: string): string {
               <span class="name" dir="auto" data-testid="ops-operator-name" [attr.title]="who.fullName">{{
                 who.fullName
               }}</span>
-              <span class="role" data-testid="ops-operator-role" [attr.title]="who.roleName">{{ who.roleName }}</span>
+              <span class="role" dir="auto" data-testid="ops-operator-role" [attr.title]="roleName()">{{ roleName() }}</span>
             </span>
             <span class="initials" aria-hidden="true" data-testid="ops-initials">{{ initials() }}</span>
           </button>
@@ -303,7 +312,7 @@ export function initialsOf(name: string): string {
 
     <div class="body">
       <nav data-testid="ops-side-bar" [class.open]="navOpen()" [attr.aria-label]="'app.shell.sections' | transloco">
-        @for (section of sections; track section.path) {
+        @for (section of sections(); track section.path) {
           <a
             [routerLink]="section.path"
             routerLinkActive="active"
@@ -319,6 +328,7 @@ export function initialsOf(name: string): string {
       </nav>
 
       <main>
+        <scs-toast-outlet [closeLabel]="'app.operators.list.close' | transloco" />
         @if (!online.online()) {
           <p class="offline" role="status" data-testid="ops-offline">{{ 'app.shell.offline' | transloco }}</p>
         }
@@ -337,7 +347,13 @@ export class OpsShellComponent {
   /** The console's mark: the first letter of the product's name, in no language. */
   protected readonly mark = 'S';
 
-  protected readonly sections = OPS_SECTIONS;
+  private readonly access = inject(OpsAccess);
+
+  /** Only the sections the operator's role opens (spec 011, FR-006). */
+  protected readonly sections = computed(() =>
+    OPS_SECTIONS.filter((section) => section.permission === undefined || this.access.can(section.permission)),
+  );
+  protected readonly roleName = this.access.roleName;
   protected readonly menuOpen = signal(false);
   protected readonly navOpen = signal(false);
 
@@ -345,6 +361,17 @@ export class OpsShellComponent {
   protected readonly initials = computed(() => initialsOf(this.operator()?.fullName ?? ''));
 
   private readonly opener = viewChild<ElementRef<HTMLButtonElement>>('opener');
+
+  constructor() {
+    // What the role holds is read again on every page of the console (spec 011, FR-008): a
+    // changed role shows in the side bar without a reload.
+    this.router.events
+      .pipe(
+        filter((event) => event instanceof NavigationEnd),
+        takeUntilDestroyed(),
+      )
+      .subscribe(() => void this.auth.refreshIfStale());
+  }
 
   protected toggleMenu(): void {
     this.menuOpen.set(!this.menuOpen());

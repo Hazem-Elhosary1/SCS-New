@@ -36,7 +36,11 @@ const words = {
 type Language = keyof typeof words;
 
 /** The state as it is: whole at the design's size and at a phone's, and pictured. */
+/** No screen of the operators console writes an Arabic-Indic or Persian digit (spec 011, FR-049). */
+const EASTERN = /[\u0660-\u0669\u06f0-\u06f9]/u;
+
 async function look(page: Page, language: Language, state: string): Promise<void> {
+  expect(await page.locator('body').innerText(), `${language} ${state}: Western digits only`).not.toMatch(EASTERN);
   await page.setViewportSize(NARROW);
   expect(await opsLooksWrong(page), `${language} ${state}, narrow`).toEqual([]);
   if (process.env['SCS_SHOTS']) {

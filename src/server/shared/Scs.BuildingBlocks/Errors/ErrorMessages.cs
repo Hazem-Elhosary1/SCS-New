@@ -57,6 +57,20 @@ public static class ErrorMessages
         [ErrorCodes.FileRefused] = ("الملف مرفوض: لم يجتز الفحص الأمني", "The file was refused: it did not pass the security check"),
         [ErrorCodes.FileNotKept] = ("الملف لم يعد محفوظًا", "The file is no longer kept"),
         [ErrorCodes.StepExpired] = ("انتهت هذه الخطوة. تُعاد من بدايتها", "This step is over. It starts again from the beginning"),
+        [ErrorCodes.OpsEmailTaken] = ("هذا البريد مستعمل لمشغل آخر", "This email already belongs to an operator"),
+        [ErrorCodes.OpsRoleNotGrantable] = ("لا يمكنك منح دور به صلاحيات ليست لديك", "You can't grant a role with permissions you don't have"),
+        [ErrorCodes.OpsOwnRole] = ("لا يمكنك تغيير دورك", "You can't change your own role"),
+        [ErrorCodes.OpsLastSuperAdmin] = ("يجب أن يبقى مسؤول عام واحد نشط على الأقل", "At least one active Super Admin must remain"),
+        [ErrorCodes.OpsOwnAccount] = ("لا يمكنك تعليق حسابك", "You can't suspend your own account"),
+        [ErrorCodes.OpsStateChanged] = ("تغيّرت حالة هذا الحساب. أعد تحميل الصفحة", "This account's state has changed. Reload the page"),
+        [ErrorCodes.OpsLinkTooSoon] = ("أُرسل رابط لهذا الحساب منذ أقل من دقيقة. انتظر قليلًا ثم حاول مرة أخرى", "A link was sent to this account less than a minute ago. Wait a moment and try again"),
+        [ErrorCodes.OpsChangedElsewhere] = ("تغيّرت هذه البيانات منذ فتحتها", "This record changed since you opened it"),
+        [ErrorCodes.OpsLinkNotSent] = ("تعذّر إرسال رابط إعادة التعيين", "The reset link could not be sent"),
+        [ErrorCodes.OpsRoleNameTaken] = ("يوجد دور بهذا الاسم", "A role with this name already exists"),
+        [ErrorCodes.OpsPermissionsNotHeld] = ("لا يمكنك إضافة صلاحيات ليست لديك", "You can't add permissions you don't have"),
+        [ErrorCodes.OpsOwnRoleEdit] = ("لا يمكنك تعديل الدور الذي تحمله", "You can't edit the role you hold"),
+        [ErrorCodes.OpsSystemRole] = ("أدوار النظام لا تُعدَّل ولا تُحذف", "System roles are not edited or deleted"),
+        [ErrorCodes.OpsRoleInUse] = ("لا يمكن حذف دور مُسند إلى مشغلين", "A role that operators hold can't be deleted"),
     };
 
     public static string Title(string code, string language)

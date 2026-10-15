@@ -18,3 +18,6 @@ export * from './lib/list/list';
 export * from './lib/files/file-upload.component';
 export * from './lib/files/file-card.component';
 export * from './lib/files/file-field.component';
+export * from './lib/controls/form-controls';
+export * from './lib/controls/select.component';
+export * from './lib/list/page-parts';
