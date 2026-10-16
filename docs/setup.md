@@ -296,6 +296,21 @@ while the file is out of date).
 - **Digits.** The operators console writes Western digits in Arabic too (the clinic's console
   keeps its own rule).
 
+#### The feature catalogue (spec 012)
+
+What plans are made of: one table, `plans.Feature`, that starts with the 35 features of the
+design, every one «قادمة» (upcoming), and grows from the console — no release adds a feature.
+
+- **«الباقات»** in the side bar (with `billing.view`) opens «كتالوج الميزات» until the plans page
+  exists (spec 013): cards, search over both names and the key, a filter by group, type and
+  status, and «أين تُستعمل» on each row.
+- **With `billing.managePlans`** too: «إضافة ميزة», «تعديل الميزة» (the key never changes),
+  «إيقاف الميزة…» for a sold feature and «إعادة بيع الميزة» for a retired one. Each is written to
+  the platform's trail (`audit.PlatformEntry`, actions `feature.*`).
+- **To look at it as each kind of operator**, invite walk accounts with the command and give them,
+  from the first account, «مسؤول الفوترة» (both billing codes), «مشاهد فقط» (`billing.view`
+  alone) or a custom role without either.
+
 ### The emails (spec 094)
 
 Every email is laid out by one template, in the recipient's language only, with a text-only

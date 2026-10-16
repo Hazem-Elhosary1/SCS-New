@@ -18,5 +18,7 @@ export interface OpsSection {
 export const OPS_SECTIONS: readonly OpsSection[] = [
   // Open to every operator until the dashboard is built (spec 022), which puts it behind its own permission.
   { key: 'home', path: '/', icon: 'home' },
+  // Opens the feature catalogue until the plans page exists (spec 013), which points it there.
+  { key: 'plans', path: '/plans/features', icon: 'gem', permission: 'billing.view' },
   { key: 'operators', path: '/operators', icon: 'people', permission: 'operators.view' },
 ];

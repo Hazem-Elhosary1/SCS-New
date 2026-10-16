@@ -16,6 +16,7 @@
     <ProjectReference Include="..\..\modules\Notifications\Scs.Notifications\Scs.Notifications.csproj" />
     <ProjectReference Include="..\..\modules\Files\Scs.Files\Scs.Files.csproj" />
     <ProjectReference Include="..\..\modules\Operators\Scs.Operators\Scs.Operators.csproj" />
+    <ProjectReference Include="..\..\modules\Plans\Scs.Plans\Scs.Plans.csproj" />
   </ItemGroup>
 
 </Project>

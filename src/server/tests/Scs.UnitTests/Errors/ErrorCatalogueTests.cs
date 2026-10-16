@@ -9,7 +9,7 @@ public class ErrorCatalogueTests
     [Fact]
     public void There_are_twelve_codes_all_upper_snake_case_and_distinct()
     {
-        Assert.Equal(57, ErrorCodes.All.Count);
+        Assert.Equal(63, ErrorCodes.All.Count);
         Assert.Equal(ErrorCodes.All.Count, ErrorCodes.All.Distinct().Count());
         Assert.All(ErrorCodes.All, code => Assert.Matches("^[A-Z][A-Z0-9_]+$", code));
     }

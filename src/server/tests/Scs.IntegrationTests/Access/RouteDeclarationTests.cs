@@ -124,7 +124,8 @@ public sealed class RouteDeclarationTests(SqlServerFixture sql)
     /// <summary>
     /// Spec 011 (FR-003): a permission of the operators console that guards nothing is a
     /// promise the server does not keep. The codes of the sections not built yet are let be
-    /// until their own specs; the operators' own three are owed here.
+    /// until their own specs; the operators' own three are owed here, and since spec 012 the two
+    /// of plans.
     /// </summary>
     [Fact]
     public async Task Every_operators_permission_of_this_spec_guards_a_route_and_every_code_named_is_in_the_catalogue()
@@ -140,7 +141,11 @@ public sealed class RouteDeclarationTests(SqlServerFixture sql)
         var strangers = named.Where(x => !OperatorPermissions.IsKnown(x.Code!)).Select(x => x.Route).ToList();
         Assert.True(strangers.Count == 0, "Not a permission of the operators' catalogue, on: " + string.Join(", ", strangers));
 
-        var owed = new[] { OperatorPermissions.OperatorsView, OperatorPermissions.OperatorsManage, OperatorPermissions.OperatorsManageRoles }
+        var owed = new[]
+            {
+                OperatorPermissions.OperatorsView, OperatorPermissions.OperatorsManage, OperatorPermissions.OperatorsManageRoles,
+                OperatorPermissions.BillingView, OperatorPermissions.BillingManagePlans, // spec 012: the feature catalogue
+            }
             .Where(code => named.All(x => x.Code != code))
             .ToList();
         Assert.True(owed.Count == 0, "No route is guarded by: " + string.Join(", ", owed));

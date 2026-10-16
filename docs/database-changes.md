@@ -49,6 +49,20 @@ A table that holds a clinic's data gets its isolation policy **in the migration 
 it** (constitution, Principle II). The two are one change and are never split across merges.
 Spec 002 adds the check that fails the build when a clinic-owned table has no policy.
 
+## Rows the product ships with (spec 012)
+
+Some rows are part of the product, not of any clinic: the feature catalogue's 35 first features
+(`plans.Feature`). They are written by a migration of their own, **each only where its key is
+absent**, and that migration's Down removes nothing — an operator may have edited a row since,
+and plans may hold it. The list a migration applies is frozen with it (`FeatureSeed` for spec
+012's). So:
+
+- **A later spec that adds seeded features** writes a new migration with its own rows, inserted by
+  key in the same way. It never edits an earlier seed.
+- **A spec that builds a feature marks it «مبنية»** (`Status = 'built'`) in a migration of its own,
+  by key, and says so in its tasks (FR-024). If an operator has already changed the status, the
+  operator's value stands: update only where the status is still `upcoming`.
+
 ## Creating a migration
 
 ```bash

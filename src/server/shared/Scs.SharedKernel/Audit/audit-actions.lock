@@ -27,3 +27,7 @@ operator.unlocked security
 opsrole.created users
 opsrole.edited users
 opsrole.deleted users
+feature.created changes
+feature.updated changes
+feature.retired changes
+feature.resumed changes

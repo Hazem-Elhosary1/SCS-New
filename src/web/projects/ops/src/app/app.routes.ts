@@ -75,6 +75,16 @@ export const routes: Routes = [
       ...guarded('operators/:id/edit', OpsCan.operatorsManage, () =>
         import('./operators/operator-form.page').then((file) => file.OperatorFormPage),
       ),
+      // The feature catalogue (spec 012): read with «عرض الباقات والفواتير», written with «إدارة الباقات والاشتراكات».
+      ...guarded('plans/features', OpsCan.billingView, () =>
+        import('./plans/feature-catalogue.page').then((file) => file.FeatureCataloguePage),
+      ),
+      ...guarded('plans/features/new', OpsCan.billingManagePlans, () =>
+        import('./plans/feature-form.page').then((file) => file.FeatureFormPage),
+      ),
+      ...guarded('plans/features/:key/edit', OpsCan.billingManagePlans, () =>
+        import('./plans/feature-form.page').then((file) => file.FeatureFormPage),
+      ),
       {
         path: '**',
         loadComponent: () => import('./home/home.pages').then((file) => file.NotFoundPage),

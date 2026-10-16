@@ -275,7 +275,7 @@ let nextId = 0;
           [readOnly]="readonly()"
           [disabled]="disabled()"
           [required]="required()"
-          [attr.dir]="kind() === 'text' && !ltr() ? null : 'ltr'"
+          [attr.dir]="rtl() ? 'rtl' : kind() === 'text' && !ltr() ? null : 'ltr'"
           [attr.placeholder]="shownPlaceholder()"
           [attr.autocomplete]="autocomplete() || null"
           [attr.inputmode]="kind() === 'email' ? 'email' : null"
@@ -377,6 +377,9 @@ export class ScsTextFieldComponent {
 
   /** A plain text that is always written left to right: a phone number, a code. */
   readonly ltr = input(false, { transform: booleanAttribute });
+
+  /** A text that is always written right to left: Arabic in an English page (spec 012). */
+  readonly rtl = input(false, { transform: booleanAttribute });
 
   /**
    * The mark before an email or a password (an envelope, a lock). On by default, as the clinic's
