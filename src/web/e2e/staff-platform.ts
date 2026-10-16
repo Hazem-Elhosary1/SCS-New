@@ -564,15 +564,30 @@ export async function useEnglish(page: Page): Promise<void> {
 
 /**
  * Saves a 1440x900 picture of the page when `SCS_SHOTS` names a folder — for laying every
- * state beside its frame in the design file. Does nothing in an ordinary run.
+ * state beside its frame in the design file — and the same state at a phone's width (390x844) in
+ * `narrow/`, then returns to 1440. Does nothing in an ordinary run.
  */
 export async function pictureFor(page: Page, group: string, language: string, state: string) {
   const folder = process.env['SCS_SHOTS'];
   if (!folder) {
     return;
   }
+  const name = `${group}-${language}-${state.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.png`;
+  // The wide picture first, exactly as before; then the phone's, once the page has settled.
+  const settle = () =>
+    page.evaluate(() =>
+      document
+        .getAnimations()
+        .filter((animation) => animation.effect?.getComputedTiming().endTime !== Infinity)
+        .forEach((animation) => animation.finish()),
+    );
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.mouse.move(0, 0);
-  const name = `${group}-${language}-${state.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.png`;
-  await page.screenshot({ path: `${folder}/${name}` });
+  // Finite animations and transitions (the side bar widening after the resize) end first.
+  await page.screenshot({ path: `${folder}/${name}`, animations: 'disabled' });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await settle();
+  await page.screenshot({ path: `${folder}/narrow/${name}`, animations: 'disabled' });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await settle();
 }

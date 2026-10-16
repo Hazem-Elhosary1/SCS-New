@@ -50,7 +50,7 @@ public partial class EmailCatalogueTests
         Assert.Equal(
             [
                 "clinic:AccessReset", "clinic:AccountCreated", "clinic:Invitation", "clinic:Notification", "clinic:PasswordChanged",
-                "clinic:PasswordReset", "clinic:SignInCode", "operators:Code", "operators:Code:change", "operators:FirstPassword",
+                "clinic:PasswordReset", "clinic:SignInCode", "operators:Code", "operators:Code:change", "operators:FirstPassword", "operators:FirstPassword:invited",
                 "operators:NewBrowser", "operators:ResetLink", "sample:Invoice", "sample:LongContent", "sample:Shell",
                 "sample:SubscriptionNotice", "sample:TicketNotification",
             ],

@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  booleanAttribute,
   ElementRef,
   computed,
   inject,
@@ -29,6 +30,11 @@ export type ScsFileUploadState =
  * way it shows the progress; when a file is refused it says so and stays ready for another
  * try. It takes no part in the upload itself: it gives the chosen files to its page
  * (spec 009, FR-037 to FR-039).
+ *
+ * The operators' page (`157:72`; spec 095) draws the same zone thinner and lower, with an outlined
+ * mark, a purple hover and its own words while a file is held over it (`releaseWords`); its
+ * uploading, uploaded and failed states are `scs-file-card` under the zone. Each look sets its
+ * drawing through the `--scs-upload-*` settings, whose defaults are the clinic's.
  */
 @Component({
   selector: 'scs-file-upload',
@@ -49,18 +55,29 @@ export type ScsFileUploadState =
       gap: var(--scs-spacing-sm);
       box-sizing: border-box;
       inline-size: 100%;
-      min-block-size: 162px;
+      min-block-size: var(--scs-upload-height, 162px);
       padding: var(--scs-spacing-lg) var(--scs-spacing-md);
-      border: 1px dashed var(--scs-color-border-strong, var(--scs-color-border-default));
-      border-radius: var(--scs-radius-lg, 12px);
+      border: var(--scs-upload-border, 1px) dashed var(--scs-color-border-strong, var(--scs-color-border-default));
+      border-radius: var(--scs-upload-radius, var(--scs-radius-lg, 12px));
       background: var(--scs-color-bg-surface);
       color: var(--scs-color-text-primary);
       font: inherit;
       text-align: center;
       cursor: pointer;
     }
-    .zone:hover {
-      background: var(--scs-color-bg-surface-secondary);
+    .zone:hover,
+    :host-context([data-scs-state~='hover']) .zone {
+      border-color: var(--scs-upload-hover-accent, var(--scs-color-border-strong, var(--scs-color-border-default)));
+      background: var(--scs-upload-hover-bg, var(--scs-color-bg-surface-secondary));
+    }
+    .zone:hover .title,
+    :host-context([data-scs-state~='hover']) .title {
+      color: var(--scs-upload-hover-accent, inherit);
+    }
+    .zone:hover .mark,
+    :host-context([data-scs-state~='hover']) .mark {
+      border-color: var(--scs-upload-hover-accent, transparent);
+      color: var(--scs-upload-hover-accent, var(--scs-color-icon-default));
     }
     .zone:focus-visible {
       outline: 2px solid var(--scs-color-brand-default);
@@ -68,7 +85,15 @@ export type ScsFileUploadState =
     }
     :host([data-state='drag']) .zone {
       border-color: var(--scs-color-brand-default);
+      border-width: var(--scs-upload-drag-border, var(--scs-upload-border, 1px));
       background: var(--scs-color-brand-subtle);
+    }
+    :host([data-state='drag']) .title,
+    :host([data-state='drag']) .hint {
+      color: var(--scs-upload-drag-text, inherit);
+    }
+    :host([data-state='drag']) .title {
+      font-weight: var(--scs-upload-drag-weight, 500);
     }
     :host([data-state='uploading']) .zone {
       min-block-size: 178px;
@@ -89,11 +114,15 @@ export type ScsFileUploadState =
       place-items: center;
       inline-size: 40px;
       block-size: 40px;
+      box-sizing: border-box;
+      border: var(--scs-upload-mark-border, 0) solid transparent;
+      border-color: var(--scs-upload-mark-line, transparent);
       border-radius: var(--scs-radius-full);
-      background: var(--scs-color-bg-surface-secondary);
+      background: var(--scs-upload-mark-bg, var(--scs-color-bg-surface-secondary));
       color: var(--scs-color-icon-default);
     }
     :host([data-state='drag']) .mark {
+      border-color: var(--scs-upload-hover-accent, transparent);
       background: var(--scs-color-bg-surface);
       color: var(--scs-color-brand-default);
     }
@@ -162,7 +191,10 @@ export type ScsFileUploadState =
         />
       </span>
       <span class="title" data-testid="file-zone-title">
-        @switch (shown()) {
+        @switch (shown() === 'drag' && releaseWords() ? 'release' : shown()) {
+          @case ('release') {
+            {{ 'ui.files.zone.drop' | transloco }}
+          }
           @case ('uploading') {
             {{ 'ui.files.zone.uploading' | transloco }}
           }
@@ -175,7 +207,10 @@ export type ScsFileUploadState =
         }
       </span>
       <span class="hint" data-testid="file-zone-hint" [id]="hintId">
-        @switch (shown()) {
+        @switch (shown() === 'drag' && releaseWords() ? 'release' : shown()) {
+          @case ('release') {
+            {{ 'ui.files.zone.release' | transloco }}
+          }
           @case ('error') {
             {{ error() }}
           }
@@ -234,6 +269,12 @@ export class ScsFileUploadComponent {
   /** The record holds as many files as its kind allows. */
   readonly full = input(false);
 
+  /** While a file is held over it, say "Drop your file here · Release to upload" (the operators' page). */
+  readonly releaseWords = input(false, { transform: booleanAttribute });
+
+  /** Shows the zone as if a file were held over it (the gallery's specimen of that state). */
+  readonly dragging = input(false, { transform: booleanAttribute });
+
   /** The files a person dropped or chose. */
   readonly chosen = output<File[]>();
 
@@ -269,7 +310,7 @@ export class ScsFileUploadComponent {
     if (this.full()) {
       return 'full';
     }
-    if (this.over()) {
+    if (this.over() || this.dragging()) {
       return 'drag';
     }
     if (this.uploading() !== null) {

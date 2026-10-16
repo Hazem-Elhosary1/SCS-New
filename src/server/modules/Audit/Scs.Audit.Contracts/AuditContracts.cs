@@ -71,6 +71,33 @@ public interface IClinicAuditReading
     Task<AuditPage> ReadAsync(AuditQuery query, CancellationToken cancellation);
 }
 
+/// <summary>One thing an operator did to the platform itself, as stored (spec 011).</summary>
+/// <param name="Facts">The entry's facts as short texts: a role's name, a kind of link.</param>
+/// <param name="After">For a change of one value: what it became (a role's name).</param>
+/// <param name="AfterKey">The same when it became one of the platform's own roles: its key.</param>
+public sealed record PlatformActivity(
+    Guid Id,
+    DateTimeOffset OccurredAt,
+    string Action,
+    string? TargetKind,
+    Guid? TargetId,
+    string? TargetName,
+    IReadOnlyDictionary<string, string> Facts,
+    string? After,
+    string? AfterKey = null)
+{
+    public override string ToString() => nameof(PlatformActivity);
+}
+
+/// <summary>
+/// The platform's own trail, read from the operators' side only (spec 011, FR-026): what one
+/// operator did, newest first. No clinic's reading reaches it.
+/// </summary>
+public interface IPlatformAuditReading
+{
+    Task<IReadOnlyList<PlatformActivity>> LastByActorAsync(Guid operatorId, int take, CancellationToken cancellation);
+}
+
 /// <summary>
 /// The operators' reading (FR-031): entries whose actor is an operator, across clinics or for
 /// one. It has no caller until the operators' console exists (specs 023 and 025).

@@ -159,16 +159,20 @@ public sealed class AuditFactsTests(SqlServerFixture sql)
         var account = AuditTarget.ForAccount(Guid.NewGuid());
 
         var tooLong = await SaveRoleWithAsync(
-            world, "طويل", new AuditRecord(AuditActions.SessionsEnded, account, Facts("reason", new string('x', 201))));
+            world, "طويل", new AuditRecord(AuditActions.SessionsEnded, account, Facts("reason", new string('x', AuditSql.FactTextMaxLength + 1))));
         var anObject = await SaveRoleWithAsync(
             world, "كائن", new AuditRecord(AuditActions.SessionsEnded, account, Facts("reason", new { nested = "x" })));
         var fits = await SaveRoleWithAsync(
-            world, "يصلح", new AuditRecord(AuditActions.SessionsEnded, account, Facts("reason", new string('x', 200))));
+            world, "يصلح", new AuditRecord(AuditActions.SessionsEnded, account, Facts("reason", new string('x', AuditSql.FactTextMaxLength))));
 
         Assert.IsType<AuditRefusedException>(tooLong);
         Assert.IsType<AuditRefusedException>(anObject);
         Assert.Null(fits);
-        Assert.Equal(200, Assert.Single(await sql.Main.EntriesAsync(world.Clinic)).FactsJson.GetProperty("reason").GetString()!.Length);
+        // The limit was 200 until spec 011, where a reason or a note on an operator or a role is "up to 500".
+        Assert.Equal(500, AuditSql.FactTextMaxLength);
+        Assert.Equal(
+            AuditSql.FactTextMaxLength,
+            Assert.Single(await sql.Main.EntriesAsync(world.Clinic)).FactsJson.GetProperty("reason").GetString()!.Length);
     }
 
     [Fact]
@@ -316,9 +320,15 @@ public sealed class AuditFactsTests(SqlServerFixture sql)
         var entries = await sql.Main.EntriesAsync(world.Clinic);
 
         // Every action of the catalogue was written while all of that was in reach — but those
-        // of files, which pass nothing of sign-in and have their own secrets test (spec 009) …
+        // of files, which pass nothing of sign-in and have their own secrets test (spec 009), and
+        // those of the operators' team, which are written to the platform's own trail and never
+        // to a clinic's (spec 011: PlatformEntryTests, NobodyGainsTests) …
         Assert.Equal(
-            AuditActions.All.Select(a => a.Code).Where(code => !code.StartsWith("file.", StringComparison.Ordinal)).Order(StringComparer.Ordinal),
+            AuditActions.All.Select(a => a.Code)
+                .Where(code => !code.StartsWith("file.", StringComparison.Ordinal)
+                               && !code.StartsWith("operator.", StringComparison.Ordinal)
+                               && !code.StartsWith("opsrole.", StringComparison.Ordinal))
+                .Order(StringComparer.Ordinal),
             entries.Select(e => e.ActionCode).Distinct().Order(StringComparer.Ordinal));
 
         // … and none of what was typed or issued is in any column of it.

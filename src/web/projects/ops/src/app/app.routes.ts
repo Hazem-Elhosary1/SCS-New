@@ -1,5 +1,8 @@
 import { Routes } from '@angular/router';
+import { OpsCan } from './access/ops-access.service';
+import { guarded } from './access/ops-can';
 import { signedInOnly, signedOutOnly } from './auth/ops-auth.guard';
+import { galleryRoutes } from './gallery/gallery.routes';
 
 /**
  * The operators console (spec 010). The screens before sign-in stand alone; everything after
@@ -30,6 +33,8 @@ export const routes: Routes = [
     path: 'password/first',
     loadComponent: () => import('./password/password.pages').then((file) => file.SetPasswordPage),
   },
+  // The design components' gallery: development only, empty in production (spec 095).
+  ...galleryRoutes,
   {
     path: 'privacy',
     loadComponent: () => import('./home/home.pages').then((file) => file.NotYetPage),
@@ -48,6 +53,28 @@ export const routes: Routes = [
         path: 'profile',
         loadComponent: () => import('./profile/profile.page').then((file) => file.ProfilePage),
       },
+      // The team and its roles (spec 011). Each page stands behind the permission its reads need.
+      ...guarded('operators', OpsCan.operatorsView, () =>
+        import('./operators/operators.page').then((file) => file.OperatorsPage),
+      ),
+      ...guarded('operators/roles', OpsCan.operatorsView, () =>
+        import('./operators/operators.page').then((file) => file.OperatorsPage),
+      ),
+      ...guarded('operators/new', OpsCan.operatorsManage, () =>
+        import('./operators/operator-form.page').then((file) => file.OperatorFormPage),
+      ),
+      ...guarded('operators/roles/new', OpsCan.operatorsManageRoles, () =>
+        import('./operators/role-form.page').then((file) => file.RoleFormPage),
+      ),
+      ...guarded('operators/roles/:id/edit', OpsCan.operatorsManageRoles, () =>
+        import('./operators/role-form.page').then((file) => file.RoleFormPage),
+      ),
+      ...guarded('operators/:id', OpsCan.operatorsView, () =>
+        import('./operators/operator.page').then((file) => file.OperatorPage),
+      ),
+      ...guarded('operators/:id/edit', OpsCan.operatorsManage, () =>
+        import('./operators/operator-form.page').then((file) => file.OperatorFormPage),
+      ),
       {
         path: '**',
         loadComponent: () => import('./home/home.pages').then((file) => file.NotFoundPage),

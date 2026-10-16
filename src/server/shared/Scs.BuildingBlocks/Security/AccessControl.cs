@@ -214,10 +214,27 @@ public static partial class AccessControlExtensions
             }
 
             // A route of the operators console: its own scheme has already let in a signed-in
-            // operator and nobody else (spec 010). Operators' permissions arrive with spec 011.
-            if (endpoint.Metadata.GetMetadata<OperatorRouteMetadata>() is not null)
+            // operator and nobody else (spec 010); what that operator's role holds decides the
+            // rest (spec 011). An operator's permission never opens a clinic's route, nor the
+            // reverse: the two rules are read from different declarations.
+            if (endpoint.Metadata.GetMetadata<OperatorRouteMetadata>() is { } operatorRule)
             {
-                await next(context);
+                if (operatorRule.IsOwnAccount
+                    || await context.RequestServices.GetRequiredService<IOperatorAccess>()
+                        .HasAsync(operatorRule.Permission!, context.RequestAborted))
+                {
+                    await next(context);
+                    return;
+                }
+
+                var opsLogger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("Scs.Access");
+                var opsRoute = (endpoint as RouteEndpoint)?.RoutePattern.RawText ?? endpoint.DisplayName ?? "";
+                LogRefused(opsLogger, opsRoute, operatorRule.Permission!);
+                await ProblemWriter.WriteAsync(
+                    context,
+                    StatusCodes.Status403Forbidden,
+                    ErrorCodes.PermissionRequired,
+                    extensions: new Dictionary<string, object?>(StringComparer.Ordinal) { ["permission"] = operatorRule.Permission });
                 return;
             }
 

@@ -119,6 +119,93 @@ namespace Scs.Audit.Infrastructure.Migrations
 
                     b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
+
+            modelBuilder.Entity("Scs.Audit.Domain.PlatformEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ActionCode")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<Guid?>("ActorAccountId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ActorKind")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(8)");
+
+                    b.Property<string>("ActorName")
+                        .HasMaxLength(254)
+                        .HasColumnType("nvarchar(254)");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(16)");
+
+                    b.Property<string>("Changes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Facts")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(45)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(45)");
+
+                    b.Property<DateTimeOffset>("OccurredAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("TargetId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("TargetKind")
+                        .HasMaxLength(32)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(32)");
+
+                    b.Property<string>("TargetName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("TraceId")
+                        .IsRequired()
+                        .HasColumnType("char(32)");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActorAccountId", "OccurredAtUtc")
+                        .IsDescending(false, true);
+
+                    b.HasIndex("TargetKind", "TargetId", "OccurredAtUtc");
+
+                    b.ToTable("PlatformEntry", "audit", t =>
+                        {
+                            t.HasTrigger("TR_PlatformEntry_AppendOnly");
+
+                            t.HasCheckConstraint("CK_PlatformEntry_ActorKind", "[ActorKind] IN ('operator', 'system')");
+
+                            t.HasCheckConstraint("CK_PlatformEntry_Category", "[Category] IN ('security', 'changes', 'records', 'users')");
+
+                            t.HasCheckConstraint("CK_PlatformEntry_Changes", "[Changes] IS NULL OR ISJSON([Changes]) = 1");
+
+                            t.HasCheckConstraint("CK_PlatformEntry_Facts", "[Facts] IS NULL OR ISJSON([Facts]) = 1");
+                        });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
+                });
 #pragma warning restore 612, 618
         }
     }

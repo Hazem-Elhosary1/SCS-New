@@ -18,6 +18,10 @@ let nextId = 0;
  * A small window over a dimmed page. Built on the browser's own dialog, which keeps focus
  * inside while it is open, closes on Escape, and returns focus to what opened it. The × button
  * and a click on the dimmed area close it too.
+ *
+ * Design: Modal (`62:57` / `309:116`; the clinic's `4252:61695`). Its look is kept as the owner
+ * chose; the page's four sizes are `size` — 360, 480, 640, and 900 for the full-screen one, never
+ * wider than the window. `still` draws it open in place, without dimming the page (the gallery).
  */
 @Component({
   selector: 'scs-dialog',
@@ -34,6 +38,11 @@ let nextId = 0;
       background: var(--scs-color-bg-surface);
       color: var(--scs-color-text-primary);
       box-shadow: 0 20px 48px 0 #0a0f1433;
+    }
+    dialog.still {
+      position: static;
+      inline-size: min(var(--scs-dialog-width, 400px), 100%);
+      margin: 0;
     }
     dialog::backdrop {
       background: var(--scs-color-overlay);
@@ -77,7 +86,8 @@ let nextId = 0;
     <dialog
       #dialog
       data-testid="dialog"
-      [style.--scs-dialog-width.px]="width()"
+      [class.still]="still()"
+      [style.--scs-dialog-width.px]="size() ? sizes[size()!] : width()"
       [attr.aria-labelledby]="heading() ? id : null"
       [attr.aria-label]="heading() ? null : label() || null"
       (close)="open.set(false)"
@@ -117,6 +127,14 @@ export class ScsDialogComponent {
   /** How wide, in pixels, when the window allows it. */
   readonly width = input(400);
 
+  /** One of the page's four widths, in place of `width`. */
+  readonly size = input<'sm' | 'md' | 'lg' | 'full' | null>(null);
+
+  /** Open in place, not over the page (the gallery's still specimens). */
+  readonly still = input(false, { transform: booleanAttribute });
+
+  protected readonly sizes = { sm: 360, md: 480, lg: 640, full: 900 } as const;
+
   /** Already translated: the dialog's name when it shows no heading. */
   readonly label = input('');
 
@@ -133,7 +151,10 @@ export class ScsDialogComponent {
 
     effect(() => {
       const element = this.dialog().nativeElement;
-      if (this.open() && !element.open) {
+      if (this.still()) {
+        // Open without the dimmed page: the attribute, as `show()` would set it.
+        element.setAttribute('open', '');
+      } else if (this.open() && !element.open) {
         element.showModal();
       } else if (!this.open() && element.open) {
         element.close();

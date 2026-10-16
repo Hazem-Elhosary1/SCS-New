@@ -12,7 +12,7 @@ import {
 import { browserLanguage, startInBrowserLanguage } from './i18n/first-language';
 import { passwordRules } from './password/password.pages';
 import { agoLabel } from './profile/profile.page';
-import { initialsOf } from './shell/ops-shell.component';
+import { initialsOf } from 'ui';
 import { OPS_SECTIONS } from './shell/sections';
 
 const problem = (status: number, code: string, extra: Record<string, unknown> = {}) =>
@@ -76,7 +76,11 @@ describe('the small pieces of the operators console', () => {
   });
 
   it('lists only the sections that exist', () => {
-    expect(OPS_SECTIONS.map((section) => section.key)).toEqual(['home']);
+    // Spec 011 adds the team, behind its permission; the home stays open to every operator until spec 022.
+    expect(OPS_SECTIONS.map((section) => [section.key, section.permission])).toEqual([
+      ['home', undefined],
+      ['operators', 'operators.view'],
+    ]);
   });
 });
 

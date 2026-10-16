@@ -18,5 +18,7 @@ export const signedInOnly: CanActivateFn = async (_route, state) => {
 /** The screens before sign-in: a signed-in operator has nothing to do there. */
 export const signedOutOnly: CanActivateFn = async () => {
   const auth = inject(OpsAuthService);
-  return (await auth.load()) ? inject(Router).createUrlTree(['/']) : true;
+  // Taken before waiting: after an await there is no injection context to ask in.
+  const router = inject(Router);
+  return (await auth.load()) ? router.createUrlTree(['/']) : true;
 };

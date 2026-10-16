@@ -17,3 +17,13 @@ password.temporary-replaced security
 settings.notification-email-changed changes
 file.downloaded records
 file.scan-refused security
+operator.invited users
+operator.edited users
+operator.role-changed users
+operator.suspended users
+operator.reactivated users
+operator.link-sent security
+operator.unlocked security
+opsrole.created users
+opsrole.edited users
+opsrole.deleted users

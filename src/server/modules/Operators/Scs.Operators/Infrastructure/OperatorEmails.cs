@@ -75,9 +75,35 @@ internal static class OperatorEmails
                 ]);
     }
 
-    public static EmailContent FirstPassword(string to, string language, string link, int validHours)
+    /// <summary>
+    /// The invitation. When an operator invited the account it says who, and in what role, as
+    /// the frame writes it (spec 011, FR-032); the deployment command's invitation names neither.
+    /// </summary>
+    public static EmailContent FirstPassword(
+        string to, string language, string link, int validHours, string? inviter = null, string? role = null)
     {
         var hours = validHours.ToString(CultureInfo.InvariantCulture);
+        if (!string.IsNullOrWhiteSpace(inviter) && !string.IsNullOrWhiteSpace(role))
+        {
+            return language == Words.English
+                ? new(
+                    to, "en", "Invitation to the Ops Console", "INVITATION", "Join the Ops Console",
+                    [
+                        new EmailParagraph($"{inviter} added you as a {role} on the {Platform} Ops Console. Set your password to sign in — the link expires in {hours} hours."),
+                        new EmailButton("Set password", link),
+                        new EmailNote("Weren’t expecting this? You can ignore this email."),
+                    ],
+                    "You’re receiving this email because an administrator added you to the Ops Console.")
+                : new(
+                    to, "ar", "دعوة إلى لوحة التشغيل", "دعوة", "انضم إلى لوحة التشغيل",
+                    [
+                        new EmailParagraph($"أضافك {inviter} بدور {role} في لوحة التشغيل الخاصة بـ{Platform}. عيّن كلمة المرور لتسجيل الدخول — ينتهي الرابط خلال {hours} ساعة."),
+                        new EmailButton("تعيين كلمة المرور", link),
+                        new EmailNote("لم تكن تتوقع هذه الرسالة؟ يمكنك تجاهلها."),
+                    ],
+                    "وصلتك هذه الرسالة لأن أحد المسؤولين أضافك إلى لوحة التشغيل.");
+        }
+
         return language == Words.English
             ? new(
                 to, "en", "Invitation to the Ops Console", "INVITATION", "Join the Ops Console",

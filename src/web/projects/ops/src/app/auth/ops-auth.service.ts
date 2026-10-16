@@ -9,7 +9,10 @@ export interface OpsOperator {
   readonly id: string;
   readonly fullName: string;
   readonly language: 'ar' | 'en';
+  /** The role's name in the account's language. */
   readonly roleName: string;
+  /** The role itself (spec 011): a system role by its key, a custom one by its name. */
+  readonly role?: { readonly id: string | null; readonly name: string; readonly systemKey: string | null };
 }
 
 export interface OpsSession {
@@ -18,6 +21,8 @@ export interface OpsSession {
   /** The idle period, for the console's own clock. */
   readonly idleMinutes: number;
   readonly newBrowser?: boolean;
+  /** The codes the operator's role holds now (spec 011): what the console may draw. */
+  readonly permissions?: readonly string[];
 }
 
 /** A code is in the operator's email: where it went and when another may be asked for. */
@@ -62,6 +67,7 @@ export const OpsCodes = {
   linkInvalid: 'LINK_INVALID',
   rateLimited: 'RATE_LIMITED',
   validation: 'VALIDATION_FAILED',
+  permissionRequired: 'PERMISSION_REQUIRED',
 } as const;
 
 /** The console marks what a page asks by itself: it is not the operator's activity (FR-032). */
@@ -104,6 +110,8 @@ export class OpsAuthService {
   private readonly said = signal<OpsNotice | null>(null);
 
   private renewing: Promise<boolean> | null = null;
+  private refreshing: Promise<void> | null = null;
+  private refreshedAt = 0;
   private lastActivity = Date.now();
   private timer: ReturnType<typeof setInterval> | null = null;
   private readonly channel = this.openChannel();
@@ -146,6 +154,35 @@ export class OpsAuthService {
     }
     this.settled.set(true);
     return this.signedIn();
+  }
+
+  /**
+   * Reads the session again: what the operator's role holds may have changed since the page
+   * was opened (spec 011, FR-008). Asked on every navigation and after the platform refuses
+   * something for a missing permission; one read at a time.
+   */
+  refresh(): Promise<void> {
+    if (!this.signedIn()) {
+      return Promise.resolve();
+    }
+
+    this.refreshing ??= firstValueFrom(this.http.get<OpsSession>(SESSION, { headers: { [BACKGROUND_HEADER]: '1' } }))
+      .then((session) => {
+        if (this.signedIn()) {
+          this.current.set(session);
+        }
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        this.refreshedAt = Date.now();
+        this.refreshing = null;
+      });
+    return this.refreshing;
+  }
+
+  /** The same, unless it was read a moment ago: a page whose guard just asked is not asked twice. */
+  refreshIfStale(): Promise<void> {
+    return Date.now() - this.refreshedAt < 500 ? (this.refreshing ?? Promise.resolve()) : this.refresh();
   }
 
   /** Step one: email and password. Opens nothing; a code is sent. */
@@ -232,6 +269,7 @@ export class OpsAuthService {
 
   private accept(session: OpsSession): void {
     this.current.set(session);
+    this.refreshedAt = Date.now();
     // After sign-in the console speaks the account's language (FR-054).
     this.language.use(session.operator.language);
     this.watch();
@@ -361,6 +399,11 @@ export const opsSessionInterceptor: HttpInterceptorFn = (request, next) => {
             return throwError(() => error);
           }),
         );
+      }
+
+      // The role lost a permission since the page was drawn: the console reads it again and follows.
+      if (error.problem.code === OpsCodes.permissionRequired) {
+        void auth.refresh();
       }
 
       if (

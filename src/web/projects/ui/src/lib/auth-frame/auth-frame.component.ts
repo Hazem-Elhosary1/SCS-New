@@ -3,7 +3,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { LanguageService } from 'core';
 import { ScsLinkDirective } from '../controls/controls';
 import { ScsIconComponent } from '../icon/icon.component';
-import { ScsLanguageToggleComponent } from '../list/list';
+import { ScsLanguageToggleComponent } from '../list/language-toggle.component';
 
 /**
  * The frame every sign-in screen shares (BRD B-5; design file, page "Sign in"): the

@@ -29,6 +29,18 @@ public class AuditActionsTests
         // Spec 009: a file leaving the system, and a file the check refused.
         ("file.downloaded", "records"),
         ("file.scan-refused", "security"),
+
+        // Spec 011: the operators console's own team and roles, in the platform's own trail.
+        ("operator.invited", "users"),
+        ("operator.edited", "users"),
+        ("operator.role-changed", "users"),
+        ("operator.suspended", "users"),
+        ("operator.reactivated", "users"),
+        ("operator.link-sent", "security"),
+        ("operator.unlocked", "security"),
+        ("opsrole.created", "users"),
+        ("opsrole.edited", "users"),
+        ("opsrole.deleted", "users"),
     ];
 
     [Fact]
@@ -109,7 +121,10 @@ public class AuditActionsTests
     public void The_actions_that_change_a_value_and_no_other_need_before_and_after()
     {
         Assert.Equal(
-            ["account.role-changed", "role.created", "role.deleted", "role.updated", "settings.notification-email-changed"],
+            [
+                "account.role-changed", "operator.edited", "operator.role-changed", "opsrole.created", "opsrole.edited",
+                "role.created", "role.deleted", "role.updated", "settings.notification-email-changed",
+            ],
             AuditActions.All.Where(a => a.NeedsBeforeAfter).Select(a => a.Code).Order(StringComparer.Ordinal));
     }
 

@@ -254,11 +254,23 @@ downloaded bytes. The contract is `specs/009-file-storage/contracts/files-engine
 
 The operators console is a room of its own. A route for operators:
 
-- lives under `/v1/ops/` and declares **`.OperatorsOnly()`** — any signed-in operator, and
-  nobody else. It is authenticated by the operators' scheme alone: a clinic's session presented
-  there is no session. Never give such a route `.Requires(...)` or `.OwnAccountOnly()`: those
-  are the clinic's. Operators' permissions arrive with spec 011 and will replace
-  `OperatorsOnly()` route by route;
+- lives under `/v1/ops/` and declares **exactly one** of three things (spec 011,
+  `specs/011-operators-roles/contracts/operator-access.md`):
+  **`.Open()`** — before sign-in only; **`.OperatorOwnAccount()`** — what an operator does to
+  their own account, a short list held by a test; or
+  **`.RequiresOperator(OperatorPermissions.X)`** — everything else. The gate answers 403
+  `PERMISSION_REQUIRED` with the code before the handler runs, the same whether or not the
+  record exists. It is authenticated by the operators' scheme alone: a clinic's session
+  presented there is no session. Never give such a route `.Requires(...)` or
+  `.OwnAccountOnly()`: those are the clinic's;
+- asks about a permission inside a handler through `IOperatorAccess` (`HasAsync(code)`,
+  `IsSuperAdminAsync()`), never by a role's name and never by counting what a role holds;
+- records what it changes in the platform's own trail, inside the transaction of the change:
+  `await db.RecordForPlatformAsync(new AuditRecord(AuditActions.X, target, facts, changes), ct)`,
+  and declares it with `.Records(AuditActions.X)`. Who did it is taken from the request;
+- in the console, puts its page behind `guarded(path, code, load)` in `app.routes.ts`, its
+  line in `shell/sections.ts` with its `permission`, and its write controls behind `*appCan`;
+  every number, date and time goes through `i18n/ops-format.ts`;
 - reads who is asking from `ICurrentOperator` (the operator's id and the session's), never from
   a cookie;
 - declares what it records, like every route. An operator's own sign-in events are kept in
@@ -323,6 +335,28 @@ two apps need goes into `core` (not visual) or `ui` (visual), never copied.
 - Dates and money go through `scsDate` and `scsMoney`.
 - Loading, empty, error, offline, view-only and not-in-plan are shown with `<scs-state>`.
 - Calls to the platform are written as `/v1/...` and go through the `core` HTTP layer.
+
+### Where a screen's parts come from (spec 095)
+
+A screen is composed; it does not draw its own buttons, fields, badges, menus or dialogs.
+
+- **Take the part from `ui`** when both consoles have it (`scs-badge`, `scs-text-field`,
+  `scs-select`, `scs-checkbox`, `scs-switch`, `scs-avatar`, `scs-tag`, `scs-navbar`,
+  `scs-nav-item`, `scs-calendar`, `scs-date-field`, `scs-time-field`, …), or from the console's own
+  `projects/ops/src/app/components/` when only the operators' file draws it (the date range, the
+  date and time field, the AI parts, the media parts, …).
+- **A part's look is its look's settings**, never a page's CSS: each component reads
+  `--scs-<part>-*` with the clinic's value as its default, and the operators' values live in
+  `projects/ops/src/styles/tokens.css`. A setting only one look declares is cleared for the
+  gallery's clinic look in `ops/src/app/gallery/clinic-reset.css` (`npm run test:tools` keeps that
+  list complete). A clinic screen must not change when a shared part learns a new look.
+- **A part the design draws and `ui` lacks** is added there (or to the console's components),
+  with its unit test, its specimens and working example in the gallery
+  (`ops/src/app/gallery/sections/`), and its kept pictures — never drawn on the screen that first
+  needs it.
+- **Its icons** come from the registry through `node tools/icons.mjs add` (see `docs/setup.md`).
+- **On a phone** every control is at least 40 by 40: a small part honours `--scs-touch` (set by
+  the operators' look below 720 pixels), making its room around its drawing.
 
 ### A page in the clinic console (spec 006)
 

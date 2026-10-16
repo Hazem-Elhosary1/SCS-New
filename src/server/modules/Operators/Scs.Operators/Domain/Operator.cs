@@ -10,13 +10,14 @@ public static class OperatorStates
 /// <summary>
 /// A person who runs the platform (spec 010, FR-001). Belongs to no clinic: the same email may
 /// also be a clinic team member's, and nothing is shared between the two accounts (FR-002).
-/// Its role arrives with spec 011.
+/// It holds one role (spec 011), and what it may do is that role's permissions at each request.
 /// </summary>
 internal sealed class Operator
 {
     public const int NameMaxLength = 200;
     public const int EmailMaxLength = 254;
     public const int MobileMaxLength = 30;
+    public const int JobTitleMaxLength = 150;
 
     private Operator()
     {
@@ -54,6 +55,28 @@ internal sealed class Operator
 
     public DateTimeOffset CreatedAtUtc { get; private set; }
 
+    /// <summary>The one role the account holds (spec 011, ق-53).</summary>
+    public Guid RoleId { get; private set; }
+
+    /// <summary>One of <see cref="OperatorDepartments"/>, or none.</summary>
+    public string? Department { get; private set; }
+
+    public string? JobTitle { get; private set; }
+
+    /// <summary>Always on while the platform asks every operator for the emailed code (spec 011, FR-040).</summary>
+    public bool TwoStepRequired { get; private set; } = true;
+
+    /// <summary>Who invited the account; none when the deployment tool did.</summary>
+    public Guid? InvitedById { get; private set; }
+
+    /// <summary>The inviter's name when they invited: kept so the page can say it whatever becomes of them.</summary>
+    public string? InvitedByName { get; private set; }
+
+    /// <summary>When the first password was set.</summary>
+    public DateTimeOffset? ActivatedAtUtc { get; private set; }
+
+    public DateTimeOffset? SuspendedAtUtc { get; private set; }
+
     /// <summary>
     /// Set while an invitation email is owed to an invited account: the deployment command asks,
     /// the platform sends (FR-003).
@@ -64,12 +87,12 @@ internal sealed class Operator
 
     public bool IsLocked(DateTimeOffset now) => LockedUntilUtc > now;
 
-    public static Operator Invite(string fullName, string normalizedEmail, DateTimeOffset now)
+    public static Operator Invite(string fullName, string normalizedEmail, Guid roleId, DateTimeOffset now)
     {
-        var name = (fullName ?? "").Trim();
-        if (name.Length is 0 or > NameMaxLength)
+        var name = NameOf(fullName);
+        if (roleId == Guid.Empty)
         {
-            throw new ArgumentException("A name has 1 to 200 characters.", nameof(fullName));
+            throw new ArgumentException("An operator holds a role.", nameof(roleId));
         }
 
         if (string.IsNullOrEmpty(normalizedEmail) || normalizedEmail.Length > EmailMaxLength)
@@ -82,6 +105,7 @@ internal sealed class Operator
             Id = Guid.CreateVersion7(),
             FullName = name,
             Email = normalizedEmail,
+            RoleId = roleId,
             State = OperatorStates.Invited,
             CreatedAtUtc = now,
         };
@@ -108,6 +132,7 @@ internal sealed class Operator
         }
 
         State = OperatorStates.Active;
+        ActivatedAtUtc = now;
         InvitationOwedSinceUtc = null;
         SetPassword(passwordHash, now);
     }
@@ -122,5 +147,115 @@ internal sealed class Operator
         LastFailedAtUtc = null;
         SpentCodes = 0;
         LockedUntilUtc = null;
+    }
+
+    /// <summary>Who invited the account, when an operator did (spec 011).</summary>
+    public void InvitedBy(Guid inviterId, string inviterName)
+    {
+        InvitedById = inviterId;
+        InvitedByName = NameOf(inviterName);
+    }
+
+    /// <summary>
+    /// The details an operator who manages operators may set. The email is not among them: it
+    /// is the account's identity and never changes (ق-59).
+    /// </summary>
+    public void Describe(string fullName, string? mobile, string? department, string? jobTitle, string language)
+    {
+        var name = NameOf(fullName);
+        var phone = Optional(mobile, MobileMaxLength, "A mobile number has at most 30 characters.", nameof(mobile));
+        var title = Optional(jobTitle, JobTitleMaxLength, "A job title has at most 150 characters.", nameof(jobTitle));
+
+        if (department is not null && !OperatorDepartments.All.Contains(department))
+        {
+            throw new ArgumentException("Not a department of the platform.", nameof(department));
+        }
+
+        if (language is not ("ar" or "en"))
+        {
+            throw new ArgumentException("The language is Arabic or English.", nameof(language));
+        }
+
+        FullName = name;
+        Mobile = phone;
+        Department = department;
+        JobTitle = title;
+        Language = language;
+    }
+
+    /// <summary>Another role. Whether it may be given, and to this account, is the caller's to check first.</summary>
+    /// <returns>Whether the role changed.</returns>
+    public bool ChangeRole(Guid roleId)
+    {
+        if (roleId == Guid.Empty)
+        {
+            throw new ArgumentException("An operator holds a role.", nameof(roleId));
+        }
+
+        if (RoleId == roleId)
+        {
+            return false;
+        }
+
+        RoleId = roleId;
+        return true;
+    }
+
+    /// <summary>Only an active account is suspended (§4-3).</summary>
+    public void Suspend(DateTimeOffset now)
+    {
+        if (State != OperatorStates.Active)
+        {
+            throw new InvalidOperationException("Only an active account is suspended.");
+        }
+
+        State = OperatorStates.Suspended;
+        SuspendedAtUtc = now;
+    }
+
+    /// <summary>Back to active, with wrong tries, spent codes and any lock forgotten (ق-125).</summary>
+    public void Reactivate()
+    {
+        if (State != OperatorStates.Suspended)
+        {
+            throw new InvalidOperationException("Only a suspended account is reactivated.");
+        }
+
+        State = OperatorStates.Active;
+        SuspendedAtUtc = null;
+        ForgetTries();
+    }
+
+    /// <summary>Only an active account that is locked now is unlocked.</summary>
+    public void Unlock(DateTimeOffset now)
+    {
+        if (State != OperatorStates.Active || !IsLocked(now))
+        {
+            throw new InvalidOperationException("Only an active, locked account is unlocked.");
+        }
+
+        ForgetTries();
+    }
+
+    private void ForgetTries()
+    {
+        FailedAttempts = 0;
+        LastFailedAtUtc = null;
+        SpentCodes = 0;
+        LockedUntilUtc = null;
+    }
+
+    private static string NameOf(string? fullName)
+    {
+        var name = (fullName ?? "").Trim();
+        return name.Length is 0 or > NameMaxLength
+            ? throw new ArgumentException("A name has 1 to 200 characters.", nameof(fullName))
+            : name;
+    }
+
+    private static string? Optional(string? value, int max, string refusal, string parameter)
+    {
+        var trimmed = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        return trimmed is { Length: var length } && length > max ? throw new ArgumentException(refusal, parameter) : trimmed;
     }
 }

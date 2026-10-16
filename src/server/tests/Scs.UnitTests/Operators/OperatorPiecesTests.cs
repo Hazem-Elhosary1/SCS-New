@@ -17,6 +17,9 @@ public partial class OperatorPiecesTests
 
     private const string To = "sara@heta.example";
 
+    private static readonly Guid SuperAdmin =
+        Scs.SharedKernel.Access.OperatorPermissions.SystemRoles.IdOf(Scs.SharedKernel.Access.OperatorPermissions.SystemRoles.SuperAdmin);
+
     private static EmailMessage Render(EmailContent content) => EmailRenderer.Render(content, EmailRendererTests.Full);
 
     [Theory]
@@ -85,6 +88,21 @@ public partial class OperatorPiecesTests
         var firstEnglish = Render(OperatorEmails.FirstPassword(To, "en", Link, 72));
         Assert.Contains("You were added to the Smart Clinic OS Ops Console.", firstEnglish.TextBody, StringComparison.Ordinal);
         Assert.Contains("expires in 72 hours", firstEnglish.TextBody, StringComparison.Ordinal);
+
+        // Invited by an operator (spec 011, FR-032): the frame's body, naming who and in what role.
+        var invited = Render(OperatorEmails.FirstPassword(To, "ar", Link, 72, "حازم الحصري", "مسؤول الفوترة"));
+        Assert.Contains("أضافك حازم الحصري بدور مسؤول الفوترة في لوحة التشغيل الخاصة بـ", invited.TextBody, StringComparison.Ordinal);
+        Assert.Contains(". عيّن كلمة المرور لتسجيل الدخول — ينتهي الرابط خلال 72 ساعة.", invited.TextBody, StringComparison.Ordinal);
+        Assert.DoesNotContain("أُضفت إلى لوحة التشغيل", invited.TextBody, StringComparison.Ordinal);
+        Assert.Single(Regex.Matches(invited.TextBody, "https://"));
+
+        var invitedEnglish = Render(OperatorEmails.FirstPassword(To, "en", Link, 72, "Hazem Elhosary", "Billing Manager"));
+        Assert.Contains(
+            "Hazem Elhosary added you as a Billing Manager on the Smart Clinic OS Ops Console. Set your password to sign in — the link expires in 72 hours.",
+            invitedEnglish.TextBody, StringComparison.Ordinal);
+
+        // Only one of the two is not enough to say it: the command's words stay.
+        Assert.Contains("You were added to", Render(OperatorEmails.FirstPassword(To, "en", Link, 72, "Hazem", " ")).TextBody, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -137,12 +155,12 @@ public partial class OperatorPiecesTests
     public void An_operator_is_invited_then_chooses_a_password_and_a_new_password_forgets_the_lock()
     {
         var now = DateTimeOffset.UnixEpoch;
-        var account = Operator.Invite("  Sara Ahmed ", To, now);
+        var account = Operator.Invite("  Sara Ahmed ", To, SuperAdmin, now);
 
         Assert.Equal(("Sara Ahmed", OperatorStates.Invited, "ar"), (account.FullName, account.State, account.Language));
         Assert.Null(account.PasswordHash);
-        Assert.Throws<ArgumentException>(() => Operator.Invite("", To, now));
-        Assert.Throws<ArgumentException>(() => Operator.Invite(new string('n', 201), To, now));
+        Assert.Throws<ArgumentException>(() => Operator.Invite("", To, SuperAdmin, now));
+        Assert.Throws<ArgumentException>(() => Operator.Invite(new string('n', 201), To, SuperAdmin, now));
 
         account.OweInvitation(now);
         Assert.NotNull(account.InvitationOwedSinceUtc);

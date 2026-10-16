@@ -37,6 +37,7 @@ public sealed class AuditModule : IModule, IMigratableModule
         services.AddScoped<AuditReading>();
         services.AddScoped<IClinicAuditReading>(provider => provider.GetRequiredService<AuditReading>());
         services.AddScoped<IOperatorAuditReading, OperatorAuditReading>();
+        services.AddScoped<IPlatformAuditReading, PlatformAuditReading>();
     }
 
     public void MapEndpoints(IEndpointRouteBuilder v1) => v1.MapAudit();

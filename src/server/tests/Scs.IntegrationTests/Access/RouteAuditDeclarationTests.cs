@@ -52,6 +52,17 @@ public sealed class RouteAuditDeclarationTests(SqlServerFixture sql)
         ["POST /v1/ops/profile/password/confirm"] = AuditDeclarationKind.RecordsNothing,
         ["POST /v1/ops/profile/password/resend"] = AuditDeclarationKind.RecordsNothing,
         ["POST /v1/ops/profile/password/cancel"] = AuditDeclarationKind.RecordsNothing,
+
+        // Spec 011: each is recorded in the platform's own trail.
+        ["POST /v1/ops/operators"] = AuditDeclarationKind.Records,
+        ["PUT /v1/ops/operators/{id:guid}"] = AuditDeclarationKind.Records,
+        ["POST /v1/ops/operators/{id:guid}/suspend"] = AuditDeclarationKind.Records,
+        ["POST /v1/ops/operators/{id:guid}/reactivate"] = AuditDeclarationKind.Records,
+        ["POST /v1/ops/operators/{id:guid}/password-link"] = AuditDeclarationKind.Records,
+        ["POST /v1/ops/operators/{id:guid}/unlock"] = AuditDeclarationKind.Records,
+        ["POST /v1/ops/roles"] = AuditDeclarationKind.Records,
+        ["PUT /v1/ops/roles/{id:guid}"] = AuditDeclarationKind.Records,
+        ["POST /v1/ops/roles/{id:guid}/delete"] = AuditDeclarationKind.Records,
         ["PUT /v1/settings/notification-emails/{eventKey}"] = AuditDeclarationKind.Records,
         ["POST /v1/files"] = AuditDeclarationKind.RecordsNothing,
         ["DELETE /v1/files/{id:guid}"] = AuditDeclarationKind.RecordsNothing,

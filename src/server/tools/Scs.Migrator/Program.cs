@@ -19,6 +19,16 @@ internal static class EntryPoint
             return 0;
         }
 
+        if (args is ["ops-catalogue", var opsPath])
+        {
+            // The operators' catalogue as their console reads it (spec 011). Run after any change
+            // to it; a test fails while the checked-in file is out of date.
+            await File.WriteAllTextAsync(opsPath, Scs.SharedKernel.Access.OperatorPermissionsFile.Write()).ConfigureAwait(false);
+            await Console.Out.WriteLineAsync($"Wrote {Scs.SharedKernel.Access.OperatorPermissions.All.Count} operator permissions to {opsPath}.")
+                .ConfigureAwait(false);
+            return 0;
+        }
+
         if (args is ["file-kinds", var kindsPath])
         {
             // The kinds of file as the web sites read them (spec 009). Run after any change to

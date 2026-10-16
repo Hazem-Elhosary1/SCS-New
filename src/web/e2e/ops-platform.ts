@@ -95,6 +95,8 @@ export interface OpsPlatform {
   /** Calls that carried the background header. */
   background: string[];
   lastHeaders: Record<string, string>;
+  /** What the operator's role holds now (spec 011); the session read returns it. */
+  permissions?: string[];
 }
 
 async function fulfil(route: Route, answer: OpsAnswer): Promise<void> {
@@ -146,10 +148,13 @@ export async function opsPlatform(page: Page, start: Partial<OpsPlatform> = {}):
   };
 
   const pick = (answer: OpsAnswer | (() => OpsAnswer)) => (typeof answer === 'function' ? answer() : answer);
+  // The role's codes are set by the team's fake (spec 011, `ops-team-platform.ts`); without it
+  // the session names none, as before roles existed.
   const described = () => ({
     operator: state.operator,
     expiresAt: '2030-01-01T12:00:00Z',
     idleMinutes: state.idleMinutes,
+    permissions: state.permissions ?? [],
   });
 
   const on = async (pattern: string, handler: (route: Route) => Promise<void>) => {
@@ -269,16 +274,39 @@ export async function opsLooksWrong(page: Page): Promise<string[]> {
       wrong.push(`the dialog scrolls sideways (${dialog.scrollWidth} > ${dialog.clientWidth})`);
     }
 
+    // A box that scrolls sideways on purpose (a wide table on a phone) is the frame of what is inside
+    // it: that is reached by scrolling the box, which itself must stay inside the window.
+    const scroller = (element: Element): Element | null => {
+      for (let around = element.parentElement; around; around = around.parentElement) {
+        const overflow = getComputedStyle(around).overflowX;
+        if ((overflow === 'auto' || overflow === 'scroll') && around.scrollWidth > around.clientWidth + 1) return around;
+      }
+      return null;
+    };
+
     const scope = dialog ?? document.body;
     for (const element of scope.querySelectorAll('input, button, a, h1, h2, h3, p, label, strong, small, li, bdi')) {
       if (!seen(element) || element.closest('.cdk-visually-hidden, .sr-only, [hidden]')) {
         continue;
       }
       const box = element.getBoundingClientRect();
+      const inside = scroller(element);
+      if (inside) {
+        const room = inside.getBoundingClientRect();
+        if (room.left < frame.left - 1 || room.right > frame.right + 1) {
+          wrong.push(`${name(inside)} is outside its frame (${Math.round(room.left)}..${Math.round(room.right)} in ${Math.round(frame.left)}..${Math.round(frame.right)})`);
+        }
+        continue;
+      }
       if (box.left < frame.left - 1 || box.right > frame.right + 1) {
         wrong.push(`${name(element)} is outside its frame (${Math.round(box.left)}..${Math.round(box.right)} in ${Math.round(frame.left)}..${Math.round(frame.right)})`);
       }
       // And inside the room its container leaves it: the nearest one that has padding at its sides.
+      // A small control made 40 to press on a phone takes its room back with negative margins: what
+      // it holds in the line is its box less that room.
+      const own = getComputedStyle(element);
+      const takenLeft = box.left - Math.min(0, parseFloat(own.marginLeft));
+      const takenRight = box.right + Math.min(0, parseFloat(own.marginRight));
       for (let around = element.parentElement; around && around !== scope.parentElement; around = around.parentElement) {
         const padded = getComputedStyle(around);
         const left = parseFloat(padded.paddingLeft);
@@ -287,7 +315,7 @@ export async function opsLooksWrong(page: Page): Promise<string[]> {
           continue;
         }
         const room = around.getBoundingClientRect();
-        if (box.left < room.left + left - 1 || box.right > room.right - right + 1) {
+        if (takenLeft < room.left + left - 1 || takenRight > room.right - right + 1) {
           wrong.push(`${name(element)} runs into the padding of ${name(around).slice(0, 40)}`);
         }
         break;

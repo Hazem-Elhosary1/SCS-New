@@ -18,6 +18,8 @@ public sealed class AuditDbContext(DbContextOptions<AuditDbContext> options, ICl
 
     public DbSet<Entry> Entries => Set<Entry>();
 
+    public DbSet<PlatformEntry> PlatformEntries => Set<PlatformEntry>();
+
     public static DbContextOptionsBuilder Configure(DbContextOptionsBuilder builder, string connection) =>
         builder.UseSqlServer(connection, sql => sql.MigrationsHistoryTable(HistoryTable, AuditSql.Schema));
 
@@ -57,6 +59,37 @@ public sealed class AuditDbContext(DbContextOptions<AuditDbContext> options, ICl
 
             // The history of one thing (used from spec 026 on).
             builder.HasIndex(e => new { e.ClinicId, e.TargetKind, e.TargetId, e.OccurredAtUtc });
+        });
+
+        // Spec 011: what was done to the platform itself. No clinic, so no isolation: it is
+        // named in the platform-wide list, and only the operators' side reads it.
+        modelBuilder.Entity<PlatformEntry>(builder =>
+        {
+            builder.ToTable(AuditSql.PlatformTable, table =>
+            {
+                table.HasTrigger(AuditSql.PlatformAppendOnlyTrigger);
+                table.HasCheckConstraint("CK_PlatformEntry_ActorKind", "[ActorKind] IN ('operator', 'system')");
+                table.HasCheckConstraint("CK_PlatformEntry_Category", "[Category] IN ('security', 'changes', 'records', 'users')");
+                table.HasCheckConstraint("CK_PlatformEntry_Facts", "[Facts] IS NULL OR ISJSON([Facts]) = 1");
+                table.HasCheckConstraint("CK_PlatformEntry_Changes", "[Changes] IS NULL OR ISJSON([Changes]) = 1");
+            });
+
+            builder.HasKey(e => e.Id);
+            builder.Property(e => e.Id).ValueGeneratedNever();
+            builder.Property(e => e.OccurredAtUtc).HasColumnType("datetimeoffset").IsRequired();
+            builder.Property(e => e.ActorKind).HasMaxLength(8).IsUnicode(false).IsRequired();
+            builder.Property(e => e.ActorName).HasMaxLength(AuditSql.ActorNameMaxLength);
+            builder.Property(e => e.ActionCode).HasMaxLength(64).IsUnicode(false).IsRequired();
+            builder.Property(e => e.Category).HasMaxLength(16).IsUnicode(false).IsRequired();
+            builder.Property(e => e.TargetKind).HasMaxLength(32).IsUnicode(false);
+            builder.Property(e => e.TargetName).HasMaxLength(AuditSql.TargetNameMaxLength);
+            builder.Property(e => e.IpAddress).HasMaxLength(AuditSql.IpAddressMaxLength).IsUnicode(false);
+            builder.Property(e => e.UserAgent).HasMaxLength(AuditSql.UserAgentMaxLength);
+            builder.Property(e => e.TraceId).HasColumnType("char(32)").IsRequired();
+
+            // What one operator did, newest first; and the history of one operator or role.
+            builder.HasIndex(e => new { e.ActorAccountId, e.OccurredAtUtc }).IsDescending(false, true);
+            builder.HasIndex(e => new { e.TargetKind, e.TargetId, e.OccurredAtUtc });
         });
 
         ApplyClinicIsolation(modelBuilder);

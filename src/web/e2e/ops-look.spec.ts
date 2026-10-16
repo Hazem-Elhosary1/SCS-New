@@ -36,7 +36,11 @@ const words = {
 type Language = keyof typeof words;
 
 /** The state as it is: whole at the design's size and at a phone's, and pictured. */
+/** No screen of the operators console writes an Arabic-Indic or Persian digit (spec 011, FR-049). */
+const EASTERN = /[\u0660-\u0669\u06f0-\u06f9]/u;
+
 async function look(page: Page, language: Language, state: string): Promise<void> {
+  expect(await page.locator('body').innerText(), `${language} ${state}: Western digits only`).not.toMatch(EASTERN);
   await page.setViewportSize(NARROW);
   expect(await opsLooksWrong(page), `${language} ${state}, narrow`).toEqual([]);
   if (process.env['SCS_SHOTS']) {
@@ -341,9 +345,14 @@ for (const language of ['ar', 'en'] as const) {
         expect(email.x - name.x).toBeGreaterThan(250);
         expect(mobile.x - email.x).toBeGreaterThan(200);
       }
+      // On, its knob at the right in both languages (spec 011's answer).
       expect(
-        await page.getByTestId('two-factor').evaluate((track) => getComputedStyle(track, '::after').right),
-      ).toBe('2px');
+        await page.getByTestId('two-factor').evaluate((button) => {
+          const track = button.querySelector('.track')!.getBoundingClientRect();
+          const knob = button.querySelector('.knob')!.getBoundingClientRect();
+          return Math.round(track.right - knob.right);
+        }),
+      ).toBeLessThanOrEqual(3);
       expect(Math.abs(account.width - security.width)).toBeLessThanOrEqual(1);
       expect(security.y).toBeGreaterThan(account.y + account.height);
 

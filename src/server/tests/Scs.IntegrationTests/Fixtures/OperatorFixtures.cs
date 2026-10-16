@@ -5,6 +5,7 @@ using Scs.BuildingBlocks.Security;
 using Scs.Operators.Domain;
 using Scs.Operators.Infrastructure;
 using Scs.Operators.Infrastructure.Persistence;
+using Scs.SharedKernel.Access;
 
 namespace Scs.IntegrationTests.Fixtures;
 
@@ -57,14 +58,19 @@ public static class OpsHelp
 {
     /// <summary>Creates an operator in a state, through the module's own entities.</summary>
     public static async Task<(Guid Id, string Email)> CreateOperatorAsync(
-        this ApiFactory factory, string state = OperatorStates.Active, string? email = null, string language = "ar")
+        this ApiFactory factory, string state = OperatorStates.Active, string? email = null, string language = "ar",
+        Guid? roleId = null)
     {
         ArgumentNullException.ThrowIfNull(factory);
         email ??= $"operator-{Guid.NewGuid():N}@heta.example";
 
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<OperatorsDbContext>();
-        var account = Operator.Invite("سارة أحمد", email, factory.Clock.GetUtcNow());
+        // A super admin unless a test says otherwise: what every operator was before roles.
+        var account = Operator.Invite(
+            "سارة أحمد", email,
+            roleId ?? OperatorPermissions.SystemRoles.IdOf(OperatorPermissions.SystemRoles.SuperAdmin),
+            factory.Clock.GetUtcNow());
         if (state != OperatorStates.Invited)
         {
             account.Activate(PasswordHasher.Hash(OpsWorld.Password), factory.Clock.GetUtcNow());
@@ -80,6 +86,53 @@ public static class OpsHelp
         }
 
         return (account.Id, email);
+    }
+
+    /// <summary>The id of one of the platform's own three roles.</summary>
+    public static Guid SystemRole(string key) => OperatorPermissions.SystemRoles.IdOf(key);
+
+    /// <summary>A custom role holding the codes given (and what they need), made as the module makes one.</summary>
+    public static async Task<Guid> CreateRoleAsync(this ApiFactory factory, params string[] codes)
+    {
+        ArgumentNullException.ThrowIfNull(factory);
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<OperatorsDbContext>();
+        var role = Role.Create($"Role {Guid.NewGuid():N}"[..20], null, codes, Guid.NewGuid(), factory.Clock.GetUtcNow());
+        db.Roles.Add(role);
+        await db.SaveChangesAsync();
+        return role.Id;
+    }
+
+    /// <summary>An active operator whose role holds exactly the codes given and what they need.</summary>
+    public static async Task<(Guid Id, string Email, Guid RoleId)> CreateOperatorWithAsync(this ApiFactory factory, params string[] codes)
+    {
+        var roleId = await factory.CreateRoleAsync(codes);
+        var (id, email) = await factory.CreateOperatorAsync(roleId: roleId);
+        return (id, email, roleId);
+    }
+
+    /// <summary>Replaces what a custom role holds, as an edit of the role does.</summary>
+    public static async Task SetRoleCodesAsync(this ApiFactory factory, Guid roleId, params string[] codes)
+    {
+        ArgumentNullException.ThrowIfNull(factory);
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<OperatorsDbContext>();
+        var role = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.SingleAsync(
+            Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.Include(db.Roles, r => r.Permissions), r => r.Id == roleId);
+        role.Hold(codes);
+        await db.SaveChangesAsync();
+    }
+
+    /// <summary>Both steps of sign-in for any operator of the factory; a browser carrying their session.</summary>
+    public static async Task<HttpClient> SignInOperatorAsync(this ApiFactory factory, string email)
+    {
+        ArgumentNullException.ThrowIfNull(factory);
+        var browser = factory.Browser();
+        using var first = await browser.OpsStepOneAsync(email);
+        Assert.True(first.IsSuccessStatusCode, $"Step one answered {(int)first.StatusCode}.");
+        using var second = await browser.OpsStepTwoAsync(factory.Mail.LatestCodeFor(email));
+        Assert.True(second.IsSuccessStatusCode, $"Step two answered {(int)second.StatusCode}.");
+        return browser;
     }
 
     public static async Task OpsSqlAsync(this ApiFactory factory, string sql)

@@ -4,7 +4,7 @@
  * variables read on 2026-10-10. Variable names are the ones the design file uses.
  * Shared components read these variables and nothing else.
  */
-:root {
+[data-scs-look='clinic'] {
   /* Colour: text */
   --scs-color-text-primary: #1a2024;
   --scs-color-text-secondary: #57646d;
@@ -78,4 +78,25 @@
   --scs-radius-md: 10px;
   --scs-radius-full: 999px;
   --scs-shadow-subtle: 0 1px 2px 0 #0a0f140f;
+
+  /* Names added by spec 095 for the parts the shared components gained. Values from the clinic
+     file's "Color" collection (read 2026-10-16); nothing read before this spec changes.
+     (--scs-color-text-disabled and --scs-color-border-strong stay undeclared here: they are read
+     with fallbacks today, and declaring them would change the clinic's screens.) */
+  --scs-color-text-placeholder: #9facb5;
+  --scs-color-bg-hover: #f6f8f9;
+  --scs-color-border-control: #e3e8ec;
+  --scs-color-focus-ring: #1d8fae;
+  --scs-color-brand-hover: #146f8b;
+  --scs-color-danger-hover: #b91c1c;
+  --scs-color-danger-active: #991b1b;
+  --scs-border-thin: 1px;
+  --scs-border-medium: 1.5px;
+  --scs-border-thick: 2px;
+  --scs-elevation-xs: 0 1px 2px 0 #0a0f140f;
+  --scs-elevation-sm: 0 2px 6px -1px #0a0f1414;
+  --scs-elevation-md: 0 4px 12px -2px #0a0f141a;
+  --scs-elevation-lg: 0 8px 20px -4px #0a0f141a, 0 2px 6px -2px #0a0f140f;
+  --scs-elevation-xl: 0 16px 32px -6px #0a0f1424, 0 4px 8px -2px #0a0f1414;
+  --scs-elevation-overlay: 0 24px 48px -8px #0a0f1433;
 }

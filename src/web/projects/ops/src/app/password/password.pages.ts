@@ -16,6 +16,7 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { OpsAuthService, OpsCodes, problemField } from '../auth/ops-auth.service';
 import { OPS_EMAIL } from '../sign-in/sign-in.page';
+import { opsCountdown } from '../i18n/ops-format';
 
 /** The four rules of a password, each met or not by what is typed (FR-029). */
 export function passwordRules(password: string, words: (key: string) => string): ScsPasswordRule[] {
@@ -225,14 +226,8 @@ export class ForgotPage {
   /** A link was sent again from the "check your email" screen. */
   protected readonly resent = signal(false);
 
-  /** Minutes and seconds, in the reader's digits. */
-  protected readonly countdown = computed(() => {
-    const digits = new Intl.NumberFormat(this.language.language() === 'ar' ? 'ar-EG' : 'en-GB', {
-      minimumIntegerDigits: 2,
-      useGrouping: false,
-    });
-    return `${digits.format(Math.floor(this.seconds() / 60))}:${digits.format(this.seconds() % 60)}`;
-  });
+  /** Minutes and seconds, in Western digits in both languages (spec 011, FR-049). */
+  protected readonly countdown = computed(() => opsCountdown(this.seconds()));
 
   private readonly language = inject(LanguageService);
   private waitEndsAt = 0;

@@ -36,6 +36,7 @@ public sealed class OperatorsModule : IModule, IMigratableModule
         services.AddScsOperatorSessions();
         services.AddOperatorRateLimits();
 
+        services.AddScoped<IOperatorAccessSource, OperatorAccessSource>();
         services.AddScoped<OperatorSessions>();
         services.AddScoped<IOperatorSessionCheck>(provider => provider.GetRequiredService<OperatorSessions>());
         services.AddScoped<IOperatorSessions>(provider => provider.GetRequiredService<OperatorSessions>());
@@ -43,14 +44,18 @@ public sealed class OperatorsModule : IModule, IMigratableModule
         services.AddScoped<OperatorSignIn>();
         services.AddScoped<OperatorPasswords>();
         services.AddScoped<OperatorInvite>();
+        services.AddScoped<OperatorsDirectory>();
+        services.AddScoped<OperatorManagement>();
+        services.AddScoped<Roles>();
         services.AddScoped<OperatorProfile>();
         services.AddScoped<IOperatorDirectory>(provider => provider.GetRequiredService<OperatorProfile>());
+        services.AddScoped<Scs.BuildingBlocks.Audit.IOperatorActorNames>(provider => provider.GetRequiredService<OperatorProfile>());
         services.AddScoped<OperatorsCleanupJob>();
         services.AddScoped<OperatorInviteJob>();
         services.AddSingleton<IRecurringJobRegistration, OperatorJobs>();
     }
 
-    public void MapEndpoints(IEndpointRouteBuilder v1) => v1.MapOperators();
+    public void MapEndpoints(IEndpointRouteBuilder v1) => v1.MapOperators().MapOperatorsTeam().MapOperatorRoles();
 
     /// <summary>
     /// The deployment tool's <c>operator invite</c> (FR-003): notes that an invitation is owed to

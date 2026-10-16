@@ -157,6 +157,16 @@ role; this account has neither until spec 011.
 | Note **(design)** | لم تكن تتوقع هذه الرسالة؟ يمكنك تجاهلها. | Weren't expecting this? You can ignore this email. |
 | Reason **(design)** | وصلتك هذه الرسالة لأن أحد المسؤولين أضافك إلى لوحة التشغيل. | You're receiving this email because an administrator added you to the Ops Console. |
 
+**Invited by an operator (spec 011, FR-032)** — the same email with the frame's own body, when the
+account has an inviter and a role; everything else is as above.
+
+| | Arabic | English |
+|---|---|---|
+| Body **(design)** | أضافك ‹الداعي› بدور ‹الدور› في لوحة التشغيل الخاصة بـ‹المنصّة›. عيّن كلمة المرور لتسجيل الدخول — ينتهي الرابط خلال ‹n› ساعة. | ‹inviter› added you as a ‹role› on the ‹platform› Ops Console. Set your password to sign in — the link expires in ‹n› hours. |
+
+The role is named in the invited person's language (a system role) or as written (a custom
+one). The frame's "30 minutes" is a sample value: an invitation lives 72 hours.
+
 ### C4. `NewBrowser` — a sign-in from a browser the account has not used
 
 Not drawn.

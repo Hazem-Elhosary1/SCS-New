@@ -6,6 +6,8 @@ export interface OpsSection {
   readonly key: string;
   readonly path: string;
   readonly icon: ScsIconName;
+  /** The permission that shows it (spec 011, FR-006); none while a section is open to every operator. */
+  readonly permission?: string;
 }
 
 /**
@@ -13,4 +15,8 @@ export interface OpsSection {
  * section adds its line here, with its route, and nothing of the frame changes. The design's
  * side bar lists eight; each appears when it is built.
  */
-export const OPS_SECTIONS: readonly OpsSection[] = [{ key: 'home', path: '/', icon: 'home' }];
+export const OPS_SECTIONS: readonly OpsSection[] = [
+  // Open to every operator until the dashboard is built (spec 022), which puts it behind its own permission.
+  { key: 'home', path: '/', icon: 'home' },
+  { key: 'operators', path: '/operators', icon: 'people', permission: 'operators.view' },
+];

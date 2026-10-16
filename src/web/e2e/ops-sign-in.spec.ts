@@ -91,7 +91,7 @@ test.describe('an operator signs in', () => {
     await expect(page.getByTestId('code-email')).toHaveText('ahmed.sami@smartclinicos.com');
     await expect(page.getByTestId('auth-panel-line')).toHaveText('طبقة حماية إضافية لحساب التشغيل الخاص بك.');
     await expect(page.getByTestId('code-wait')).toContainText('يمكنك إعادة إرسال الكود خلال');
-    await expect(page.getByTestId('code-countdown')).toHaveText(/٠٠:[٠-٩]{2}/);
+    await expect(page.getByTestId('code-countdown')).toHaveText(/^00:[0-9]{2}$/);
     await expect(page.getByTestId('code-submit')).toHaveText('تحقق');
     await expect(page.getByTestId('code-back')).toHaveText('الرجوع لتسجيل الدخول');
     await opsPicture(page, 'ar', 'code');
@@ -100,7 +100,7 @@ test.describe('an operator signs in', () => {
     await typeCode(page, '427913');
     await expect(page.getByTestId('ops-top-bar')).toBeVisible();
     await expect(page).toHaveURL(`${OPS}/`);
-    await expect(page.getByTestId('ops-operator-name')).toHaveText('أحمد سامي');
+    await expect(page.getByTestId('ops-person')).toHaveText('أحمد سامي');
   });
 
   test('an address opened with no session returns to it after sign-in', async ({ page }) => {
@@ -140,7 +140,7 @@ test.describe('an operator signs in', () => {
     platform.signIn = opsProblem(403, 'ACCOUNT_LOCKED', { lockedUntil: '2026-10-12T14:05:00Z' });
     await page.getByTestId('sign-in-submit').click();
     await expect(page.getByTestId('banner-locked')).toContainText('الحساب مقفل حتى');
-    await expect(page.getByTestId('locked-until')).toHaveText(/[٠-٩]+:[٠-٩]{2}/);
+    await expect(page.getByTestId('locked-until')).toHaveText(/^[0-9]+:[0-9]{2} [صم]$/);
     await expect(page.getByTestId('banner-locked')).toContainText('إعادة تعيين كلمة المرور تفتحه الآن');
     await opsPicture(page, 'ar', 'sign-in-locked');
 
@@ -273,13 +273,13 @@ test.describe('a forgotten password, and choosing one from a link', () => {
     const sendings = () => platform.calls.filter((call) => call === 'POST /v1/ops/password/forgot').length;
     await expect(page.getByTestId('forgot-again')).toHaveCount(0);
     await expect(page.getByTestId('forgot-wait')).toContainText('يمكنك إعادة الإرسال خلال');
-    await expect(page.getByTestId('forgot-countdown')).toHaveText(/^٠[٠١]:[٠-٩]{2}$/);
+    await expect(page.getByTestId('forgot-countdown')).toHaveText(/^0[01]:[0-9]{2}$/);
     // The countdown changes every second: it is in no live region, or a screen reader would
     // be made to speak sixty times a minute.
     const live = '[role="status"], [role="alert"], [aria-live]';
     expect(await page.getByTestId('forgot-countdown').evaluate((part, s) => part.closest(s) === null, live)).toBe(true);
     await page.clock.fastForward(20_000);
-    await expect(page.getByTestId('forgot-countdown')).toHaveText(/^٠٠:[٣٤][٠-٩]$/);
+    await expect(page.getByTestId('forgot-countdown')).toHaveText(/^00:[34][0-9]$/);
     expect(sendings()).toBe(1);
     await opsPicture(page, 'ar', 'forgot-sent');
 

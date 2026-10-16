@@ -26,6 +26,10 @@ public sealed class OperatorsDbContext(DbContextOptions<OperatorsDbContext> opti
 
     internal DbSet<SignInRecord> Records => Set<SignInRecord>();
 
+    internal DbSet<Role> Roles => Set<Role>();
+
+    internal DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+
     public static DbContextOptionsBuilder Configure(DbContextOptionsBuilder builder, string connection) =>
         builder.UseSqlServer(connection, sql => sql.MigrationsHistoryTable(HistoryTable, Schema));
 
@@ -41,6 +45,9 @@ public sealed class OperatorsDbContext(DbContextOptions<OperatorsDbContext> opti
                 table.HasCheckConstraint("CK_Operator_Language", "[Language] IN ('ar', 'en')");
                 table.HasCheckConstraint(
                     "CK_Operator_Password", "[State] = 'invited' OR [PasswordHash] IS NOT NULL");
+                table.HasCheckConstraint(
+                    "CK_Operator_Department",
+                    "[Department] IS NULL OR [Department] IN ('support', 'billing', 'success', 'sales', 'management')");
             });
 
             builder.HasKey(o => o.Id);
@@ -59,6 +66,52 @@ public sealed class OperatorsDbContext(DbContextOptions<OperatorsDbContext> opti
             builder.Property(o => o.InvitationOwedSinceUtc).HasColumnType("datetimeoffset");
             builder.Property(o => o.RowVersion).IsRowVersion();
             builder.HasIndex(o => o.Email).IsUnique().HasDatabaseName("UX_Operator_Email");
+
+            // Spec 011: one role, and a role that is held cannot be removed from under its holders.
+            builder.Property(o => o.Department).HasMaxLength(20).IsUnicode(false);
+            builder.Property(o => o.JobTitle).HasMaxLength(Operator.JobTitleMaxLength);
+            builder.Property(o => o.TwoStepRequired).HasDefaultValue(true);
+            builder.Property(o => o.InvitedByName).HasMaxLength(Operator.NameMaxLength);
+            builder.Property(o => o.ActivatedAtUtc).HasColumnType("datetimeoffset");
+            builder.Property(o => o.SuspendedAtUtc).HasColumnType("datetimeoffset");
+            builder.HasOne<Role>().WithMany().HasForeignKey(o => o.RoleId).OnDelete(DeleteBehavior.Restrict);
+            builder.HasIndex(o => o.RoleId).HasDatabaseName("IX_Operator_Role");
+            builder.HasIndex(o => o.CreatedAtUtc).IsDescending().HasDatabaseName("IX_Operator_Newest");
+        });
+
+        modelBuilder.Entity<Role>(builder =>
+        {
+            builder.ToTable("Role", table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_Role_SystemKey", "[SystemKey] IS NULL OR [SystemKey] IN ('super-admin', 'billing-admin', 'viewer')");
+
+                // A system role is never deleted, and only a system role has no name of its own.
+                table.HasCheckConstraint("CK_Role_SystemKept", "[SystemKey] IS NULL OR [DeletedAtUtc] IS NULL");
+                table.HasCheckConstraint("CK_Role_Named", "[SystemKey] IS NOT NULL OR LEN([Name]) > 0");
+            });
+
+            builder.HasKey(r => r.Id);
+            builder.Property(r => r.Id).ValueGeneratedNever();
+            builder.Property(r => r.Name).HasMaxLength(Role.NameMaxLength).IsRequired();
+            builder.Property(r => r.NameKey).HasMaxLength(Role.NameMaxLength + 40).IsRequired();
+            builder.Property(r => r.Description).HasMaxLength(Role.DescriptionMaxLength);
+            builder.Property(r => r.SystemKey).HasMaxLength(20).IsUnicode(false);
+            builder.Property(r => r.CreatedAtUtc).HasColumnType("datetimeoffset").IsRequired();
+            builder.Property(r => r.DeletedAtUtc).HasColumnType("datetimeoffset");
+            builder.Property(r => r.RowVersion).IsRowVersion();
+            builder.Ignore(r => r.Codes);
+            builder.HasIndex(r => r.NameKey).IsUnique().HasDatabaseName("UX_Role_Name");
+            builder.HasIndex(r => r.SystemKey).IsUnique().HasFilter("[SystemKey] IS NOT NULL").HasDatabaseName("UX_Role_SystemKey");
+            builder.HasMany(r => r.Permissions).WithOne().HasForeignKey(p => p.RoleId).OnDelete(DeleteBehavior.Cascade);
+            builder.Navigation(r => r.Permissions).UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        modelBuilder.Entity<RolePermission>(builder =>
+        {
+            builder.ToTable("RolePermission");
+            builder.HasKey(p => new { p.RoleId, p.Code });
+            builder.Property(p => p.Code).HasMaxLength(RolePermission.CodeMaxLength).IsUnicode(false);
         });
 
         modelBuilder.Entity<SignInChallenge>(builder =>

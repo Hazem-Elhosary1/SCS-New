@@ -35,6 +35,17 @@ public sealed class RouteDeclarationTests(SqlServerFixture sql)
         "POST /v1/dev/files/sample/{id:guid}/remove", "POST /v1/dev/files/sample/{id:guid}/restore",
     ];
 
+    /// <summary>
+    /// The same for the operators console (spec 011, contracts/operator-access.md §1): only what
+    /// an operator does to their own account. Everything else names a permission.
+    /// </summary>
+    private static readonly string[] OperatorOwnAccountRoutes =
+    [
+        "GET /v1/ops/auth/session", "POST /v1/ops/auth/sign-out-everywhere",
+        "GET /v1/ops/profile/", "POST /v1/ops/profile/password", "POST /v1/ops/profile/password/confirm",
+        "POST /v1/ops/profile/password/resend", "POST /v1/ops/profile/password/cancel",
+    ];
+
     private static string Describe(RouteEndpoint endpoint)
     {
         var methods = endpoint.Metadata.GetMetadata<HttpMethodMetadata>()?.HttpMethods;
@@ -67,7 +78,7 @@ public sealed class RouteDeclarationTests(SqlServerFixture sql)
 
         Assert.True(
             offenders.Count == 0,
-            "Say who may call each of these — AllowAnonymous(), OwnAccountOnly(), Requires(...), RequiresOrOwner(...) or, in the operators console, OperatorsOnly(), and only one: "
+            "Say who may call each of these — AllowAnonymous(), OwnAccountOnly(), Requires(...), RequiresOrOwner(...) or, in the operators console, OperatorOwnAccount() or RequiresOperator(...), and only one: "
             + string.Join(", ", offenders));
     }
 
@@ -94,6 +105,45 @@ public sealed class RouteDeclarationTests(SqlServerFixture sql)
 
         Assert.DoesNotContain(
             routes.Except(ops), e => e.Metadata.GetMetadata<OperatorRouteMetadata>() is not null);
+    }
+
+    [Fact]
+    public async Task The_routes_open_to_any_signed_in_operator_are_exactly_the_written_list()
+    {
+        await sql.EnsureMigratedAsync();
+        using var factory = sql.CreateApi();
+
+        var found = Routes(factory, probes: false)
+            .Where(e => e.Metadata.GetMetadata<OperatorRouteMetadata>() is { IsOwnAccount: true })
+            .Select(Describe)
+            .Order(StringComparer.Ordinal);
+
+        Assert.Equal(OperatorOwnAccountRoutes.Order(StringComparer.Ordinal), found);
+    }
+
+    /// <summary>
+    /// Spec 011 (FR-003): a permission of the operators console that guards nothing is a
+    /// promise the server does not keep. The codes of the sections not built yet are let be
+    /// until their own specs; the operators' own three are owed here.
+    /// </summary>
+    [Fact]
+    public async Task Every_operators_permission_of_this_spec_guards_a_route_and_every_code_named_is_in_the_catalogue()
+    {
+        await sql.EnsureMigratedAsync();
+        using var factory = sql.CreateApi();
+
+        var named = Routes(factory, probes: false)
+            .Select(e => (Route: Describe(e), Code: e.Metadata.GetMetadata<OperatorRouteMetadata>()?.Permission))
+            .Where(x => x.Code is not null)
+            .ToList();
+
+        var strangers = named.Where(x => !OperatorPermissions.IsKnown(x.Code!)).Select(x => x.Route).ToList();
+        Assert.True(strangers.Count == 0, "Not a permission of the operators' catalogue, on: " + string.Join(", ", strangers));
+
+        var owed = new[] { OperatorPermissions.OperatorsView, OperatorPermissions.OperatorsManage, OperatorPermissions.OperatorsManageRoles }
+            .Where(code => named.All(x => x.Code != code))
+            .ToList();
+        Assert.True(owed.Count == 0, "No route is guarded by: " + string.Join(", ", owed));
     }
 
     [Fact]

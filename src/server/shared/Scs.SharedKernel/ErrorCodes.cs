@@ -127,6 +127,48 @@ public static class ErrorCodes
     /// </summary>
     public const string StepExpired = "STEP_EXPIRED";
 
+    /// <summary>The email already belongs to an operator (spec 011).</summary>
+    public const string OpsEmailTaken = "OPS_EMAIL_TAKEN";
+
+    /// <summary>The role holds a permission the caller does not, or is the super admin's and the caller is not one.</summary>
+    public const string OpsRoleNotGrantable = "OPS_ROLE_NOT_GRANTABLE";
+
+    /// <summary>An operator does not change the role of their own account.</summary>
+    public const string OpsOwnRole = "OPS_OWN_ROLE";
+
+    /// <summary>The change would leave the platform with no active super admin.</summary>
+    public const string OpsLastSuperAdmin = "OPS_LAST_SUPER_ADMIN";
+
+    /// <summary>An operator does not suspend their own account.</summary>
+    public const string OpsOwnAccount = "OPS_OWN_ACCOUNT";
+
+    /// <summary>The account is not in the state the action needs; nothing changed.</summary>
+    public const string OpsStateChanged = "OPS_STATE_CHANGED";
+
+    /// <summary>A link was sent to the account less than a minute ago; nothing was sent.</summary>
+    public const string OpsLinkTooSoon = "OPS_LINK_TOO_SOON";
+
+    /// <summary>The record changed since it was read; nothing was overwritten.</summary>
+    public const string OpsChangedElsewhere = "OPS_CHANGED_ELSEWHERE";
+
+    /// <summary>The link could not be handed to the mail server; nothing was kept.</summary>
+    public const string OpsLinkNotSent = "OPS_LINK_NOT_SENT";
+
+    /// <summary>Another role has the name.</summary>
+    public const string OpsRoleNameTaken = "OPS_ROLE_NAME_TAKEN";
+
+    /// <summary>The body adds permissions the caller does not hold; carries <c>permissions</c>.</summary>
+    public const string OpsPermissionsNotHeld = "OPS_PERMISSIONS_NOT_HELD";
+
+    /// <summary>Nobody but a super admin edits the role they hold.</summary>
+    public const string OpsOwnRoleEdit = "OPS_OWN_ROLE_EDIT";
+
+    /// <summary>One of the platform's own roles: never edited or deleted.</summary>
+    public const string OpsSystemRole = "OPS_SYSTEM_ROLE";
+
+    /// <summary>A role that operators hold is not deleted; carries <c>operators</c>.</summary>
+    public const string OpsRoleInUse = "OPS_ROLE_IN_USE";
+
     public static IReadOnlyList<string> All { get; } =
     [
         ValidationFailed, MalformedRequest, Unauthenticated, Forbidden, NotFound,
@@ -140,5 +182,7 @@ public static class ErrorCodes
         FileEmpty, FileTooLarge, FileTypeNotAccepted, FileNotStored, FileLimitReached,
         FileCountReached, FileNotAttachable, FileBeingChecked, FileRefused, FileNotKept,
         StepExpired,
+        OpsEmailTaken, OpsRoleNotGrantable, OpsOwnRole, OpsLastSuperAdmin, OpsOwnAccount, OpsStateChanged, OpsLinkTooSoon,
+        OpsChangedElsewhere, OpsLinkNotSent, OpsRoleNameTaken, OpsPermissionsNotHeld, OpsOwnRoleEdit, OpsSystemRole, OpsRoleInUse,
     ];
 }
