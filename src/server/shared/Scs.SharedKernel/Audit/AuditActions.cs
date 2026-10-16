@@ -65,6 +65,12 @@ public static class AuditActions
     public const string OperatorRoleEdited = "opsrole.edited";
     public const string OperatorRoleDeleted = "opsrole.deleted";
 
+    // Spec 012: the feature catalogue, written to the platform's own trail.
+    public const string FeatureCreated = "feature.created";
+    public const string FeatureUpdated = "feature.updated";
+    public const string FeatureRetired = "feature.retired";
+    public const string FeatureResumed = "feature.resumed";
+
     /// <summary>Fact keys no action may allow: nothing secret and no email address is ever a fact (FR-016, FR-018).</summary>
     public static IReadOnlyList<string> NeverKeys { get; } =
         ["password", "code", "token", "link", "secret", "key", "email", "proof", "cookie"];
@@ -129,6 +135,14 @@ public static class AuditActions
             "عُدِّل دور المشغلين «{target}»{changes}", "The operators’ role “{target}” was edited{changes}", ["note"], NeedsBeforeAfter: true),
         new(OperatorRoleDeleted, AuditCategories.Users, "حذف دور مشغلين", "Operators’ role deleted",
             "حُذف دور المشغلين «{target}»", "The operators’ role “{target}” was deleted", ["note"], NeedsBeforeAfter: false),
+        new(FeatureCreated, AuditCategories.Changes, "إضافة ميزة", "Feature added",
+            "أُضيفت الميزة «{target}»", "Feature “{target}” was added", ["feature", "group", "kind"], NeedsBeforeAfter: true),
+        new(FeatureUpdated, AuditCategories.Changes, "تعديل ميزة", "Feature edited",
+            "عُدِّلت الميزة «{target}»{changes}", "Feature “{target}” was edited{changes}", ["feature"], NeedsBeforeAfter: true),
+        new(FeatureRetired, AuditCategories.Changes, "إيقاف ميزة", "Feature retired",
+            "أُوقف بيع الميزة «{target}»", "Feature “{target}” was retired", ["feature"], NeedsBeforeAfter: true),
+        new(FeatureResumed, AuditCategories.Changes, "إعادة بيع ميزة", "Feature sold again",
+            "أُعيدت الميزة «{target}» إلى البيع", "Feature “{target}” was put back on sale", ["feature"], NeedsBeforeAfter: true),
     ];
 
     private static readonly Dictionary<string, AuditAction> ByCode = All.ToDictionary(a => a.Code, StringComparer.Ordinal);

@@ -62,7 +62,8 @@ for (const language of ['ar', 'en'] as const) {
     test('the side bar, the top bar and the pages follow the role', async ({ page }) => {
       const { team } = await open(page, language, '/');
 
-      await expect(page.getByTestId('ops-side-bar').getByRole('link')).toHaveText(ar ? ['الرئيسية', 'المشغلون'] : ['Home', 'Operators']);
+      // Spec 012 adds «الباقات», for whoever may view plans.
+      await expect(page.getByTestId('ops-side-bar').getByRole('link')).toHaveText(ar ? ['الرئيسية', 'الباقات', 'المشغلون'] : ['Home', 'Plans', 'Operators']);
       await expect(page.getByTestId('ops-role')).toHaveText(ar ? 'مسؤول عام' : 'Super Admin');
 
       // A custom role is named as it was written, in both languages.

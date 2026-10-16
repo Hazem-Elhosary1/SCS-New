@@ -495,6 +495,7 @@ export class ScsSwitchComponent {
       [required]="required()"
       [attr.maxlength]="max() || null"
       [attr.placeholder]="placeholder() || null"
+      [attr.dir]="dir() || null"
       [attr.aria-invalid]="error() !== '' ? 'true' : null"
       [attr.aria-describedby]="error() ? id + '-error' : hint() ? id + '-hint' : null"
       [attr.data-testid]="testId() || null"
@@ -524,6 +525,8 @@ export class ScsTextareaComponent {
   /** The most it takes; its count is shown under it. */
   readonly max = input(0);
   readonly placeholder = input('');
+  /** Written in one direction whatever the page's: Arabic in an English page, or the other way (spec 012). */
+  readonly dir = input<'ltr' | 'rtl' | ''>('');
   readonly readOnly = input(false, { transform: booleanAttribute });
   readonly disabled = input(false, { transform: booleanAttribute });
   readonly required = input(false, { transform: booleanAttribute });

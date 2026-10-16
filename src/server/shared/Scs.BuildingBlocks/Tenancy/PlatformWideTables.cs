@@ -29,6 +29,7 @@ public static class PlatformWideTables
         ("ops.Role", "The roles of the platform's own staff (spec 011): names and descriptions; no clinic's data."),
         ("ops.RolePermission", "Which codes of the operators' catalogue a role holds."),
         ("audit.PlatformEntry", "What operators and the platform did to the platform itself (spec 011): its team and roles; no clinic's data; append-only."),
+        ("plans.Feature", "The catalogue of capabilities plans are made of (spec 012): names and rules of features; no clinic's data."),
         ("security.AnonymousSignInAttempt", "Sign-in attempts on emails that match no account; a keyed hash, never the email; insert-only for the application."),
     ];
 

@@ -32,6 +32,8 @@ export const OpsCan = {
   operatorsView: 'operators.view',
   operatorsManage: 'operators.manage',
   operatorsManageRoles: 'operators.manageRoles',
+  billingView: 'billing.view',
+  billingManagePlans: 'billing.managePlans',
 } as const;
 
 export const SUPER_ADMIN = 'super-admin';

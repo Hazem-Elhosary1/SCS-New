@@ -71,6 +71,12 @@ public static class ErrorMessages
         [ErrorCodes.OpsOwnRoleEdit] = ("لا يمكنك تعديل الدور الذي تحمله", "You can't edit the role you hold"),
         [ErrorCodes.OpsSystemRole] = ("أدوار النظام لا تُعدَّل ولا تُحذف", "System roles are not edited or deleted"),
         [ErrorCodes.OpsRoleInUse] = ("لا يمكن حذف دور مُسند إلى مشغلين", "A role that operators hold can't be deleted"),
+        [ErrorCodes.FeatureUnitsRequired] = ("الحدّ يحتاج وحدة بالعربية والإنجليزية", "A limit needs its unit in Arabic and English"),
+        [ErrorCodes.FeatureSwitchHasLimit] = ("المفتاح لا يحمل وحدة ولا حدًّا أساسيًّا", "A switch has no unit and no baseline"),
+        [ErrorCodes.FeatureKeyTaken] = ("هذا المفتاح لميزة أخرى", "This key belongs to another feature"),
+        [ErrorCodes.FeatureRetiredMustBeSold] = ("الميزة الموقوفة تبقى مُباعة حتى يُعاد بيعها أو تبقى موقوفة", "A retired feature stays sold"),
+        [ErrorCodes.FeatureStateChanged] = ("تغيّرت حالة الميزة", "The feature's state has changed"),
+        [ErrorCodes.FeatureChangedElsewhere] = ("عدّل غيرك هذه الميزة بعد فتحها", "Someone else edited this feature after you opened it"),
     };
 
     public static string Title(string code, string language)

@@ -24,6 +24,7 @@ public static class Migrator
         new Scs.Files.FilesModule(),
         new Scs.Identity.IdentityModule(),
         new Scs.Operators.OperatorsModule(),
+        new Scs.Plans.PlansModule(),
         new PlatformModule(),
     ];
 

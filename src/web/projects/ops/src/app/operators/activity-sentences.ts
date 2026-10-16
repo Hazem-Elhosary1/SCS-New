@@ -13,6 +13,11 @@ export const ACTIVITY_KINDS = [
   'opsrole.created',
   'opsrole.edited',
   'opsrole.deleted',
+  // Spec 012: the feature catalogue.
+  'feature.created',
+  'feature.updated',
+  'feature.retired',
+  'feature.resumed',
 ] as const;
 
 /**

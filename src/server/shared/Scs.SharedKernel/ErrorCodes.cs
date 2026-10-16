@@ -169,6 +169,24 @@ public static class ErrorCodes
     /// <summary>A role that operators hold is not deleted; carries <c>operators</c>.</summary>
     public const string OpsRoleInUse = "OPS_ROLE_IN_USE";
 
+    /// <summary>A limit without its unit in both languages (spec 012, FR-010).</summary>
+    public const string FeatureUnitsRequired = "FEATURE_UNITS_REQUIRED";
+
+    /// <summary>A switch given a unit or a baseline: only a limit counts something (spec 012, FR-010).</summary>
+    public const string FeatureSwitchHasLimit = "FEATURE_SWITCH_HAS_LIMIT";
+
+    /// <summary>The key is a feature's already, a retired one included (spec 012, FR-009).</summary>
+    public const string FeatureKeyTaken = "FEATURE_KEY_TAKEN";
+
+    /// <summary>A retired feature stays sold: it is sold again or left retired (spec 012).</summary>
+    public const string FeatureRetiredMustBeSold = "FEATURE_RETIRED_MUST_BE_SOLD";
+
+    /// <summary>The feature is not in the state the action needs: retire a sold one, sell again a retired one.</summary>
+    public const string FeatureStateChanged = "FEATURE_STATE_CHANGED";
+
+    /// <summary>Someone edited the feature after this form read it.</summary>
+    public const string FeatureChangedElsewhere = "FEATURE_CHANGED_ELSEWHERE";
+
     public static IReadOnlyList<string> All { get; } =
     [
         ValidationFailed, MalformedRequest, Unauthenticated, Forbidden, NotFound,
@@ -184,5 +202,6 @@ public static class ErrorCodes
         StepExpired,
         OpsEmailTaken, OpsRoleNotGrantable, OpsOwnRole, OpsLastSuperAdmin, OpsOwnAccount, OpsStateChanged, OpsLinkTooSoon,
         OpsChangedElsewhere, OpsLinkNotSent, OpsRoleNameTaken, OpsPermissionsNotHeld, OpsOwnRoleEdit, OpsSystemRole, OpsRoleInUse,
+        FeatureUnitsRequired, FeatureSwitchHasLimit, FeatureKeyTaken, FeatureRetiredMustBeSold, FeatureStateChanged, FeatureChangedElsewhere,
     ];
 }
