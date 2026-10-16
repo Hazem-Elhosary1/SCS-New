@@ -25,6 +25,9 @@ public class ApiFactory : WebApplicationFactory<Program>
     /// <summary>Where links in emails lead, in tests.</summary>
     public const string StaffApp = "https://app.scs.test";
 
+    /// <summary>The operators console's address, as its emails write it (spec 010).</summary>
+    public const string OpsApp = "https://ops.scs.test";
+
     private readonly Dictionary<string, string?> _settings = new(StringComparer.OrdinalIgnoreCase)
     {
         ["Scs:ENVIRONMENT"] = "local",
@@ -34,6 +37,10 @@ public class ApiFactory : WebApplicationFactory<Program>
         ["Scs:ROLE"] = "api",
         ["Scs:AUTH:CODE_KEY"] = TestCodeKey,
         ["Scs:AUTH:STAFF_APP_URL"] = StaffApp,
+        ["Scs:OPS:APP_URL"] = OpsApp,
+        ["Scs:PLATFORM:NAME_AR"] = "سمارت كلينك أو إس",
+        ["Scs:PLATFORM:NAME_EN"] = "Smart Clinic OS",
+        ["Scs:PLATFORM:SUPPORT_EMAIL"] = "support@scs.test",
         ["Scs:MAIL:HOST"] = "localhost",
         ["Scs:MAIL:PORT"] = "1",
         ["Scs:MAIL:USE_TLS"] = "false",
@@ -43,7 +50,29 @@ public class ApiFactory : WebApplicationFactory<Program>
         ["Scs:SUPPORT:HOTLINE"] = "19999",
         ["Scs:SUPPORT:WHATSAPP"] = "201000000000",
         ["Scs:SUPPORT:EMAIL"] = "support@scs.test",
+
+        // Each host keeps its files in a folder of its own, removed with the host.
+        ["Scs:FILES:ROOT"] = Path.Combine(Path.GetTempPath(), "scs-test-files", Guid.NewGuid().ToString("N")),
     };
+
+    /// <summary>Where this host keeps file content.</summary>
+    public string FilesRoot => _settings["Scs:FILES:ROOT"]!;
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+        try
+        {
+            if (disposing && Directory.Exists(FilesRoot))
+            {
+                Directory.Delete(FilesRoot, recursive: true);
+            }
+        }
+        catch (IOException)
+        {
+            // A file still open somewhere: the folder is under the temporary files and goes with them.
+        }
+    }
 
     public CapturedLogs Logs { get; } = new();
 
@@ -66,6 +95,14 @@ public class ApiFactory : WebApplicationFactory<Program>
     public ApiFactory With(string key, string? value)
     {
         _settings[key] = value;
+
+        // Outside a developer's machine the platform does not start without a malware scanner
+        // (spec 009); a host that names another environment is given one unless it says otherwise.
+        if (string.Equals(key, "Scs:ENVIRONMENT", StringComparison.OrdinalIgnoreCase) && value is not (null or "local"))
+        {
+            _settings.TryAdd("Scs:SCAN:HOST", "scanner.internal");
+        }
+
         return this;
     }
 

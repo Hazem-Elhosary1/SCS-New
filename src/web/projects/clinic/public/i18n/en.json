@@ -267,6 +267,18 @@
         "deleted": "Record deleted"
       },
       "filterTitle": "Filter records"
+    },
+    "devFiles": {
+      "title": "Files and attachments",
+      "note": "For builders: every state of the upload zone and the file card, and a live try on a sample kind",
+      "live": "Live try",
+      "save": "Save",
+      "saved": "Saved files",
+      "none": "No saved files yet",
+      "zones": "Upload zone — every state",
+      "cards": "File card — every state",
+      "remove": "Remove",
+      "restore": "Restore"
     }
   }
 }

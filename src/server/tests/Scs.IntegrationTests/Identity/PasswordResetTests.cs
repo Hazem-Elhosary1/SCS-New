@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using System.Net;
+using Microsoft.Extensions.DependencyInjection;
+using Scs.BuildingBlocks.Mail;
 using Scs.Identity.Contracts;
 using Scs.IntegrationTests.Fixtures;
 using Xunit.Abstractions;
@@ -70,7 +72,7 @@ public sealed class PasswordResetTests(SqlServerFixture sql)
 
         // The owner is told, by a message with no link and no password in it.
         await world.Factory.RunAccountEmailJobAsync(world.Clinic);
-        var notice = world.Factory.Mail.To(account.Email).Single(m => m.Subject.Contains("غُيّرت كلمة المرور", StringComparison.Ordinal));
+        var notice = world.Factory.Mail.To(account.Email).Single(m => m.Subject.Contains("تم تغيير كلمة مرورك", StringComparison.Ordinal));
         Assert.DoesNotContain("#t=", notice.TextBody, StringComparison.Ordinal);
         Assert.DoesNotContain(Passwords.New, notice.TextBody + notice.HtmlBody, StringComparison.Ordinal);
 
@@ -138,13 +140,13 @@ public sealed class PasswordResetTests(SqlServerFixture sql)
         // The job reports the failure so that it is tried again, and still serves the other account.
         await Assert.ThrowsAnyAsync<Exception>(() => world.Factory.RunAccountEmailJobAsync(world.Clinic));
         Assert.Equal(1, world.Factory.Mail.LinksSentTo(lucky.Email));
-        Assert.DoesNotContain(world.Factory.Mail.To(unlucky.Email), m => m.Subject.Contains("غُيّرت", StringComparison.Ordinal));
+        Assert.DoesNotContain(world.Factory.Mail.To(unlucky.Email), m => m.Subject.Contains("تم تغيير كلمة مرورك", StringComparison.Ordinal));
 
         // When the server takes the mail again, the waiting notice goes out — and the reset
         // stood all along: the new password signs in.
         world.Factory.Mail.FailingFor.Clear();
         await world.Factory.RunAccountEmailJobAsync(world.Clinic);
-        Assert.Contains(world.Factory.Mail.To(unlucky.Email), m => m.Subject.Contains("غُيّرت", StringComparison.Ordinal));
+        Assert.Contains(world.Factory.Mail.To(unlucky.Email), m => m.Subject.Contains("تم تغيير كلمة مرورك", StringComparison.Ordinal));
         using var signedIn = await world.Factory.SignInAsAsync(unlucky.Email, Passwords.New);
     }
 
@@ -423,5 +425,38 @@ public sealed class ResetEmailLimitTests(SqlServerFixture sql)
         using var refused = await browser.ForgotAsync(account.Email);
         Assert.Equal((429, "RATE_LIMITED"), ((int)refused.StatusCode, (await refused.ReadAsync()).Code));
         Assert.True(int.Parse(refused.Headers.GetValues("Retry-After").Single(), System.Globalization.CultureInfo.InvariantCulture) is > 0 and <= 60);
+    }
+
+    [Fact]
+    public async Task A_link_whose_email_cannot_be_composed_is_not_stored_and_holds_up_no_other()
+    {
+        // Spec 094, T051: an email that can never be whole is "not sent", like one the mail
+        // server refused — nothing is kept of a link nobody received, and the next account's
+        // link goes out.
+        using var world = await RefusalWorld.CreateAsync(sql);
+        var unlucky = await world.AccountAsync();
+        var lucky = await world.AccountAsync();
+
+        var results = await world.Factory.ForClinicAsync(world.Clinic, async services =>
+        {
+            var links = services.GetRequiredService<Scs.Identity.Infrastructure.PasswordLinks>();
+            var renderer = services.GetRequiredService<EmailRenderer>();
+
+            var refused = await links.SendAsync(
+                unlucky.Id, "reset", enforceResetCaps: false,
+                address => renderer.Render(new EmailContent(unlucky.Email, "ar", "موضوع", "سطر", "عنوان", [new EmailButton("افتح", "http://elsewhere.example/" + address)])),
+                default);
+            var sent = await links.SendAsync(
+                lucky.Id, "reset", enforceResetCaps: false,
+                address => renderer.Render(new EmailContent(lucky.Email, "ar", "موضوع", "سطر", "عنوان", [new EmailButton("افتح", address)])),
+                default);
+            return (refused.ToString(), sent.ToString());
+        });
+
+        Assert.Equal(("NotSent", "Sent"), results);
+        Assert.Empty(world.Factory.Mail.To(unlucky.Email));
+        Assert.Single(world.Factory.Mail.To(lucky.Email));
+        Assert.Equal(0, await world.ScalarAsync<int>($"SELECT COUNT(*) FROM [identity].PasswordLink WHERE AccountId = '{unlucky.Id}'"));
+        Assert.Equal(1, await world.ScalarAsync<int>($"SELECT COUNT(*) FROM [identity].PasswordLink WHERE AccountId = '{lucky.Id}'"));
     }
 }

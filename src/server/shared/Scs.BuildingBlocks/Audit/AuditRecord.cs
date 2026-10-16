@@ -12,6 +12,13 @@ public sealed record AuditTarget(string Kind, Guid? Id, string? Name = null, str
     /// <summary>An event of the notification table, by its key (spec 008).</summary>
     public const string NotificationEvent = "notification-event";
 
+    public const string File = "file";
+
+    /// <summary>An operator of the platform, and a role of the operators console (spec 011).</summary>
+    public const string Operator = "operator";
+
+    public const string OperatorRole = "operator-role";
+
     public static AuditTarget ForAccount(Guid accountId) => new(Account, accountId);
 }
 

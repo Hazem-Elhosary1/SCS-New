@@ -28,7 +28,8 @@ public static class AuditSql
     public const int TargetNameMaxLength = 200;
     public const int IpAddressMaxLength = 45;
     public const int UserAgentMaxLength = 256;
-    public const int FactTextMaxLength = 200;
+    // Long enough for a note or a reason an operator writes (spec 011): up to 500 characters.
+    public const int FactTextMaxLength = 500;
 
     public const string ActorStaff = "staff";
     public const string ActorOperator = "operator";
@@ -66,6 +67,72 @@ public static class AuditSql
          """;
 
     public const string DropAppendOnlyTrigger = $"DROP TRIGGER [{Schema}].[{AppendOnlyTrigger}];";
+
+    /// <summary>
+    /// The platform's own trail (spec 011; spec 007 research R5): what an operator or the
+    /// platform did to the platform itself — its team, its roles. The same columns without a
+    /// clinic; platform-wide, and as unchangeable as a clinic's entries.
+    /// </summary>
+    public const string PlatformTable = "PlatformEntry";
+    public const string PlatformAppendOnlyTrigger = "TR_PlatformEntry_AppendOnly";
+
+    internal const string InsertPlatform =
+        $"""
+         INSERT INTO [{Schema}].[{PlatformTable}]
+             (Id, OccurredAtUtc, ActorKind, ActorAccountId, ActorName, ActionCode, Category,
+              TargetKind, TargetId, TargetName, Facts, Changes, IpAddress, UserAgent, TraceId)
+         VALUES
+             (@id, @at, @actorKind, @actor, @actorName, @action, @category,
+              @targetKind, @targetId, @targetName, @facts, @changes, @ip, @userAgent, @trace);
+         """;
+
+    public const string CreatePlatformAppendOnlyTrigger =
+        $"""
+         CREATE TRIGGER [{Schema}].[{PlatformAppendOnlyTrigger}]
+         ON [{Schema}].[{PlatformTable}]
+         AFTER UPDATE, DELETE
+         AS
+         BEGIN
+             SET NOCOUNT ON;
+
+             IF NOT EXISTS (SELECT 1 FROM inserted) AND NOT EXISTS (SELECT 1 FROM deleted)
+                 RETURN;
+
+             THROW 51007, N'Audit entries cannot be changed or removed.', 1;
+         END
+         """;
+
+    public const string DropPlatformAppendOnlyTrigger = $"DROP TRIGGER [{Schema}].[{PlatformAppendOnlyTrigger}];";
+}
+
+/// <summary>Gives an operator's name at this moment, for the platform's own trail (spec 011).</summary>
+public interface IOperatorActorNames
+{
+    Task<string?> NameOfAsync(Guid operatorId, CancellationToken cancellation);
+}
+
+/// <summary>
+/// Records what an operator, or the platform, did to the platform itself (spec 011, FR-048;
+/// contracts/operator-access.md §5). The entry is written on the connection and inside the
+/// transaction of the change it belongs to. Who did it is the operator of the request, taken
+/// from the session and never from the caller; with no request it is the platform itself.
+/// </summary>
+public static class PlatformAudit
+{
+    /// <exception cref="AuditRefusedException">No transaction is open, or the record breaks the catalogue's rules.</exception>
+    public static Task RecordForPlatformAsync(this DbContext db, AuditRecord record, CancellationToken cancellation)
+    {
+        ArgumentNullException.ThrowIfNull(db);
+        ArgumentNullException.ThrowIfNull(record);
+        return AuditWriter.WritePlatformAsync(db, [record], AuditWriter.Now(db), cancellation);
+    }
+
+    public static Task RecordForPlatformAsync(this DbContext db, IReadOnlyList<AuditRecord> records, CancellationToken cancellation)
+    {
+        ArgumentNullException.ThrowIfNull(db);
+        ArgumentNullException.ThrowIfNull(records);
+        return AuditWriter.WritePlatformAsync(db, records, AuditWriter.Now(db), cancellation);
+    }
 }
 
 /// <summary>Who is acting and from where, on this piece of work. Taken by the trail, never by the caller.</summary>
@@ -183,6 +250,77 @@ internal static class AuditWriter
                 await command.ExecuteNonQueryAsync(cancellation).ConfigureAwait(false);
             }
         }
+    }
+
+    /// <summary>The same as <see cref="WriteAsync"/>, for an entry that belongs to no clinic.</summary>
+    public static async Task WritePlatformAsync(
+        DbContext db, IReadOnlyList<AuditRecord> records, DateTimeOffset now, CancellationToken cancellation)
+    {
+        var transaction = db.Database.CurrentTransaction?.GetDbTransaction()
+                          ?? throw new AuditRefusedException("An audit entry is written only inside the transaction of its change.");
+
+        var services = Services(db);
+        var catalogue = services?.GetService<IAuditCatalogue>() ?? new AuditCatalogue();
+        AuditActor? actor = null;
+
+        foreach (var record in records)
+        {
+            var action = Check(record, catalogue);
+            var changes = record.Changes?.Where(change => !change.IsEmpty).ToList();
+            if (record.Changes is { Count: > 0 } && changes!.Count == 0)
+            {
+                continue;
+            }
+
+            actor ??= await OperatorActorAsync(services, cancellation).ConfigureAwait(false);
+            var by = record.BySystem ? new AuditActor(AuditSql.ActorSystem, null, null, actor.Origin) : actor;
+
+            var command = db.Database.GetDbConnection().CreateCommand();
+            await using (command.ConfigureAwait(false))
+            {
+                command.Transaction = transaction;
+                command.CommandText = AuditSql.InsertPlatform;
+                Add(command, "@id", SqlDbType.UniqueIdentifier, Guid.CreateVersion7(now));
+                Add(command, "@at", SqlDbType.DateTimeOffset, now);
+                Add(command, "@actorKind", SqlDbType.VarChar, by.Kind);
+                Add(command, "@actor", SqlDbType.UniqueIdentifier, by.AccountId);
+                Add(command, "@actorName", SqlDbType.NVarChar, Cut(by.Name, AuditSql.ActorNameMaxLength));
+                Add(command, "@action", SqlDbType.VarChar, action.Code);
+                Add(command, "@category", SqlDbType.VarChar, action.Category);
+                Add(command, "@targetKind", SqlDbType.VarChar, record.Target?.Kind);
+                Add(command, "@targetId", SqlDbType.UniqueIdentifier, record.Target?.Id);
+                Add(command, "@targetName", SqlDbType.NVarChar, Cut(record.Target?.Name, AuditSql.TargetNameMaxLength));
+                Add(command, "@facts", SqlDbType.NVarChar, record.Facts is { Count: > 0 } ? JsonSerializer.Serialize(record.Facts, Json) : null);
+                Add(command, "@changes", SqlDbType.NVarChar, changes is { Count: > 0 } ? JsonSerializer.Serialize(changes, Json) : null);
+                Add(command, "@ip", SqlDbType.VarChar, Cut(by.Origin.IpAddress, AuditSql.IpAddressMaxLength));
+                Add(command, "@userAgent", SqlDbType.NVarChar, Cut(by.Origin.UserAgent, AuditSql.UserAgentMaxLength));
+                Add(command, "@trace", SqlDbType.Char, by.Origin.TraceId);
+                await command.ExecuteNonQueryAsync(cancellation).ConfigureAwait(false);
+            }
+        }
+    }
+
+    /// <summary>
+    /// The operator of this request; where there is no request — the deployment tool, a job —
+    /// the platform itself. Nothing a caller says can name another actor.
+    /// </summary>
+    private static async Task<AuditActor> OperatorActorAsync(IServiceProvider? services, CancellationToken cancellation)
+    {
+        var http = services?.GetService<IHttpContextAccessor>()?.HttpContext;
+        if (http is null || !Guid.TryParse(http.User.FindFirstValue(OperatorClaims.OperatorId), out var operatorId))
+        {
+            return new AuditActor(AuditSql.ActorSystem, null, null, AuditOrigin.None);
+        }
+
+        var origin = new AuditOrigin(
+            http.Connection.RemoteIpAddress?.ToString(),
+            http.Request.Headers.UserAgent.ToString() is { Length: > 0 } agent ? agent : null,
+            TraceIdMiddleware.Get(http));
+        var name = services?.GetService<IOperatorActorNames>() is { } names
+            ? await names.NameOfAsync(operatorId, cancellation).ConfigureAwait(false)
+            : null;
+
+        return new AuditActor(AuditSql.ActorOperator, operatorId, name, origin);
     }
 
     /// <summary>The checks of FR-008, FR-010 and FR-011. A failure is a defect in the caller.</summary>

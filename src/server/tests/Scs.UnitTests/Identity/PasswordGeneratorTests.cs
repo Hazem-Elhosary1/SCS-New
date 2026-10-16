@@ -1,3 +1,4 @@
+using Scs.BuildingBlocks.Security;
 using Scs.Identity.Domain;
 using Scs.Identity.Infrastructure;
 

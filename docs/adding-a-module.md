@@ -192,6 +192,103 @@ code, a link or an email address in a fact; never read or write the `notify` tab
 `SaveChangesAsync`, since the synchronous save refuses a pending event. The contract is
 `specs/008-notifications-engine/contracts/notifications-engine.md`.
 
+## Holding files (spec 009)
+
+A record that holds files — a ticket's attachments, a patient's documents — does not store them
+itself. The files engine takes the file in, checks it, scans it, gives it out and erases it;
+the module that owns the record says three things: which kind of file, who may upload and see,
+and which files the record holds.
+
+1. **The kind is in the table** — `src/server/shared/Scs.SharedKernel/Files/FileKinds.cs`: its
+   key, the types it takes (PDF, PNG, JPEG), the largest size, how many one record holds,
+   private or public, and its retention class. The five kinds of the BRD are there already. A
+   new one also goes in `file-kinds.lock`, and the web's copy is written again:
+
+   ```powershell
+   dotnet run --project src/server/tools/Scs.Migrator -- file-kinds src/web/projects/core/src/lib/files/file-kinds.json
+   ```
+
+2. **Own the kind** — one class in your module, registered with `services.AddFileKindOwner<T>()`:
+
+   ```csharp
+   internal sealed class TicketAttachmentOwner(ITicketAccess tickets) : IFileKindOwner
+   {
+       public string Kind => FileKinds.TicketAttachment;
+       public Task<bool> MayUploadAsync(CancellationToken ct) => tickets.MayWriteAsync(ct);
+       public Task<bool> MaySeeAsync(FileRecord record, CancellationToken ct) => tickets.MaySeeMessageAsync(record.Id, ct);
+   }
+   ```
+
+   Both are asked on the server at every upload and every download. A kind with no owner is
+   refused for everyone, and `FileRulesTests` lists the kinds still waiting for their spec.
+3. **Attach with the save of the record**, on your own context, and record your own audit action:
+
+   ```csharp
+   db.AttachFiles(FileKinds.TicketAttachment, new FileRecord("ticket-message", message.Id), request.FileIds);
+   db.Record(new AuditRecord(AuditActions.TicketReplied, …));
+   await db.SaveChangesAsync(cancellation);
+   ```
+
+   The file and the record take effect together or not at all. The same goes for
+   `db.RemoveFile(kind, id)` and `db.RestoreFile(kind, id)` (a removed file can be put back for
+   thirty days), `db.StartFileRetention(record, moment)` and `db.StopFileRetention(record)` (the
+   retention period of a record's files starts when you say — a ticket closed, a clinic
+   cancelled — never at upload), and `db.HoldFiles(record)` and `db.ReleaseFiles(record)`
+   (nothing of a held record's files is erased).
+4. **Show them** with `IRecordFiles.ListAsync(recordKind, recordId, includeRemoved)` in your own
+   answer; the browser downloads through `POST /v1/files/{id}/access`.
+5. **On the page**: `createFileUploads('ticket.attachment')` in the component,
+   `<scs-file-field [uploads]="uploads" />` in the template, `uploads.ids()` with the save, and
+   the save disabled while `uploads.busy()`. Saved files are drawn with `<scs-file-card>`.
+
+Rules the engine enforces: the type is read from the content; size and count are the kind's;
+nothing is given out before its scan is clean; a file that is not the saver's own, of another
+kind, or already attached, fails the save; a person has at most thirty files waiting and sixty
+uploads in ten minutes. Rules you keep: never read or write `files.StoredFile` or the store
+yourself (`FileRulesTests`); never put a file's name or a way in into a log; a public kind is
+for what everyone may see, never anything about a patient; whether a file may be removed at all
+is your rule; a private file is a download — a page that previews one does so from the
+downloaded bytes. The contract is `specs/009-file-storage/contracts/files-engine.md`.
+
+## A route of the operators console (spec 010)
+
+The operators console is a room of its own. A route for operators:
+
+- lives under `/v1/ops/` and declares **exactly one** of three things (spec 011,
+  `specs/011-operators-roles/contracts/operator-access.md`):
+  **`.Open()`** — before sign-in only; **`.OperatorOwnAccount()`** — what an operator does to
+  their own account, a short list held by a test; or
+  **`.RequiresOperator(OperatorPermissions.X)`** — everything else. The gate answers 403
+  `PERMISSION_REQUIRED` with the code before the handler runs, the same whether or not the
+  record exists. It is authenticated by the operators' scheme alone: a clinic's session
+  presented there is no session. Never give such a route `.Requires(...)` or
+  `.OwnAccountOnly()`: those are the clinic's;
+- asks about a permission inside a handler through `IOperatorAccess` (`HasAsync(code)`,
+  `IsSuperAdminAsync()`), never by a role's name and never by counting what a role holds;
+- records what it changes in the platform's own trail, inside the transaction of the change:
+  `await db.RecordForPlatformAsync(new AuditRecord(AuditActions.X, target, facts, changes), ct)`,
+  and declares it with `.Records(AuditActions.X)`. Who did it is taken from the request;
+- in the console, puts its page behind `guarded(path, code, load)` in `app.routes.ts`, its
+  line in `shell/sections.ts` with its `permission`, and its write controls behind `*appCan`;
+  every number, date and time goes through `i18n/ops-format.ts`;
+- reads who is asking from `ICurrentOperator` (the operator's id and the session's), never from
+  a cookie;
+- declares what it records, like every route. An operator's own sign-in events are kept in
+  `ops.SignInRecord`, not in a clinic's audit trail;
+- when it changes something, is refused unless the request carries the header our own sites
+  send — nothing to do: every route that needs a session is covered.
+
+A module that must end an operator's sessions (suspending, changing a role) asks
+`IOperatorSessions.EndAllAsync(operatorId, reason)` from `Scs.Operators.Contracts`; to show who
+did something, `IOperatorDirectory.FindAsync(id)`. No module reads `ops.*` tables, and a new
+table in that schema is entered in `PlatformWideTables` by name, with its reason.
+
+On the front end, a page of the console goes under the frame in
+`src/web/projects/ops/src/app/app.routes.ts`, and its line in the side bar in
+`shell/sections.ts`. What a page asks for by itself — polling, a background refresh — carries the
+header `X-Scs-Background: 1`, so that it is not taken for the operator's activity and does not
+keep an unattended console signed in.
+
 ## Conventions to follow
 
 These are decided once in `specs/001-platform-foundation/contracts/` and are not re-decided in
@@ -238,6 +335,28 @@ two apps need goes into `core` (not visual) or `ui` (visual), never copied.
 - Dates and money go through `scsDate` and `scsMoney`.
 - Loading, empty, error, offline, view-only and not-in-plan are shown with `<scs-state>`.
 - Calls to the platform are written as `/v1/...` and go through the `core` HTTP layer.
+
+### Where a screen's parts come from (spec 095)
+
+A screen is composed; it does not draw its own buttons, fields, badges, menus or dialogs.
+
+- **Take the part from `ui`** when both consoles have it (`scs-badge`, `scs-text-field`,
+  `scs-select`, `scs-checkbox`, `scs-switch`, `scs-avatar`, `scs-tag`, `scs-navbar`,
+  `scs-nav-item`, `scs-calendar`, `scs-date-field`, `scs-time-field`, …), or from the console's own
+  `projects/ops/src/app/components/` when only the operators' file draws it (the date range, the
+  date and time field, the AI parts, the media parts, …).
+- **A part's look is its look's settings**, never a page's CSS: each component reads
+  `--scs-<part>-*` with the clinic's value as its default, and the operators' values live in
+  `projects/ops/src/styles/tokens.css`. A setting only one look declares is cleared for the
+  gallery's clinic look in `ops/src/app/gallery/clinic-reset.css` (`npm run test:tools` keeps that
+  list complete). A clinic screen must not change when a shared part learns a new look.
+- **A part the design draws and `ui` lacks** is added there (or to the console's components),
+  with its unit test, its specimens and working example in the gallery
+  (`ops/src/app/gallery/sections/`), and its kept pictures — never drawn on the screen that first
+  needs it.
+- **Its icons** come from the registry through `node tools/icons.mjs add` (see `docs/setup.md`).
+- **On a phone** every control is at least 40 by 40: a small part honours `--scs-touch` (set by
+  the operators' look below 720 pixels), making its room around its drawing.
 
 ### A page in the clinic console (spec 006)
 

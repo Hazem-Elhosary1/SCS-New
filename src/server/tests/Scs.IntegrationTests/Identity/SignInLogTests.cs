@@ -92,6 +92,8 @@ public sealed class SignInLogTests(SqlServerFixture sql)
             Assert.DoesNotContain(property, logs, StringComparison.OrdinalIgnoreCase);
         }
 
+        world.Factory.Mail.AssertNothingOfAnEmailIsIn(logs);
+
         // Work done with the session says who it was for, by identifier.
         var signedIn = world.Factory.Logs.Lines.Where(l => l.Contains("\"route\":\"/probe/whoami\"", StringComparison.Ordinal)).ToList();
         var entry = Assert.Single(signedIn);
@@ -175,6 +177,8 @@ public sealed class SignInLogTests(SqlServerFixture sql)
         {
             Assert.DoesNotContain(property, logs, StringComparison.OrdinalIgnoreCase);
         }
+
+        world.Factory.Mail.AssertNothingOfAnEmailIsIn(logs, atLeast: 3);
 
         // The job store holds the clinic and the job's name — never a token, an address or a password.
         var stored = await TestDatabase.ScalarAsync<string>(

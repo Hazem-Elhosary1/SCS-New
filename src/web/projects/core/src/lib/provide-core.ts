@@ -1,4 +1,4 @@
-import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { HttpInterceptorFn, provideHttpClient, withInterceptors } from '@angular/common/http';
 import {
   EnvironmentProviders,
   ErrorHandler,
@@ -18,12 +18,18 @@ import { VersionCheckService } from './version/version-check.service';
  * Everything an app needs from `core`: runtime configuration, the platform HTTP layer, the
  * two languages, the reporting of unhandled failures and the check for a newer release.
  */
-export function provideScsCore(options: { app: ScsApp }): EnvironmentProviders {
+export function provideScsCore(options: {
+  app: ScsApp;
+  /** An app's own interceptors, outermost: they see the problems the others produce. */
+  interceptors?: readonly HttpInterceptorFn[];
+}): EnvironmentProviders {
   return makeEnvironmentProviders([
     { provide: SCS_APP, useValue: options.app },
     { provide: ErrorHandler, useClass: ScsErrorHandler },
     // The session interceptor is outermost: it sees the problems the API interceptor produces.
-    provideHttpClient(withInterceptors([sessionInterceptor, apiInterceptor])),
+    provideHttpClient(
+      withInterceptors([...(options.interceptors ?? []), sessionInterceptor, apiInterceptor]),
+    ),
     provideRuntimeConfig(),
     provideScsI18n(),
     // Not awaited: the app must start even when version.json cannot be read.

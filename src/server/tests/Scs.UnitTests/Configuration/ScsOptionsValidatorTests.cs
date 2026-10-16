@@ -18,6 +18,10 @@ public class ScsOptionsValidatorTests
             },
             Auth = new AuthOptions { CodeKey = Convert.ToBase64String(new byte[32]), StaffAppUrl = "https://app.scs.test" },
             Mail = new MailOptions { Host = "mail", Port = 587, From = "no-reply@scs.test" },
+            Files = new FilesOptions { Root = OperatingSystem.IsWindows() ? @"D:\scs\files" : "/var/scs/files" },
+            Scan = new ScanOptions { Host = "scanner.internal" },
+            Ops = new OpsOptions { AppUrl = "https://ops.scs.test" },
+            Platform = new PlatformOptions { NameAr = "سمارت كلينك أو إس", NameEn = "Smart Clinic OS", SupportEmail = "support@scs.test" },
         };
         change?.Invoke(options);
         return options;
@@ -160,6 +164,68 @@ public class ScsOptionsValidatorTests
         }
     }
 
+    [Theory]
+    [InlineData("local", "http://localhost:4203", true)]
+    [InlineData("local", "http://127.0.0.1:4203", true)]
+    [InlineData("local", "https://ops.scs.test", true)]
+    [InlineData("local", "http://192.168.1.20:4203", false)]
+    [InlineData("local", "http://ops.scs.test", false)]
+    [InlineData("production", "", false)]
+    [InlineData("production", "http://ops.scs-heta.com", false)]
+    [InlineData("production", "http://localhost:4203", false)]
+    [InlineData("production", "https://ops.scs-heta.com/sign-in", false)]
+    [InlineData("production", "ops.scs-heta.com", false)]
+    [InlineData("production", "https://ops.scs-heta.com", true)]
+    public void Both_consoles_addresses_are_held_to_what_an_email_s_link_may_lead_to(string environment, string address, bool valid)
+    {
+        // Spec 094, T050: the operators console's address had no rule but "set", and locally
+        // either console could be given a plain http address elsewhere — which started, and
+        // then could not send an email with a button.
+        foreach (var (variable, set) in new (string, Action<ScsOptions>)[]
+                 {
+                     ("SCS_OPS__APP_URL", o => o.Ops.AppUrl = address),
+                     ("SCS_AUTH__STAFF_APP_URL", o => o.Auth.StaffAppUrl = address),
+                 })
+        {
+            var options = Valid(o =>
+            {
+                o.Environment = environment;
+                set(o);
+            });
+            var failures = Failures(options);
+
+            if (valid)
+            {
+                Assert.Empty(failures);
+            }
+            else
+            {
+                Assert.Contains(variable, Assert.Single(failures), StringComparison.Ordinal);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData("local", "")]
+    [InlineData("local", "http://localhost:4201")]
+    [InlineData("local", "http://[::1]:4201")]
+    [InlineData("local", "https://app.scs.test")]
+    [InlineData("production", "https://app.scs-heta.com/")]
+    public void An_address_the_configuration_accepts_always_makes_a_button(string environment, string address)
+    {
+        var options = Valid(o =>
+        {
+            o.Environment = environment;
+            o.Auth.StaffAppUrl = address;
+            o.Ops.AppUrl = address;
+        });
+        Assert.Empty(Failures(options));
+
+        // The addresses the emails are really given: a console's base and a path under it.
+        var links = new[] { $"{options.Auth.StaffAppBase()}/set-password#t=v1.token", $"{options.Ops.AppBase()}/password/reset#token=abc" };
+        Assert.All(links, link => Assert.Equal(link, new Scs.BuildingBlocks.Mail.EmailButton("Open", link).Address));
+    }
+
     [Fact]
     public void Locally_the_staff_app_address_falls_back_to_the_dev_server()
     {
@@ -237,6 +303,103 @@ public class ScsOptionsValidatorTests
             }));
             Assert.Contains(failures, f => f.Contains("SCS_CORS__ORIGINS", StringComparison.Ordinal));
         }
+    }
+
+    [Theory]
+    [InlineData("local", "", "", true)]
+    [InlineData("test", "", "scanner.internal", false)]
+    [InlineData("production", "", "scanner.internal", false)]
+    [InlineData("production", "files", "scanner.internal", false)]
+    [InlineData("local", "relative/files", "", false)]
+    [InlineData("test", null, "", false)]
+    [InlineData("production", null, "", false)]
+    [InlineData("production", null, "scanner.internal", true)]
+    public void Files_need_a_folder_and_a_scanner_everywhere_but_on_a_developers_machine(
+        string environment, string? root, string scanner, bool valid)
+    {
+        var failures = Failures(Valid(o =>
+        {
+            o.Environment = environment;
+            o.Files.Root = root ?? o.Files.Root;
+            o.Scan.Host = scanner;
+        }));
+
+        Assert.Equal(valid, failures.Count == 0);
+        if (!valid)
+        {
+            Assert.All(failures, failure => Assert.Matches("SCS_(FILES__ROOT|SCAN__HOST)", failure));
+        }
+    }
+
+    [Theory]
+    [InlineData(4, false)]
+    [InlineData(5, true)]
+    [InlineData(120, true)]
+    [InlineData(121, false)]
+    public void A_scan_may_take_five_seconds_to_two_minutes(int seconds, bool valid)
+    {
+        var failures = Failures(Valid(o => o.Scan.TimeoutSeconds = seconds));
+
+        Assert.Equal(valid, failures.Count == 0);
+    }
+
+    [Fact]
+    public void A_developer_with_no_folder_set_keeps_files_under_the_temporary_ones()
+    {
+        var options = Valid(o => o.Files.Root = "");
+
+        Assert.StartsWith(Path.GetTempPath(), options.Files.RootOrLocal(), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("SCS_PLATFORM__NAME_AR")]
+    [InlineData("SCS_PLATFORM__NAME_EN")]
+    [InlineData("SCS_PLATFORM__SUPPORT_EMAIL")]
+    public void Outside_local_the_platform_must_have_its_two_names_and_its_support_email(string missing)
+    {
+        var options = Valid(o =>
+        {
+            o.Environment = "production";
+            if (missing.EndsWith("NAME_AR", StringComparison.Ordinal)) { o.Platform.NameAr = " "; }
+            if (missing.EndsWith("NAME_EN", StringComparison.Ordinal)) { o.Platform.NameEn = ""; }
+            if (missing.EndsWith("SUPPORT_EMAIL", StringComparison.Ordinal)) { o.Platform.SupportEmail = ""; }
+        });
+
+        var result = Failures(options);
+        Assert.Contains(result, f => f.Contains(missing, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Locally_the_platform_s_identity_falls_back_to_the_design_s_names_and_shows_no_phone_or_address()
+    {
+        var platform = new PlatformOptions();
+
+        Assert.Equal(("سمارت كلينك أو إس", "Smart Clinic OS"), (platform.Name("ar"), platform.Name("en")));
+        Assert.Equal(PlatformOptions.LocalSupportEmail, platform.Support());
+        Assert.Equal(("", "", ""), (platform.Phone(), platform.Address("ar"), platform.Address("en")));
+
+        // An address set in one language is used for both.
+        platform.AddressEn = " 12 Tahrir St., Cairo ";
+        Assert.Equal(("12 Tahrir St., Cairo", "12 Tahrir St., Cairo"), (platform.Address("ar"), platform.Address("en")));
+    }
+
+    [Fact]
+    public void The_platform_s_identity_is_held_to_its_limits_everywhere()
+    {
+        var options = Valid(o =>
+        {
+            o.Environment = "production";
+            o.Platform.NameEn = new string('n', 81);
+            o.Platform.SupportPhone = new string('1', 41);
+            o.Platform.AddressAr = new string('a', 201);
+            o.Platform.SupportEmail = "not an address";
+        });
+
+        var failures = Failures(options);
+        Assert.Contains(failures, f => f.Contains("SCS_PLATFORM__NAME_EN", StringComparison.Ordinal));
+        Assert.Contains(failures, f => f.Contains("SCS_PLATFORM__SUPPORT_PHONE", StringComparison.Ordinal));
+        Assert.Contains(failures, f => f.Contains("SCS_PLATFORM__ADDRESS_AR", StringComparison.Ordinal));
+        Assert.Contains(failures, f => f.Contains("SCS_PLATFORM__SUPPORT_EMAIL must be an email address", StringComparison.Ordinal));
     }
 
     [Fact]

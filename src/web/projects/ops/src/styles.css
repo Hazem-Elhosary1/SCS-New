@@ -1,6 +1,12 @@
 @import 'tailwindcss';
 @import './styles/tokens.css';
 @import '../../ui/src/lib/controls/controls.css';
+@import '@angular/cdk/overlay-prebuilt.css';
+@import '../../ui/src/lib/overlay/overlay.css';
+@import '../../ui/src/lib/list/list.css';
+
+/* The design file's typeface, served from this site: no page calls a third party (spec 095). */
+@import '@fontsource-variable/cairo';
 
 /* Shared libraries are part of this app's styles. */
 @source '../../core/src';
@@ -12,4 +18,35 @@ body {
   color: var(--scs-color-text-primary);
   font-family: var(--scs-font-family);
   font-size: var(--scs-text-body);
+}
+
+/* The round green tick of "done" and of "check your email" (ops design, Login and Profile pages). */
+.ops-tick {
+  display: grid;
+  place-items: center;
+  inline-size: 64px;
+  block-size: 64px;
+  border-radius: var(--scs-radius-full);
+  background: var(--scs-color-feedback-success-bg);
+  color: var(--scs-color-feedback-success-icon);
+}
+
+/* An email named in a sentence stays whole: it goes to the next line rather than break at a
+   hyphen or a dot, and breaks only when it is wider than the line itself. */
+.ops-address {
+  display: inline-block;
+  max-inline-size: 100%;
+  overflow-wrap: anywhere;
+}
+
+/*
+ * A named option of the shared fields (spec 095, research R13): the frames of "Template — Operators"
+ * draw a form's labels small, grey and regular, and an empty drop-down dark, where the component
+ * pages draw them bold and grey. The owner chose the template's for the operators' forms
+ * (14 Oct 2026); everywhere else the component pages' look stands.
+ */
+.scs-form--template {
+  --scs-field-label-weight: 400;
+  --scs-field-label-color: var(--scs-color-text-secondary);
+  --scs-select-empty-color: var(--scs-color-text-primary);
 }

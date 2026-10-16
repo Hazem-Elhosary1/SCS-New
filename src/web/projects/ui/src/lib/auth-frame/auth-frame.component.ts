@@ -1,9 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { LanguageService } from 'core';
 import { ScsLinkDirective } from '../controls/controls';
 import { ScsIconComponent } from '../icon/icon.component';
-import { ScsLanguageToggleComponent } from '../list/list';
+import { ScsLanguageToggleComponent } from '../list/language-toggle.component';
 
 /**
  * The frame every sign-in screen shares (BRD B-5; design file, page "Sign in"): the
@@ -17,6 +17,7 @@ import { ScsLanguageToggleComponent } from '../list/list';
   selector: 'scs-auth-frame',
   imports: [TranslocoPipe, ScsLinkDirective, ScsIconComponent, ScsLanguageToggleComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[class.console]': "panelTitle() !== ''" },
   styles: `
     :host {
       display: grid;
@@ -87,6 +88,32 @@ import { ScsLanguageToggleComponent } from '../list/list';
       font-weight: 700;
       line-height: 1;
     }
+    /* A console's own panel (the operators' design, page "Login"): half the screen in its
+       brand colour, a light mark at its top, the title and the line in its middle. */
+    :host(.console) {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+    :host(.console) .form {
+      max-inline-size: 440px;
+    }
+    :host(.console) .intro {
+      position: relative;
+      gap: var(--scs-spacing-md);
+      padding-inline: var(--scs-spacing-60, 60px);
+      background: var(--scs-color-brand-default);
+    }
+    .logo.plain {
+      position: absolute;
+      inset-block-start: var(--scs-spacing-60, 60px);
+      inset-inline-start: var(--scs-spacing-60, 60px);
+      background: var(--scs-color-bg-surface);
+      color: var(--scs-color-brand-default);
+    }
+    @media (max-width: 899px) {
+      :host(.console) {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
     .badge {
       margin: 0;
       padding: var(--scs-spacing-sm) var(--scs-spacing-12);
@@ -136,24 +163,34 @@ import { ScsLanguageToggleComponent } from '../list/list';
       </main>
 
       <footer data-testid="auth-footer">
-        <button type="button" scsLink class="help" data-testid="help-link" (click)="help.emit()">
-          <scs-icon name="help-circle" [size]="16" />
-          <span>{{ 'ui.auth.footer.help' | transloco }}</span>
-        </button>
+        @if (panelTitle() === '') {
+          <button type="button" scsLink class="help" data-testid="help-link" (click)="help.emit()">
+            <scs-icon name="help-circle" [size]="16" />
+            <span>{{ 'ui.auth.footer.help' | transloco }}</span>
+          </button>
+        }
         <a scsLink class="legal" data-testid="privacy-link" href="/privacy">{{
           'ui.auth.footer.privacy' | transloco
         }}</a>
-        <a scsLink class="legal" data-testid="terms-link" href="/terms">{{
-          'ui.auth.footer.terms' | transloco
-        }}</a>
+        @if (panelTitle() === '') {
+          <a scsLink class="legal" data-testid="terms-link" href="/terms">{{
+            'ui.auth.footer.terms' | transloco
+          }}</a>
+        }
       </footer>
     </div>
 
     <aside class="intro" data-testid="auth-intro">
-      <span class="logo" lang="ar" aria-hidden="true">{{ mark }}</span>
-      <p class="badge">{{ 'ui.auth.intro.badge' | transloco }}</p>
-      <p class="headline">{{ 'ui.auth.intro.headline' | transloco }}</p>
-      <p class="about">{{ 'ui.auth.intro.about' | transloco }}</p>
+      @if (panelTitle() !== '') {
+        <span class="logo plain" aria-hidden="true">{{ panelMark() }}</span>
+        <p class="headline" data-testid="auth-panel-title">{{ panelTitle() }}</p>
+        <p class="about" data-testid="auth-panel-line">{{ panelLine() }}</p>
+      } @else {
+        <span class="logo" lang="ar" aria-hidden="true">{{ mark }}</span>
+        <p class="badge">{{ 'ui.auth.intro.badge' | transloco }}</p>
+        <p class="headline">{{ 'ui.auth.intro.headline' | transloco }}</p>
+        <p class="about">{{ 'ui.auth.intro.about' | transloco }}</p>
+      }
     </aside>
   `,
 })
@@ -162,6 +199,15 @@ export class ScsAuthFrameComponent {
 
   /** The product's mark: the letter the Arabic word for "clinic" begins with. */
   protected readonly mark = 'ع';
+
+  /**
+   * A console that is not the clinic's gives its own panel: a title and a line that change by
+   * screen, already translated, and its mark (the operators console, spec 010). The clinic's
+   * badge, the help link and the terms link are the clinic's and are then left out.
+   */
+  readonly panelTitle = input('');
+  readonly panelLine = input('');
+  readonly panelMark = input('S');
 
   /** The help link in the footer was pressed. */
   readonly help = output<void>();

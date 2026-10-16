@@ -77,6 +77,9 @@
         "hide": "Hide password"
       }
     },
+    "banner": {
+      "close": "Close the notice"
+    },
     "dialog": {
       "close": "Close"
     },
@@ -104,6 +107,57 @@
         "manager": "Clinic manager",
         "doctor": "Doctor"
       }
+    },
+    "files": {
+      "zone": {
+        "title": "Drag a file here or click to browse",
+        "hint": "{{ types }} · up to {{ size }}",
+        "uploading": "Uploading the file…",
+        "failed": "The file could not be uploaded",
+        "full": "The limit is reached: {{ max }}",
+        "drop": "Drop your file here",
+        "release": "Release to upload"
+      },
+      "card": {
+        "uploading": "Uploading… {{ percent }}%",
+        "failed": "Upload failed — try again",
+        "beingChecked": "Being checked",
+        "refused": "Refused: it did not pass the security check",
+        "unreadable": "Refused: it could not be checked — to be sent again without a password",
+        "notKept": "No longer kept",
+        "removed": "Removed · can be restored until {{ date }}"
+      },
+      "reason": {
+        "tooLarge": "Larger than {{ max }} — choose a smaller file",
+        "wrongType": "This type of file is not accepted — {{ types }} only",
+        "empty": "The file is empty",
+        "countReached": "The limit is reached: {{ max }}",
+        "limitReached": "Too many files in a short time — try again shortly",
+        "offline": "No connection — the file was not uploaded",
+        "failed": "Upload failed — try again",
+        "notAllowed": "Uploading this file is not in your role"
+      },
+      "action": {
+        "download": "Download {{ name }}",
+        "remove": "Remove {{ name }}",
+        "retry": "Upload {{ name }} again",
+        "more": "Actions for {{ name }}"
+      },
+      "said": {
+        "uploaded": "{{ name }} was uploaded",
+        "refused": "{{ name }} was not uploaded: {{ reason }}",
+        "removed": "{{ name }} was removed"
+      }
+    },
+    "date": {
+      "previous": "Previous month",
+      "next": "Next month",
+      "calendar": "Choose a date",
+      "today": "Today",
+      "hour": "Hour",
+      "minute": "Minute",
+      "period": "AM or PM",
+      "done": "Done"
     }
   }
 }

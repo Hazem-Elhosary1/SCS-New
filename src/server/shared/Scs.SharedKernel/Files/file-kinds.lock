@@ -1,0 +1,7 @@
+# Keys of the kinds of file (spec 009). A key in this file is never renamed, reused or removed.
+ticket.attachment
+patient.file
+consent.signed-copy
+order.result-report
+doctor.photo
+dev.sample

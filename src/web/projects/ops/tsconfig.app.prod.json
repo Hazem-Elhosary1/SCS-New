@@ -1,0 +1,7 @@
+/* The production build's program (spec 095, R4, R15): the gallery's folder is left out, so none of its
+   components is compiled — production swaps its routes for an empty list (gallery.routes.prod.ts),
+   which is reached through that replacement alone. */
+{
+  "extends": "./tsconfig.app.json",
+  "exclude": ["src/**/*.spec.ts", "src/app/gallery/**"]
+}

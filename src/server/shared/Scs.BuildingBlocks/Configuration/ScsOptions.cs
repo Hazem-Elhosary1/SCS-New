@@ -40,6 +40,14 @@ public sealed class ScsOptions
 
     public SeedOptions Seed { get; set; } = new();
 
+    public FilesOptions Files { get; set; } = new();
+
+    public ScanOptions Scan { get; set; } = new();
+
+    public OpsOptions Ops { get; set; } = new();
+
+    public PlatformOptions Platform { get; set; } = new();
+
     /// <summary><c>SCS_VERSION</c>, set at build.</summary>
     public string Version { get; set; } = "0.0.0-dev";
 
@@ -277,6 +285,135 @@ public sealed class MailOptions
     /// <summary><c>SCS_MAIL__TIMEOUT_SECONDS</c>: how long a request waits for the mail server.</summary>
     [ConfigurationKeyName("TIMEOUT_SECONDS")]
     public int TimeoutSeconds { get; set; } = 10;
+}
+
+/// <summary>The operators console (spec 010).</summary>
+public sealed class OpsOptions
+{
+    public const string LocalAppUrl = "http://localhost:4203";
+
+    /// <summary>
+    /// <c>SCS_OPS__IDLE_MINUTES</c>: no activity for this long ends an operator's session.
+    /// Fifteen minutes to a week (FR-031, FR-032).
+    /// </summary>
+    [ConfigurationKeyName("IDLE_MINUTES")]
+    public int IdleMinutes { get; set; } = 30;
+
+    /// <summary>
+    /// <c>SCS_OPS__APP_URL</c>: the operators console's address, for links in emails. No path.
+    /// Required outside the local environment.
+    /// </summary>
+    [ConfigurationKeyName("APP_URL")]
+    public string AppUrl { get; set; } = "";
+
+    /// <summary><c>SCS_OPS__RESET_LINK_MINUTES</c>: life of a reset link (SH-048).</summary>
+    [ConfigurationKeyName("RESET_LINK_MINUTES")]
+    public int ResetLinkMinutes { get; set; } = 30;
+
+    /// <summary><c>SCS_OPS__FIRST_LINK_HOURS</c>: life of a first-password link (SH-048).</summary>
+    [ConfigurationKeyName("FIRST_LINK_HOURS")]
+    public int FirstLinkHours { get; set; } = 72;
+
+    /// <summary><c>SCS_OPS__RECORD_MONTHS</c>: how long sign-in records are kept (FR-052a).</summary>
+    [ConfigurationKeyName("RECORD_MONTHS")]
+    public int RecordMonths { get; set; } = 12;
+
+    /// <summary>The console's address without a trailing slash.</summary>
+    public string AppBase() =>
+        string.IsNullOrWhiteSpace(AppUrl) ? LocalAppUrl : AppUrl.Trim().TrimEnd('/');
+}
+
+/// <summary>
+/// Who the platform is when it writes to someone (spec 094): its two names, how to reach
+/// support, and where it is. Read by the email template alone; spec 024 will make these
+/// settings, and these keys stay as the deployment's defaults.
+/// </summary>
+public sealed class PlatformOptions
+{
+    public const string LocalNameAr = "سمارت كلينك أو إس";
+    public const string LocalNameEn = "Smart Clinic OS";
+    public const string LocalSupportEmail = "support@scs.localhost";
+
+    public const int NameMaxLength = 80;
+    public const int PhoneMaxLength = 40;
+    public const int AddressMaxLength = 200;
+
+    /// <summary><c>SCS_PLATFORM__NAME_AR</c>: the platform's name in Arabic. Required outside local.</summary>
+    [ConfigurationKeyName("NAME_AR")]
+    public string NameAr { get; set; } = "";
+
+    /// <summary><c>SCS_PLATFORM__NAME_EN</c>: the platform's name in English. Required outside local.</summary>
+    [ConfigurationKeyName("NAME_EN")]
+    public string NameEn { get; set; } = "";
+
+    /// <summary><c>SCS_PLATFORM__SUPPORT_EMAIL</c>: shown in every email's footer. Required outside local.</summary>
+    [ConfigurationKeyName("SUPPORT_EMAIL")]
+    public string SupportEmail { get; set; } = "";
+
+    /// <summary><c>SCS_PLATFORM__SUPPORT_PHONE</c>: beside the support email; left out when empty.</summary>
+    [ConfigurationKeyName("SUPPORT_PHONE")]
+    public string SupportPhone { get; set; } = "";
+
+    /// <summary><c>SCS_PLATFORM__ADDRESS_AR</c>: the postal address in Arabic; left out when neither is set.</summary>
+    [ConfigurationKeyName("ADDRESS_AR")]
+    public string AddressAr { get; set; } = "";
+
+    /// <summary><c>SCS_PLATFORM__ADDRESS_EN</c>: the postal address in English; left out when neither is set.</summary>
+    [ConfigurationKeyName("ADDRESS_EN")]
+    public string AddressEn { get; set; } = "";
+
+    /// <summary>The platform's name in a language; the design's names where none is set (local only).</summary>
+    public string Name(string language)
+    {
+        var english = language == "en";
+        var set = (english ? NameEn : NameAr).Trim();
+        return set.Length > 0 ? set : english ? LocalNameEn : LocalNameAr;
+    }
+
+    public string Support() =>
+        string.IsNullOrWhiteSpace(SupportEmail) ? LocalSupportEmail : SupportEmail.Trim();
+
+    public string Phone() => SupportPhone.Trim();
+
+    /// <summary>The address of a language, else the other's, else nothing.</summary>
+    public string Address(string language)
+    {
+        var (own, other) = language == "en" ? (AddressEn, AddressAr) : (AddressAr, AddressEn);
+        return own.Trim().Length > 0 ? own.Trim() : other.Trim();
+    }
+}
+
+/// <summary>Where file content is kept (spec 009).</summary>
+public sealed class FilesOptions
+{
+    /// <summary>
+    /// <c>SCS_FILES__ROOT</c>: the folder of the local store. Required outside a developer's
+    /// machine; there it falls back to a folder under the system's temporary files.
+    /// </summary>
+    public string Root { get; set; } = "";
+
+    /// <summary>The folder in use: the configured one, or the developer's fallback.</summary>
+    public string RootOrLocal() =>
+        string.IsNullOrWhiteSpace(Root) ? Path.Combine(Path.GetTempPath(), "scs-files") : Root.Trim();
+}
+
+/// <summary>The malware scanner (spec 009, FR-014).</summary>
+public sealed class ScanOptions
+{
+    /// <summary>
+    /// <c>SCS_SCAN__HOST</c>: the ClamAV daemon. Required outside a developer's machine; with
+    /// none, a developer's machine uses a scanner that knows the standard test signature only.
+    /// </summary>
+    public string Host { get; set; } = "";
+
+    /// <summary><c>SCS_SCAN__PORT</c>.</summary>
+    public int Port { get; set; } = 3310;
+
+    /// <summary><c>SCS_SCAN__TIMEOUT_SECONDS</c>: how long one scan may take.</summary>
+    [ConfigurationKeyName("TIMEOUT_SECONDS")]
+    public int TimeoutSeconds { get; set; } = 30;
+
+    public bool HasScanner => !string.IsNullOrWhiteSpace(Host);
 }
 
 /// <summary>What the help window on the sign-in screens shows. Nothing here is private.</summary>

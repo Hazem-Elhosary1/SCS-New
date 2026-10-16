@@ -91,6 +91,84 @@ public static class ErrorCodes
     /// <summary>Nobody changes the role of their own account (SH-053).</summary>
     public const string OwnRole = "OWN_ROLE";
 
+    /// <summary>A file of no bytes (spec 009).</summary>
+    public const string FileEmpty = "FILE_EMPTY";
+
+    /// <summary>Larger than its kind allows; carries <c>sizeBytes</c> and <c>maxBytes</c>.</summary>
+    public const string FileTooLarge = "FILE_TOO_LARGE";
+
+    /// <summary>Its content is none of the types its kind takes; carries <c>accepted</c>.</summary>
+    public const string FileTypeNotAccepted = "FILE_TYPE_NOT_ACCEPTED";
+
+    /// <summary>The store could not keep it; nothing of it was kept. Try again.</summary>
+    public const string FileNotStored = "FILE_NOT_STORED";
+
+    /// <summary>Too many files waiting unsaved, or too many uploads at once; carries <c>retryAfterSeconds</c>.</summary>
+    public const string FileLimitReached = "FILE_LIMIT_REACHED";
+
+    /// <summary>The record already holds as many files as its kind allows; carries <c>max</c>.</summary>
+    public const string FileCountReached = "FILE_COUNT_REACHED";
+
+    /// <summary>A file named for a record cannot be attached to it; never says which or why.</summary>
+    public const string FileNotAttachable = "FILE_NOT_ATTACHABLE";
+
+    /// <summary>Not scanned yet: it cannot be given out.</summary>
+    public const string FileBeingChecked = "FILE_BEING_CHECKED";
+
+    /// <summary>Refused by the check; carries <c>reason</c>: <c>infected</c> or <c>unreadable</c>.</summary>
+    public const string FileRefused = "FILE_REFUSED";
+
+    /// <summary>Removed, or past the time it is kept for.</summary>
+    public const string FileNotKept = "FILE_NOT_KEPT";
+
+    /// <summary>
+    /// Spec 010: the step in progress — a sign-in between the password and the code, or a change
+    /// of password waiting for its code — is over: expired, cancelled, or its tries are spent.
+    /// </summary>
+    public const string StepExpired = "STEP_EXPIRED";
+
+    /// <summary>The email already belongs to an operator (spec 011).</summary>
+    public const string OpsEmailTaken = "OPS_EMAIL_TAKEN";
+
+    /// <summary>The role holds a permission the caller does not, or is the super admin's and the caller is not one.</summary>
+    public const string OpsRoleNotGrantable = "OPS_ROLE_NOT_GRANTABLE";
+
+    /// <summary>An operator does not change the role of their own account.</summary>
+    public const string OpsOwnRole = "OPS_OWN_ROLE";
+
+    /// <summary>The change would leave the platform with no active super admin.</summary>
+    public const string OpsLastSuperAdmin = "OPS_LAST_SUPER_ADMIN";
+
+    /// <summary>An operator does not suspend their own account.</summary>
+    public const string OpsOwnAccount = "OPS_OWN_ACCOUNT";
+
+    /// <summary>The account is not in the state the action needs; nothing changed.</summary>
+    public const string OpsStateChanged = "OPS_STATE_CHANGED";
+
+    /// <summary>A link was sent to the account less than a minute ago; nothing was sent.</summary>
+    public const string OpsLinkTooSoon = "OPS_LINK_TOO_SOON";
+
+    /// <summary>The record changed since it was read; nothing was overwritten.</summary>
+    public const string OpsChangedElsewhere = "OPS_CHANGED_ELSEWHERE";
+
+    /// <summary>The link could not be handed to the mail server; nothing was kept.</summary>
+    public const string OpsLinkNotSent = "OPS_LINK_NOT_SENT";
+
+    /// <summary>Another role has the name.</summary>
+    public const string OpsRoleNameTaken = "OPS_ROLE_NAME_TAKEN";
+
+    /// <summary>The body adds permissions the caller does not hold; carries <c>permissions</c>.</summary>
+    public const string OpsPermissionsNotHeld = "OPS_PERMISSIONS_NOT_HELD";
+
+    /// <summary>Nobody but a super admin edits the role they hold.</summary>
+    public const string OpsOwnRoleEdit = "OPS_OWN_ROLE_EDIT";
+
+    /// <summary>One of the platform's own roles: never edited or deleted.</summary>
+    public const string OpsSystemRole = "OPS_SYSTEM_ROLE";
+
+    /// <summary>A role that operators hold is not deleted; carries <c>operators</c>.</summary>
+    public const string OpsRoleInUse = "OPS_ROLE_IN_USE";
+
     public static IReadOnlyList<string> All { get; } =
     [
         ValidationFailed, MalformedRequest, Unauthenticated, Forbidden, NotFound,
@@ -101,5 +179,10 @@ public static class ErrorCodes
         ResendTooEarly, ResendLimitReached, SignInCodeNotSent, SignInCodeNotResent,
         LinkInvalid, PasswordChangeRequired, PasswordChangeNotRequired,
         PermissionRequired, RoleFixed, RoleInUse, LastOwner, OwnRole,
+        FileEmpty, FileTooLarge, FileTypeNotAccepted, FileNotStored, FileLimitReached,
+        FileCountReached, FileNotAttachable, FileBeingChecked, FileRefused, FileNotKept,
+        StepExpired,
+        OpsEmailTaken, OpsRoleNotGrantable, OpsOwnRole, OpsLastSuperAdmin, OpsOwnAccount, OpsStateChanged, OpsLinkTooSoon,
+        OpsChangedElsewhere, OpsLinkNotSent, OpsRoleNameTaken, OpsPermissionsNotHeld, OpsOwnRoleEdit, OpsSystemRole, OpsRoleInUse,
     ];
 }

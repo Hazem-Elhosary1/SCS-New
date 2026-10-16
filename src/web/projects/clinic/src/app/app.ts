@@ -16,6 +16,9 @@ import { ScsEnvStripComponent } from 'ui';
   styles: `
     :host {
       display: block;
+      /* As wide as the widest thing inside: in a window narrower than the console's least
+         width the page scrolls sideways, and the strip must reach across all of it. */
+      min-inline-size: min-content;
     }
   `,
   template: `

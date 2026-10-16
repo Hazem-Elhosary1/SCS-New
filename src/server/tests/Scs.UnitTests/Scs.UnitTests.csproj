@@ -17,6 +17,8 @@
     <ProjectReference Include="..\..\modules\Identity\Scs.Identity\Scs.Identity.csproj" />
     <ProjectReference Include="..\..\modules\Audit\Scs.Audit\Scs.Audit.csproj" />
     <ProjectReference Include="..\..\modules\Notifications\Scs.Notifications\Scs.Notifications.csproj" />
+    <ProjectReference Include="..\..\modules\Files\Scs.Files\Scs.Files.csproj" />
+    <ProjectReference Include="..\..\modules\Operators\Scs.Operators\Scs.Operators.csproj" />
   </ItemGroup>
 
 </Project>

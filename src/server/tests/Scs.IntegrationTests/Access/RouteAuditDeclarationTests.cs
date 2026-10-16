@@ -36,7 +36,40 @@ public sealed class RouteAuditDeclarationTests(SqlServerFixture sql)
         ["POST /v1/dev/staff-invitations"] = AuditDeclarationKind.RecordsNothing,
         ["POST /v1/notifications/{id:guid}/read"] = AuditDeclarationKind.RecordsNothing,
         ["POST /v1/notifications/read-all"] = AuditDeclarationKind.RecordsNothing,
+
+        // Spec 010: an operator's sign-in events are kept in the operators' own record.
+        ["POST /v1/ops/auth/sign-in"] = AuditDeclarationKind.RecordsNothing,
+        ["POST /v1/ops/auth/code"] = AuditDeclarationKind.RecordsNothing,
+        ["POST /v1/ops/auth/code/resend"] = AuditDeclarationKind.RecordsNothing,
+        ["POST /v1/ops/auth/code/cancel"] = AuditDeclarationKind.RecordsNothing,
+        ["POST /v1/ops/auth/session/renew"] = AuditDeclarationKind.RecordsNothing,
+        ["POST /v1/ops/auth/sign-out"] = AuditDeclarationKind.RecordsNothing,
+        ["POST /v1/ops/auth/sign-out-everywhere"] = AuditDeclarationKind.RecordsNothing,
+        ["POST /v1/ops/password/forgot"] = AuditDeclarationKind.RecordsNothing,
+        ["POST /v1/ops/password/link"] = AuditDeclarationKind.RecordsNothing,
+        ["POST /v1/ops/password/set"] = AuditDeclarationKind.RecordsNothing,
+        ["POST /v1/ops/profile/password"] = AuditDeclarationKind.RecordsNothing,
+        ["POST /v1/ops/profile/password/confirm"] = AuditDeclarationKind.RecordsNothing,
+        ["POST /v1/ops/profile/password/resend"] = AuditDeclarationKind.RecordsNothing,
+        ["POST /v1/ops/profile/password/cancel"] = AuditDeclarationKind.RecordsNothing,
+
+        // Spec 011: each is recorded in the platform's own trail.
+        ["POST /v1/ops/operators"] = AuditDeclarationKind.Records,
+        ["PUT /v1/ops/operators/{id:guid}"] = AuditDeclarationKind.Records,
+        ["POST /v1/ops/operators/{id:guid}/suspend"] = AuditDeclarationKind.Records,
+        ["POST /v1/ops/operators/{id:guid}/reactivate"] = AuditDeclarationKind.Records,
+        ["POST /v1/ops/operators/{id:guid}/password-link"] = AuditDeclarationKind.Records,
+        ["POST /v1/ops/operators/{id:guid}/unlock"] = AuditDeclarationKind.Records,
+        ["POST /v1/ops/roles"] = AuditDeclarationKind.Records,
+        ["PUT /v1/ops/roles/{id:guid}"] = AuditDeclarationKind.Records,
+        ["POST /v1/ops/roles/{id:guid}/delete"] = AuditDeclarationKind.Records,
         ["PUT /v1/settings/notification-emails/{eventKey}"] = AuditDeclarationKind.Records,
+        ["POST /v1/files"] = AuditDeclarationKind.RecordsNothing,
+        ["DELETE /v1/files/{id:guid}"] = AuditDeclarationKind.RecordsNothing,
+        ["POST /v1/files/{id:guid}/access"] = AuditDeclarationKind.Records,
+        ["POST /v1/dev/files/sample"] = AuditDeclarationKind.RecordsNothing,
+        ["POST /v1/dev/files/sample/{id:guid}/remove"] = AuditDeclarationKind.RecordsNothing,
+        ["POST /v1/dev/files/sample/{id:guid}/restore"] = AuditDeclarationKind.RecordsNothing,
     };
 
     private static string Describe(RouteEndpoint endpoint) => $"{Method(endpoint)} {endpoint.RoutePattern.RawText}";

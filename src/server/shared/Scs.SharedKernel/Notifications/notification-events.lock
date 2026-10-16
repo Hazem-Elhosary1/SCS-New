@@ -22,3 +22,5 @@ result.out-of-range
 account.new-device
 account.support-action
 licence.expiring
+file.scan-refused
+file.unreadable

@@ -3,6 +3,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Audit\audit-actions.lock" />
     <EmbeddedResource Include="Notifications\notification-events.lock" />
+    <EmbeddedResource Include="Files\file-kinds.lock" />
   </ItemGroup>
 
 </Project>

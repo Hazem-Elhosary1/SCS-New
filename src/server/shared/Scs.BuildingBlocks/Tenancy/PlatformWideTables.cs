@@ -19,6 +19,16 @@ public static class PlatformWideTables
         ("tenancy.ClinicDirectory", "Clinic short names, which already appear in public addresses."),
         ("crossing.CrossClinicAccess", "Who used a cross-clinic operation; identifiers only, hidden from clinics."),
         ("platform.DataProtectionKey", "The key ring that protects session cookies; one for the whole platform."),
+        ("files.RetentionPeriod", "How long each class of file is kept (SH-095): four classes and a number of days; no clinic data."),
+        ("ops.Operator", "The platform's own staff (spec 010): names, emails and password hashes of operators; no clinic's data."),
+        ("ops.SignInChallenge", "An operator's sign-in or password change waiting for its code: a keyed hash, never the code."),
+        ("ops.Session", "Operators' sessions: hashes of renewal secrets, addresses and browsers of the platform's own staff."),
+        ("ops.PasswordLink", "Operators' first-password and reset links: a hash and times."),
+        ("ops.KnownBrowser", "Browsers an operator has signed in from: a hash of a random mark and two times."),
+        ("ops.SignInRecord", "Security events of operators' sign-in: identifiers, addresses and times; kept as written, removed by age."),
+        ("ops.Role", "The roles of the platform's own staff (spec 011): names and descriptions; no clinic's data."),
+        ("ops.RolePermission", "Which codes of the operators' catalogue a role holds."),
+        ("audit.PlatformEntry", "What operators and the platform did to the platform itself (spec 011): its team and roles; no clinic's data; append-only."),
         ("security.AnonymousSignInAttempt", "Sign-in attempts on emails that match no account; a keyed hash, never the email; insert-only for the application."),
     ];
 

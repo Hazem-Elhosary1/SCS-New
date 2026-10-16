@@ -186,4 +186,34 @@ menu, not only the bell.
   ٢٠٢٦، ٣:٠٤ م» · "11 October 2026, 3:04 PM" — between the line and the way in. Four unit tests
   and a line in `NewDeviceTests`.
 
-Neither was walked again on the real stack: the walk of section 3 is from before them.
+Both were walked on the real stack afterwards (section 9).
+
+## 9. Second convergence (T041–T042), after the merge
+
+Done on branch `008-notifications-followup`, from `develop`.
+
+- **T042 — FR-022.** The fix of T039 had a side effect: an open panel refreshed by replacing
+  its list with the first page, so a person who had scrolled to load older notifications lost
+  them, and their place, every thirty seconds while anything was unread. A refresh now puts the
+  newest page in its place and keeps the older ones below it with the way to the ones after
+  them; when nothing is unread any more, the older ones are marked read too. One unit test, and
+  the browser test of scrolling now waits a turn and checks the count and the scroll position.
+- **T041 — Constitution VII.** Walked on the running stack with two fresh browsers as
+  `owner@shifa.example` (`walk8c.mjs`):
+  - the email of the new device, in English as that account reads: "Sign-in from a new device
+    ⏎ Chrome on Windows ⏎ **11 October 2026, 7:18 PM** ⏎ Open in Smart Clinic OS:
+    http://localhost:4201/"; Mailpit received it at 19:18:01 Cairo time (T040);
+  - the first browser kept its panel open with four items, two unread; the second browser
+    pressed "Mark all read"; **27 s later**, with no reload, the first browser's open panel
+    showed all four read and the dot gone (T039);
+  - the panel held four items before and after the refresh (T042). The account has too few
+    notifications to scroll, so "older ones stay" was seen in the browser test with forty-five,
+    not on the real stack.
+
+The panel's look did not change, so it was not laid beside its frames again.
+
+| Gate, after these two tasks | Result |
+|---|---|
+| `npm --prefix src/web run ci` | passed — clinic 68, core 145, ui 72 |
+| `npx playwright test` | 377 passed, 4 skipped, 1 passed on its second try: the one-second timing of "not in your role" (`access.spec.ts`), run while the API of the local stack was up; its file then passed 5 times of 5 |
+| Server suites | not run again: no server file changed since the run of section 1 |

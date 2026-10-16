@@ -126,6 +126,12 @@ public static class NotificationEvents
     public const string AccountSupportAction = "account.support-action";
     public const string LicenceExpiring = "licence.expiring";
 
+    /// <summary>Spec 009: a file its uploader sent did not pass the malware scan.</summary>
+    public const string FileScanRefused = "file.scan-refused";
+
+    /// <summary>Spec 009: a file its uploader sent could not be looked inside — it is behind a password, or damaged.</summary>
+    public const string FileUnreadable = "file.unreadable";
+
     private static readonly int[] None = [];
 
     public static IReadOnlyList<NotificationEvent> All { get; } =
@@ -182,6 +188,14 @@ public static class NotificationEvents
             NotificationMarks.Notice, RecipientRule.Holders(Permissions.AdminUsersManage), NotificationEmail.Never, None, []),
         new(LicenceExpiring, NotificationGroups.Accounts, "اقتراب انتهاء رخصة", "Licence expiring soon",
             NotificationMarks.Warning, RecipientRule.OwnerAnd(Permissions.AdminLicencesManage), NotificationEmail.Switch, [60, 30, 7], []),
+
+        // Spec 009 — told to whoever uploaded the file, in the bell only.
+        new(FileScanRefused, NotificationGroups.Accounts, "ملف مرفوض", "File refused",
+            NotificationMarks.Warning, RecipientRule.Owner, NotificationEmail.Never, None, ["name", "forAr", "forEn"],
+            LineAr: "{name} ({forAr}) · لم يجتز الفحص الأمني", LineEn: "{name} ({forEn}) · did not pass the security check"),
+        new(FileUnreadable, NotificationGroups.Accounts, "ملف تعذّر فحصه", "File could not be checked",
+            NotificationMarks.Warning, RecipientRule.Owner, NotificationEmail.Never, None, ["name", "forAr", "forEn"],
+            LineAr: "{name} ({forAr}) · يُعاد إرساله بلا كلمة مرور", LineEn: "{name} ({forEn}) · to be sent again without a password"),
     ];
 
     private static readonly Dictionary<string, NotificationEvent> ByKey = All.ToDictionary(e => e.Key, StringComparer.Ordinal);

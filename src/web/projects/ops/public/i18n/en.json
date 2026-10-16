@@ -1,7 +1,509 @@
 {
   "app": {
     "shell": {
-      "name": "Operators console"
+      "name": "SCS — Ops Console",
+      "sections": "Console sections",
+      "account": "Account menu",
+      "offline": "No internet connection — what is shown is the last copy loaded.",
+      "menu": {
+        "profile": "My Profile",
+        "signOut": "Log Out"
+      },
+      "nav": {
+        "home": "Home",
+        "operators": "Operators"
+      }
+    },
+    "signIn": {
+      "title": "Sign In",
+      "subtitle": "Enter your operator account details",
+      "panel": {
+        "title": "SCS Ops Console",
+        "line": "Manage every clinic, plan, ticket, and team member from one place."
+      },
+      "email": {
+        "label": "Email address",
+        "required": "The email is required",
+        "invalid": "Not a valid email — like name@company.com"
+      },
+      "password": {
+        "label": "Password",
+        "required": "The password is required"
+      },
+      "remember": "Remember me",
+      "forgot": "Forgot password?",
+      "submit": "Sign In",
+      "submitting": "Signing in…",
+      "banner": {
+        "invalidTitle": "Invalid email or password",
+        "invalid": "Check your credentials and try again.",
+        "suspended": "This account is suspended.",
+        "unreachable": "The server could not be reached. Try again in a moment.",
+        "codeNotSent": "The verification code could not be sent. Try again in a moment.",
+        "unexpected": "Something unexpected went wrong. Try again.",
+        "rateLimited": "Too many attempts from this address. Try again in a minute.",
+        "lockedBefore": "The account is locked until",
+        "lockedAfter": " after wrong sign-in attempts. Resetting the password opens it now."
+      },
+      "notice": {
+        "replaced": "You signed in on another device, so this session ended.",
+        "idle": "The session ended. Sign in again to continue.",
+        "expired": "The session ended. Sign in again to continue.",
+        "reuse": "The session ended. Sign in again to continue.",
+        "password-reset": "Your password was reset, so you were signed out. Sign in with the new password.",
+        "suspended": "Your account was locked for security reasons. Sign in again.",
+        "role-changed": "Your role was changed, so you were signed out. Sign in again to continue.",
+        "locked": "The account was locked after wrong attempts. Resetting the password opens it now.",
+        "password-changed": "The password was changed. Sign in with the new password.",
+        "account-ready": "The account is active. Sign in now."
+      }
+    },
+    "code": {
+      "title": "Two-Factor Verification",
+      "sentTo": "Enter the 6-digit code sent to",
+      "panel": {
+        "title": "Two-Factor Verification",
+        "line": "An extra layer of security for your operator account."
+      },
+      "boxes": "Verification code, six digits",
+      "waitBefore": "Resend code in",
+      "resend": "Resend code",
+      "submit": "Verify",
+      "back": "Back to Sign In",
+      "problem": {
+        "wrong": "The code is wrong or has expired. You can ask for a new one.",
+        "notResent": "A new code could not be sent. The earlier code stays valid until it expires.",
+        "resendLimit": "No more codes can be sent. Sign in again from the start.",
+        "unexpected": "Something unexpected went wrong. Try again."
+      }
+    },
+    "forgot": {
+      "title": "Forgot Password",
+      "subtitle": "Enter your email and we'll send you a reset link",
+      "submit": "Send Reset Link",
+      "back": "Back to Login",
+      "sent": {
+        "title": "Check your email",
+        "line": "We've sent a password reset link to",
+        "notArrived": "Didn't receive the email?",
+        "again": "Resend email",
+        "resent": "We sent a new link.",
+        "sending": "Sending…",
+        "waitBefore": "Resend email in"
+      }
+    },
+    "password": {
+      "reading": "Checking the link…",
+      "new": "New Password",
+      "confirm": "Confirm Password",
+      "mismatch": "Passwords do not match. Please try again.",
+      "same": "The new password must be different from the current one.",
+      "rules": {
+        "length": "At least 10 characters",
+        "cases": "An uppercase and a lowercase letter",
+        "digit": "At least one number",
+        "symbol": "At least one special character"
+      },
+      "first": {
+        "title": "Set your password",
+        "subtitle": "You've been invited to join SCS Ops Console. Create a password to activate your account.",
+        "submit": "Activate Account"
+      },
+      "reset": {
+        "title": "New password",
+        "subtitle": "Choose a new password for your operator account.",
+        "submit": "Save Password"
+      },
+      "gone": {
+        "title": "This link no longer works",
+        "reset": "The link has expired or was already used. You can ask for a new one.",
+        "first": "The invitation has expired or was already used. Ask whoever sent it for a new one.",
+        "unknown": "The link is wrong or has expired.",
+        "askNew": "Ask for a new link"
+      }
+    },
+    "home": {
+      "greeting": "Welcome,",
+      "line": "The console's sections appear here as they are built."
+    },
+    "notFound": {
+      "title": "Page not found",
+      "line": "That address is not a page of the ops console.",
+      "home": "Back to Home"
+    },
+    "notYet": {
+      "title": "Not available yet",
+      "line": "This page is coming soon."
+    },
+    "profile": {
+      "title": "My Profile",
+      "lead": "Manage your personal account information and security settings.",
+      "cancel": "Cancel",
+      "account": {
+        "title": "Account Information",
+        "mobile": "Phone Number",
+        "changePassword": "Change Password",
+        "email": "Email"
+      },
+      "security": {
+        "title": "Security & Sessions",
+        "twoFactor": "Enable two-factor authentication (2FA) for my account",
+        "twoFactorLocked": "Required for every operator in Settings → Security, so it can’t be turned off here."
+      },
+      "sessions": {
+        "title": "Recent Sessions",
+        "one": "One session at a time — signing in on another device ends this one.",
+        "device": "Device & IP Address",
+        "state": "Status",
+        "action": "Action",
+        "activeNow": "Active now",
+        "ended": "Ended",
+        "current": "Current session"
+      },
+      "everywhere": {
+        "button": "Sign Out of All Devices",
+        "title": "Sign out of all devices?",
+        "line": "Every session of your account ends, this one too, and you sign in again."
+      },
+      "change": {
+        "lead": "Make sure to use a strong password to protect your account.",
+        "current": "Current Password",
+        "currentWrong": "The current password is incorrect.",
+        "new": "New Password",
+        "same": "The new password must be different from the current one.",
+        "hint": "At least 10 characters, with upper and lower case letters, a number and a symbol.",
+        "confirmNew": "Confirm New Password",
+        "mismatch": "Passwords do not match. Please try again.",
+        "save": "Save Password",
+        "failed": "The password was not changed. Start again.",
+        "codeSentTo": "To confirm, enter the 6-digit code sent to",
+        "confirm": "Confirm change",
+        "doneTitle": "Password Changed Successfully",
+        "doneLine": "You can now use your new password to sign in.",
+        "done": "Done"
+      }
+    },
+    "noAccess": {
+      "title": "You can't open this page",
+      "line": "Your current role doesn't include the permission this page needs. Ask a Super Admin if you need it.",
+      "home": "Back to home"
+    },
+    "operators": {
+      "title": "Operators",
+      "note": "Manage the platform's operations team, roles, and permissions.",
+      "add": "Add Operator",
+      "tabs": {
+        "label": "Page sections",
+        "operators": "Operators",
+        "roles": "Roles & Permissions"
+      },
+      "state": {
+        "active": "Active",
+        "invited": "Invited",
+        "suspended": "Suspended"
+      },
+      "twoStep": {
+        "on": "Enabled",
+        "off": "Disabled"
+      },
+      "never": "Hasn't signed in yet",
+      "unset": "—",
+      "retry": "Try again",
+      "cancel": "Cancel",
+      "required": "This field is required.",
+      "tooLong": "This is longer than allowed.",
+      "crumbs": "Breadcrumb",
+      "cards": {
+        "total": "Total Operators",
+        "totalNote": "All roles",
+        "active": "Active Operators",
+        "activeNote": "+{{count}} this month",
+        "invited": "Pending Invitations",
+        "invitedNote": "Awaiting acceptance",
+        "invitedNone": "No invites waiting",
+        "twoStep": "2FA Enabled",
+        "twoStepNote": "{{share}} of team"
+      },
+      "list": {
+        "caption": "Operators list",
+        "search": "Search operators by name or email...",
+        "clearSearch": "Clear search",
+        "filter": "Filter",
+        "filterTitle": "Filter results",
+        "filterState": "Status",
+        "filterRole": "Role",
+        "filterAny": "All",
+        "apply": "Apply filters",
+        "reset": "Reset",
+        "close": "Close",
+        "column": {
+          "name": "Name",
+          "role": "Role",
+          "lastSignIn": "Last Login",
+          "state": "Status",
+          "twoStep": "2FA",
+          "actions": "Actions"
+        },
+        "menu": "Actions for {{name}}",
+        "view": "View details",
+        "edit": "Edit operator",
+        "count": "Showing {{from}}–{{to}} of {{total}} operators",
+        "previous": "Previous",
+        "next": "Next",
+        "paging": "List pages",
+        "loading": "Loading operators",
+        "emptyTitle": "No operators",
+        "emptyText": "Try changing the search or filters, or add a new operator to get started.",
+        "noneText": "No operators match your search or filters.",
+        "clearFilters": "Clear filters",
+        "failedTitle": "Something went wrong",
+        "failedText": "Couldn't load the operators list. Check your connection and try again.",
+        "clearAll": "Clear all",
+        "removeFilter": "Remove",
+        "applied": {
+          "1": "1 filter applied",
+          "2": "2 filters applied"
+        }
+      },
+      "detail": {
+        "crumb": "Operator Details",
+        "edit": "Edit",
+        "suspend": "Suspend Account",
+        "reactivate": "Reactivate",
+        "reactivating": "Reactivating…",
+        "reset": "Reset Password",
+        "unlock": "Unlock Account",
+        "unlocking": "Unlocking…",
+        "info": "Operator Information",
+        "role": "Role",
+        "joined": "Join Date",
+        "lastSignIn": "Last Login",
+        "twoStep": "Two-Factor Authentication (2FA)",
+        "mobile": "Mobile Number",
+        "department": "Department",
+        "jobTitle": "Job Title",
+        "addedBy": "Added By",
+        "system": "System",
+        "systemFirst": "System (first operator)",
+        "permissions": "Permissions",
+        "noWrites": "No edit permissions",
+        "performance": "Performance (last 30 days)",
+        "activeSessions": "Active Sessions",
+        "activity": "Recent Activity Log",
+        "noActivity": "No activity yet",
+        "locked": "The account is temporarily locked after wrong sign-in attempts.",
+        "loading": "Loading the operator",
+        "failed": "Couldn't load the operator.",
+        "notFoundTitle": "Operator not found",
+        "notFoundText": "The link may be wrong.",
+        "back": "Back to operators",
+        "reactivated": "The operator account was reactivated.",
+        "reactivateFailed": "Couldn't reactivate this operator's account.",
+        "unlocked": "Account unlocked.",
+        "unlockFailed": "Couldn't unlock this account."
+      },
+      "activity": {
+        "signed-in": "Logged in from {{device}}",
+        "operator.invited": "Invited {{name}} as {{role}}",
+        "operator.edited": "Edited {{name}}'s details",
+        "operator.role-changed": "Changed {{name}}'s role to {{role}}",
+        "operator.suspended": "Suspended {{name}}'s account",
+        "operator.reactivated": "Reactivated {{name}}'s account",
+        "operator.link-sent": "Sent {{name}} a password link",
+        "operator.unlocked": "Unlocked {{name}}'s account",
+        "opsrole.created": "Created the role {{name}}",
+        "opsrole.edited": "Edited the role {{name}}",
+        "opsrole.deleted": "Deleted the role {{name}}",
+        "other": "Did something on the platform"
+      },
+      "department": {
+        "support": "Technical Support",
+        "billing": "Billing",
+        "success": "Customer Success",
+        "sales": "Sales",
+        "management": "Senior Management"
+      },
+      "form": {
+        "addTitle": "Add New Operator",
+        "addNote": "Add a new team member and set their role and permissions on the platform.",
+        "editTitle": "Edit Operator",
+        "editNote": "Update {{name}}'s information, role, and permissions.",
+        "fullName": "Full Name",
+        "fullNameHint": "e.g. Nour Khaled",
+        "email": "Email Address",
+        "emailInvalid": "Enter a valid email address.",
+        "emailTaken": "This email already belongs to an operator.",
+        "emailFixed": "The email address can't be changed.",
+        "role": "Role",
+        "rolePick": "Select a role",
+        "roleHoldsMore": "Holds permissions you don't have",
+        "roleSuperOnly": "Only a Super Admin can grant it",
+        "roleRefused": "You can't give a role with permissions you don't have.",
+        "roleOwn": "You can't change your own role.",
+        "roleLast": "At least one active Super Admin must remain.",
+        "roleGone": "This role no longer exists. Choose another.",
+        "mobile": "Mobile Number (optional)",
+        "department": "Department",
+        "departmentPick": "Select a department",
+        "jobTitle": "Job Title",
+        "jobTitleHint": "e.g. Technical Support Specialist",
+        "language": "Default Interface Language",
+        "arabic": "Arabic",
+        "english": "English",
+        "permissions": "This operator's permissions",
+        "twoStepAdd": "Require the operator to set up two-factor authentication (2FA) on first login",
+        "twoStepEdit": "Require two-factor authentication (2FA) for this operator",
+        "twoStepLocked": "Required for all operators",
+        "invite": "Send an email invitation to join now",
+        "note": "Change note (optional)",
+        "noteHint": "Shown in this record's activity log and in yours.",
+        "notePlaceholder": "e.g. Moved to the billing team",
+        "send": "Send Invite",
+        "save": "Save",
+        "saveChanges": "Save Changes",
+        "saving": "Saving…",
+        "invited": "Invitation sent.",
+        "created": "Account created.",
+        "updated": "Operator details updated.",
+        "addFailed": "Couldn't add the operator.",
+        "saveFailed": "Couldn't save the changes.",
+        "changed": "This record changed since you opened it.",
+        "reload": "Reload",
+        "emailPlaceholder": "name@smartclinicos.com",
+        "mobilePlaceholder": "+20 1XX XXX XXXX"
+      },
+      "suspend": {
+        "title": "Suspend Operator Account",
+        "text": "{{name}}'s account will be suspended and they won't be able to sign in to the Ops Console until reactivated.",
+        "kept": "Their data will be preserved and the account can be reactivated at any time.",
+        "reason": "Reason (optional)",
+        "reasonPlaceholder": "Why is this account being suspended?",
+        "action": "Suspend Account",
+        "working": "Suspending…",
+        "done": "The operator account was suspended.",
+        "last": "At least one active Super Admin must remain.",
+        "failed": "Couldn't suspend this operator's account."
+      },
+      "link": {
+        "title": "Reset Password",
+        "text": "A password reset link will be sent to {{name}}'s email ({{email}}).",
+        "action": "Send Link",
+        "working": "Sending…",
+        "done": "The reset link was sent.",
+        "tooSoon": "A link was sent to this account less than a minute ago. Wait a moment and try again.",
+        "failed": "Couldn't send the reset link."
+      },
+      "roles": {
+        "title": "Roles & Permissions",
+        "note": "Manage operator roles and their permissions across the platform.",
+        "add": "Add Role",
+        "caption": "Roles list",
+        "cards": {
+          "total": "Total Roles",
+          "totalNote": "All available roles",
+          "inUse": "Active Roles",
+          "inUseNote": "Currently in use",
+          "custom": "Custom Roles",
+          "customNote": "Fully editable",
+          "system": "System Roles",
+          "systemNote": "Cannot be deleted"
+        },
+        "search": "Search roles…",
+        "column": {
+          "name": "Role Name",
+          "category": "Category",
+          "operators": "Operators",
+          "state": "Status",
+          "permissions": "Permissions",
+          "actions": "Actions"
+        },
+        "system": "System",
+        "custom": "Custom",
+        "inUse": "In use",
+        "notInUse": "Not in use",
+        "operators": {
+          "zero": "operators",
+          "one": "operator",
+          "two": "operators",
+          "few": "operators",
+          "many": "operators",
+          "other": "operators"
+        },
+        "permissions": {
+          "zero": "permissions",
+          "one": "permission",
+          "two": "permissions",
+          "few": "permissions",
+          "many": "permissions",
+          "other": "permissions"
+        },
+        "description": {
+          "super-admin": "Full access to every section of the Ops Console.",
+          "billing-admin": "Manages plans, subscriptions, payments and financial reports.",
+          "viewer": "Sees everything and changes nothing."
+        },
+        "menu": "Actions for the role {{name}}",
+        "edit": "Edit role",
+        "delete": "Delete role…",
+        "count": "Showing 1–{{count}} of {{count}} roles",
+        "loading": "Loading roles",
+        "none": "No roles match your search.",
+        "failedTitle": "Couldn't load the roles.",
+        "failedText": "The roles list couldn't be loaded. Check your connection and try again."
+      },
+      "roleForm": {
+        "addCrumb": "Add New Role",
+        "editCrumb": "Edit Role",
+        "addTitle": "Add New Role",
+        "addNote": "Create a new role and define the permissions it grants across the platform.",
+        "editTitle": "Edit Role: {{name}}",
+        "editNote": "Update the role name, description, and the permissions it grants.",
+        "name": "Role Name",
+        "namePlaceholder": "e.g. Branch Supervisor",
+        "nameTaken": "A role with this name already exists.",
+        "basedOn": "Base on existing role (optional)",
+        "basedOnNone": "None — start from scratch",
+        "left": "{{count}} permissions you don't hold were left out.",
+        "description": "Description",
+        "descriptionPlaceholder": "Briefly describe the purpose of this role and its responsibilities...",
+        "permissions": "Permissions",
+        "selectAll": "Select All",
+        "clearAll": "Clear",
+        "neededBy": "Required by {{permission}}",
+        "notYours": "You don't hold this permission",
+        "noneTicked": "Select at least one permission.",
+        "notHeld": "You can't add permissions you don't have: {{permissions}}.",
+        "note": "Change note (optional)",
+        "save": "Save Role",
+        "saveChanges": "Save Changes",
+        "saving": "Saving…",
+        "created": "Role created.",
+        "updated": "Role updated.",
+        "createFailed": "Couldn't create the role.",
+        "saveFailed": "Couldn't save the changes.",
+        "ownRole": "You can't edit the role you hold.",
+        "systemRole": "System roles can't be edited.",
+        "loading": "Loading the role",
+        "failed": "Couldn't load the role.",
+        "category": "Category",
+        "categoryCustom": "Custom roles are fully editable, including deletion.",
+        "categorySystem": "System roles can't be edited or deleted."
+      },
+      "deleteRole": {
+        "title": "Delete role",
+        "free": "Delete the role “{{name}}”? Nobody holds it, so no operator loses access. It leaves the roles list and the role picker, and its history stays in the audit log.",
+        "note": "Change note (optional)",
+        "notePlaceholder": "e.g. Merged into Support Agent",
+        "held": "The role “{{name}}” can’t be deleted while operators hold it.",
+        "heldCount": "Reassign the {{count}} on this role before deleting it.",
+        "action": "Delete role",
+        "working": "Deleting…",
+        "done": "Role deleted.",
+        "failed": "Couldn't delete the role."
+      }
+    },
+    "ai": {
+      "badge": "AI"
     }
   }
 }

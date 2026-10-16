@@ -39,15 +39,17 @@ public class IdentityRulesTests
             .Where(file => !InBuildOutput(file) && !file.Contains($"{Path.DirectorySeparatorChar}tests{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
             .Where(file =>
             {
-                // The link token of spec 004 has its own purpose and its own class; it writes no cookie.
+                // The link token of spec 004, and the way in to a file of spec 009, each have
+                // their own purpose and their own class; neither writes a cookie.
                 var name = Path.GetFileName(file);
                 var text = File.ReadAllText(file);
-                if (name == "SessionCookies.cs")
+                // The clinic's cookies, and the operators' own (spec 010): each in its one file.
+                if (name is "SessionCookies.cs" or "OperatorCookies.cs")
                 {
                     return false;
                 }
 
-                if (name == "PasswordLinkTokens.cs")
+                if (name is "PasswordLinkTokens.cs" or "FileDownloads.cs")
                 {
                     return text.Contains("\"__Host-scs-", StringComparison.Ordinal)
                            || text.Contains("\"__Secure-scs-", StringComparison.Ordinal);
@@ -114,7 +116,9 @@ public class IdentityRulesTests
     {
         // OwnAccountOnly() is for what a person does to their own account (spec 005, FR-021):
         // a module that is not Identity has no such route. The one exception is a person's own
-        // bell (spec 008, FR-020): the four routes of access-engine.md §1, in one file.
+        // bell (spec 008, FR-020): the four routes of access-engine.md §1, in one file. And the
+        // files engine's addresses (spec 009): who may is decided by the kind's owner, the
+        // uploader's identity and the token, which no single permission can say.
         var modules = FindUp("src", "server", "modules");
         var offenders = Directory
             .EnumerateFiles(modules, "*.cs", SearchOption.AllDirectories)
@@ -122,6 +126,7 @@ public class IdentityRulesTests
             .Where(file => !file.Contains($"{Path.DirectorySeparatorChar}Identity{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
             .Where(file => !file.EndsWith(
                 Path.Combine("Notifications", "Scs.Notifications", "Api", "NotificationEndpoints.cs"), StringComparison.Ordinal))
+            .Where(file => !file.EndsWith(Path.Combine("Files", "Scs.Files", "Api", "FileEndpoints.cs"), StringComparison.Ordinal))
             .Where(file => File.ReadAllText(file).Contains(".OwnAccountOnly()", StringComparison.Ordinal))
             .Select(file => Path.GetRelativePath(modules, file))
             .ToList();

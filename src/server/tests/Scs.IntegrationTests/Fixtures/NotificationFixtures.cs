@@ -47,6 +47,9 @@ public sealed class TestEvents : INotificationCatalogue
     public const string WithoutLine = "test.without-line";
     public const string Reminder = "test.reminder";
 
+    /// <summary>An event whose email can never be composed: its title holds what a subject may not.</summary>
+    public const string Unsendable = "test.unsendable";
+
     /// <summary>The permission the "holders" events are told to.</summary>
     public const string Permission = Permissions.TicketsViewAll;
 
@@ -71,6 +74,8 @@ public sealed class TestEvents : INotificationCatalogue
             RecipientRule.Owner, NotificationEmail.Never, None, [], "السجل {label}", "Record {label}", Clinical: true),
         new(WithoutLine, NotificationGroups.Support, "حدث بلا سطر", "Event without a line", NotificationMarks.Notice,
             RecipientRule.Owner, NotificationEmail.Always, None, []),
+        new(Unsendable, NotificationGroups.Support, "حدث " + Scs.BuildingBlocks.Mail.EmailContent.Platform, "Event " + Scs.BuildingBlocks.Mail.EmailContent.Platform,
+            NotificationMarks.Notice, RecipientRule.Owner, NotificationEmail.Always, None, [], "التذكرة {label}", "Ticket {label}"),
         new(Reminder, NotificationGroups.Billing, "تذكير", "Reminder", NotificationMarks.Subscription,
             RecipientRule.Owner, NotificationEmail.Always, [14, 7, 1], ["days"], "خلال {days} يومًا", "In {days} days"),
     }.ToDictionary(e => e.Key, StringComparer.Ordinal);

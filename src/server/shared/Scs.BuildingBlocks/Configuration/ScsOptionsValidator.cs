@@ -50,7 +50,7 @@ public sealed class ScsOptionsValidator : IValidateOptions<ScsOptions>
         }
 
         ValidateAuth(options.Auth, failures);
-        ValidateStaffAppUrl(options, failures);
+        ValidateConsoleAddress(options.Auth.StaffAppUrl, "SCS_AUTH__STAFF_APP_URL", options, failures);
 
         if (string.IsNullOrWhiteSpace(options.Mail.Host))
         {
@@ -68,6 +68,60 @@ public sealed class ScsOptionsValidator : IValidateOptions<ScsOptions>
         }
 
         Range(options.Mail.TimeoutSeconds, 1, 60, "SCS_MAIL__TIMEOUT_SECONDS", failures);
+
+        Range(options.Ops.IdleMinutes, 15, 10_080, "SCS_OPS__IDLE_MINUTES", failures);
+        Range(options.Ops.ResetLinkMinutes, 5, 1_440, "SCS_OPS__RESET_LINK_MINUTES", failures);
+        Range(options.Ops.FirstLinkHours, 1, 168, "SCS_OPS__FIRST_LINK_HOURS", failures);
+        Range(options.Ops.RecordMonths, 1, 120, "SCS_OPS__RECORD_MONTHS", failures);
+
+        ValidateConsoleAddress(options.Ops.AppUrl, "SCS_OPS__APP_URL", options, failures);
+
+        foreach (var (value, key) in new[]
+                 {
+                     (options.Platform.NameAr, "SCS_PLATFORM__NAME_AR"),
+                     (options.Platform.NameEn, "SCS_PLATFORM__NAME_EN"),
+                     (options.Platform.SupportEmail, "SCS_PLATFORM__SUPPORT_EMAIL"),
+                 })
+        {
+            if (!options.IsLocal && string.IsNullOrWhiteSpace(value))
+            {
+                failures.Add($"Missing required configuration value {key}.");
+            }
+        }
+
+        TooLong(options.Platform.NameAr, PlatformOptions.NameMaxLength, "SCS_PLATFORM__NAME_AR", failures);
+        TooLong(options.Platform.NameEn, PlatformOptions.NameMaxLength, "SCS_PLATFORM__NAME_EN", failures);
+        TooLong(options.Platform.SupportPhone, PlatformOptions.PhoneMaxLength, "SCS_PLATFORM__SUPPORT_PHONE", failures);
+        TooLong(options.Platform.AddressAr, PlatformOptions.AddressMaxLength, "SCS_PLATFORM__ADDRESS_AR", failures);
+        TooLong(options.Platform.AddressEn, PlatformOptions.AddressMaxLength, "SCS_PLATFORM__ADDRESS_EN", failures);
+
+        if (!string.IsNullOrWhiteSpace(options.Platform.SupportEmail)
+            && !MimeKit.MailboxAddress.TryParse(options.Platform.SupportEmail.Trim(), out _))
+        {
+            failures.Add("SCS_PLATFORM__SUPPORT_EMAIL must be an email address.");
+        }
+
+        if (!options.IsLocal && string.IsNullOrWhiteSpace(options.Files.Root))
+        {
+            failures.Add("Missing required configuration value SCS_FILES__ROOT.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(options.Files.Root) && !Path.IsPathFullyQualified(options.Files.Root.Trim()))
+        {
+            failures.Add("SCS_FILES__ROOT must be a full path, outside anything the web server serves.");
+        }
+
+        if (!options.IsLocal && !options.Scan.HasScanner)
+        {
+            failures.Add("Missing required configuration value SCS_SCAN__HOST: files are not accepted without a malware scanner.");
+        }
+
+        if (options.Scan.Port is < 1 or > 65535)
+        {
+            failures.Add("SCS_SCAN__PORT must be between 1 and 65535.");
+        }
+
+        Range(options.Scan.TimeoutSeconds, 5, 120, "SCS_SCAN__TIMEOUT_SECONDS", failures);
 
         if (!options.IsLocal && options.Cors.OriginList.Length > 0)
         {
@@ -117,24 +171,25 @@ public sealed class ScsOptionsValidator : IValidateOptions<ScsOptions>
     }
 
     /// <summary>
-    /// Links in emails lead here, so outside a developer's machine the address must be given and
-    /// must be HTTPS: a link that carries a secret is never sent over plain HTTP.
+    /// Links in emails lead to the two consoles, and a link that carries a secret is never sent
+    /// over plain HTTP: an address must be HTTPS, or — on a developer's machine only — plain HTTP
+    /// on that machine itself. This is the rule an email's button keeps (spec 094), held here so
+    /// that a configuration that starts can always send its emails.
     /// </summary>
-    private static void ValidateStaffAppUrl(ScsOptions options, List<string> failures)
+    private static void ValidateConsoleAddress(string address, string variable, ScsOptions options, List<string> failures)
     {
-        var address = options.Auth.StaffAppUrl;
         if (string.IsNullOrWhiteSpace(address))
         {
             if (!options.IsLocal)
             {
-                failures.Add("Missing required configuration value SCS_AUTH__STAFF_APP_URL.");
+                failures.Add($"Missing required configuration value {variable}.");
             }
 
             return;
         }
 
         var wellFormed =
-            Uri.TryCreate(address, UriKind.Absolute, out var uri)
+            Uri.TryCreate(address.Trim(), UriKind.Absolute, out var uri)
             && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp)
             && uri.AbsolutePath == "/"
             && uri.Query.Length == 0
@@ -143,11 +198,23 @@ public sealed class ScsOptionsValidator : IValidateOptions<ScsOptions>
 
         if (!wellFormed)
         {
-            failures.Add("SCS_AUTH__STAFF_APP_URL must be an absolute http(s) address with no path.");
+            failures.Add($"{variable} must be an absolute http(s) address with no path.");
         }
         else if (!options.IsLocal && uri!.Scheme != Uri.UriSchemeHttps)
         {
-            failures.Add("SCS_AUTH__STAFF_APP_URL must use https outside the local environment.");
+            failures.Add($"{variable} must use https outside the local environment.");
+        }
+        else if (!ConsoleAddresses.MayBeLinkedTo(uri!))
+        {
+            failures.Add($"{variable} must use https, or http on this machine itself (localhost): an email's link is not sent to a plain http address elsewhere.");
+        }
+    }
+
+    private static void TooLong(string value, int maximum, string variable, List<string> failures)
+    {
+        if (value.Trim().Length > maximum)
+        {
+            failures.Add($"{variable} must be at most {maximum} characters.");
         }
     }
 
@@ -157,5 +224,17 @@ public sealed class ScsOptionsValidator : IValidateOptions<ScsOptions>
         {
             failures.Add($"{variable} must be between {minimum} and {maximum}.");
         }
+    }
+}
+
+/// <summary>Where an email's link may lead, said once for the configuration and for the email.</summary>
+public static class ConsoleAddresses
+{
+    /// <summary>HTTPS anywhere; plain HTTP only on the machine itself.</summary>
+    public static bool MayBeLinkedTo(Uri address)
+    {
+        ArgumentNullException.ThrowIfNull(address);
+        return address.IsAbsoluteUri
+               && (address.Scheme == Uri.UriSchemeHttps || (address.Scheme == Uri.UriSchemeHttp && address.IsLoopback));
     }
 }

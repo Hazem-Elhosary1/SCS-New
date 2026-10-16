@@ -13,7 +13,7 @@ export const cors = {
   'access-control-allow-origin': CLINIC,
   'access-control-allow-credentials': 'true',
   'access-control-allow-headers': 'content-type, traceparent, accept-language, x-scs-request',
-  'access-control-allow-methods': 'GET, POST, PUT, OPTIONS',
+  'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'access-control-expose-headers': 'X-Trace-Id, Retry-After',
 };
 
@@ -119,6 +119,20 @@ export interface PlatformNotification {
   link: string | null;
 }
 
+/** A file of a record, as the builders' address lists it (spec 009). */
+export interface PlatformFile {
+  id: string;
+  name: string;
+  sizeBytes: number;
+  type: 'pdf' | 'png' | 'jpeg';
+  state: 'available' | 'being-checked' | 'refused' | 'removed' | 'not-kept';
+  refusedFor: 'infected' | 'unreadable' | null;
+  uploadedAt: string;
+  uploadedByAccountId: string;
+  restorableUntil: string | null;
+  held: boolean;
+}
+
 /** How many notifications one page of the made-up platform holds, as the real one does. */
 export const NOTIFICATIONS_PAGE = 20;
 
@@ -155,6 +169,18 @@ export interface StaffPlatform {
   notificationsAnswer: Answer | null;
   /** Every call to the notification addresses, as `METHOD path`, apart from `calls`: the bell asks by itself. */
   notificationCalls: string[];
+  /** The files saved on the builders' record (spec 009). None by default. */
+  files: PlatformFile[];
+  /** What the next uploads answer instead of taking the file; a function is asked for each file by its name. */
+  uploadAnswer: Answer | ((name: string) => Answer | null) | null;
+  /** How long an upload takes to be answered, so its progress can be seen. */
+  uploadDelayMs: number;
+  /** What a saved file's scan says when it is saved: available by default. */
+  savedAs: PlatformFile['state'];
+  /** Overrides the answer of `POST /v1/files/{id}/access` while set. */
+  accessAnswer: Answer | null;
+  /** Every call to the files addresses, as `METHOD path`. */
+  fileCalls: string[];
   /** Every call made, as `METHOD path`. */
   calls: string[];
   /** Bodies posted to sign-in and code. */
@@ -215,6 +241,12 @@ export async function staffPlatform(
     notifications: [],
     notificationsAnswer: null,
     notificationCalls: [],
+    files: [],
+    uploadAnswer: null,
+    uploadDelayMs: 0,
+    savedAs: 'available',
+    accessAnswer: null,
+    fileCalls: [],
     calls: [],
     bodies: [],
     lastHeaders: {},
@@ -380,6 +412,111 @@ export async function staffPlatform(
     }
   });
 
+  // Files (spec 009): taking one in, the builders' record, and giving one out.
+  const uploaded = new Map<string, PlatformFile>();
+  let nextFile = 1;
+  const typeOf = (name: string): PlatformFile['type'] =>
+    /\.png$/i.test(name) ? 'png' : /\.jpe?g$/i.test(name) ? 'jpeg' : 'pdf';
+
+  await page.route(/\/v1\/(dev\/)?files(\/[^?]*)?(\?.*)?$/, async (route) => {
+    const request = route.request();
+    if (request.method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: cors });
+      return;
+    }
+    const url = new URL(request.url());
+    const path = url.pathname.slice(url.pathname.indexOf('/v1/'));
+    const method = request.method();
+    state.fileCalls.push(`${method} ${path}`);
+    if (!state.signedIn) {
+      await fulfil(route, problem(401, 'UNAUTHENTICATED'));
+      return;
+    }
+
+    if (method === 'POST' && path === '/v1/files') {
+      const body = request.postDataBuffer() ?? Buffer.alloc(0);
+      const head = body.subarray(0, 600).toString('utf8');
+      const name = /filename="([^"]*)"/.exec(head)?.[1] ?? 'file';
+      if (state.uploadDelayMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, state.uploadDelayMs));
+      }
+      const refused = typeof state.uploadAnswer === 'function' ? state.uploadAnswer(name) : state.uploadAnswer;
+      if (refused !== null) {
+        await fulfil(route, refused);
+        return;
+      }
+      const file: PlatformFile = {
+        id: `0199f11e-0000-7000-8000-${String(nextFile++).padStart(12, '0')}`,
+        name,
+        sizeBytes: Math.max(1, body.length - 250),
+        type: typeOf(name),
+        state: 'being-checked',
+        refusedFor: null,
+        uploadedAt: new Date().toISOString(),
+        uploadedByAccountId: session.accountId,
+        restorableUntil: null,
+        held: false,
+      };
+      uploaded.set(file.id, file);
+      await fulfil(route, {
+        status: 201,
+        json: { id: file.id, name, sizeBytes: file.sizeBytes, type: file.type, state: 'being-checked' },
+      });
+    } else if (method === 'GET' && path === '/v1/dev/files/sample') {
+      await fulfil(route, { status: 200, json: { files: state.files } });
+    } else if (method === 'POST' && path === '/v1/dev/files/sample') {
+      const ids = (request.postDataJSON() as { fileIds: string[] }).fileIds;
+      for (const id of ids) {
+        const file = uploaded.get(id);
+        if (file !== undefined) {
+          uploaded.delete(id);
+          state.files = [...state.files, { ...file, state: state.savedAs }];
+        }
+      }
+      await fulfil(route, { status: 204 });
+    } else if (method === 'POST' && /^\/v1\/dev\/files\/sample\/[^/]+\/(remove|restore)$/.test(path)) {
+      const [, , , , , id, action] = path.split('/');
+      state.files = state.files.map((file) =>
+        file.id !== id
+          ? file
+          : action === 'remove'
+            ? { ...file, state: 'removed', restorableUntil: new Date(Date.now() + 30 * 86_400_000).toISOString() }
+            : { ...file, state: 'available', restorableUntil: null },
+      );
+      await fulfil(route, { status: 204 });
+    } else if (method === 'POST' && /^\/v1\/files\/[^/]+\/access$/.test(path)) {
+      const id = path.split('/')[3];
+      const file = state.files.find((each) => each.id === id);
+      await fulfil(
+        route,
+        state.accessAnswer ??
+          (file === undefined
+            ? problem(404, 'NOT_FOUND')
+            : {
+                status: 200,
+                json: {
+                  url: `/v1/files/content/way-in-${id}`,
+                  expiresAt: new Date(Date.now() + 300_000).toISOString(),
+                  name: file.name,
+                  sizeBytes: file.sizeBytes,
+                  type: file.type,
+                },
+              }),
+      );
+    } else if (method === 'GET' && path.startsWith('/v1/files/content/')) {
+      await route.fulfill({
+        status: 200,
+        headers: { ...cors, 'content-type': 'application/pdf', 'content-disposition': 'attachment' },
+        body: '%PDF-1.7 made-up content',
+      });
+    } else if (method === 'DELETE' && /^\/v1\/files\/[^/]+$/.test(path)) {
+      uploaded.delete(path.split('/')[3]);
+      await fulfil(route, { status: 204 });
+    } else {
+      await fulfil(route, problem(404, 'NOT_FOUND'));
+    }
+  });
+
   await on('**/v1/auth/sign-out', async (route) => {
     state.signedIn = false;
     await fulfil(route, { status: 204 });
@@ -427,15 +564,30 @@ export async function useEnglish(page: Page): Promise<void> {
 
 /**
  * Saves a 1440x900 picture of the page when `SCS_SHOTS` names a folder — for laying every
- * state beside its frame in the design file. Does nothing in an ordinary run.
+ * state beside its frame in the design file — and the same state at a phone's width (390x844) in
+ * `narrow/`, then returns to 1440. Does nothing in an ordinary run.
  */
 export async function pictureFor(page: Page, group: string, language: string, state: string) {
   const folder = process.env['SCS_SHOTS'];
   if (!folder) {
     return;
   }
+  const name = `${group}-${language}-${state.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.png`;
+  // The wide picture first, exactly as before; then the phone's, once the page has settled.
+  const settle = () =>
+    page.evaluate(() =>
+      document
+        .getAnimations()
+        .filter((animation) => animation.effect?.getComputedTiming().endTime !== Infinity)
+        .forEach((animation) => animation.finish()),
+    );
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.mouse.move(0, 0);
-  const name = `${group}-${language}-${state.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.png`;
-  await page.screenshot({ path: `${folder}/${name}` });
+  // Finite animations and transitions (the side bar widening after the resize) end first.
+  await page.screenshot({ path: `${folder}/${name}`, animations: 'disabled' });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await settle();
+  await page.screenshot({ path: `${folder}/narrow/${name}`, animations: 'disabled' });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await settle();
 }

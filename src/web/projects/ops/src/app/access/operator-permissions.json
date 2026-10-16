@@ -1,0 +1,265 @@
+{
+  "catalogue": "operators",
+  "groups": [
+    {
+      "key": "dashboard",
+      "nameAr": "لوحة التحكم",
+      "nameEn": "Dashboard"
+    },
+    {
+      "key": "clinics",
+      "nameAr": "العيادات",
+      "nameEn": "Clinics"
+    },
+    {
+      "key": "tickets",
+      "nameAr": "التذاكر",
+      "nameEn": "Tickets"
+    },
+    {
+      "key": "notices",
+      "nameAr": "التنبيهات",
+      "nameEn": "Notices"
+    },
+    {
+      "key": "billing",
+      "nameAr": "الباقات والاشتراكات",
+      "nameEn": "Plans & Subscriptions"
+    },
+    {
+      "key": "operators",
+      "nameAr": "المشغلون",
+      "nameEn": "Operators"
+    },
+    {
+      "key": "reports",
+      "nameAr": "التقارير",
+      "nameEn": "Reports"
+    },
+    {
+      "key": "security",
+      "nameAr": "الأمان",
+      "nameEn": "Security"
+    },
+    {
+      "key": "settings",
+      "nameAr": "الإعدادات",
+      "nameEn": "Settings"
+    }
+  ],
+  "permissions": [
+    {
+      "code": "dashboard.view",
+      "group": "dashboard",
+      "nameAr": "عرض لوحة التحكم",
+      "nameEn": "View Dashboard",
+      "needs": null
+    },
+    {
+      "code": "clinics.view",
+      "group": "clinics",
+      "nameAr": "عرض العيادات",
+      "nameEn": "View Clinics",
+      "needs": null
+    },
+    {
+      "code": "clinics.edit",
+      "group": "clinics",
+      "nameAr": "تعديل بيانات العيادات",
+      "nameEn": "Edit Clinic Data",
+      "needs": "clinics.view"
+    },
+    {
+      "code": "clinics.lifecycle",
+      "group": "clinics",
+      "nameAr": "إيقاف العيادات وإنهاء اشتراكها",
+      "nameEn": "Suspend Clinics & End Subscriptions",
+      "needs": "clinics.view"
+    },
+    {
+      "code": "clinics.payments",
+      "group": "clinics",
+      "nameAr": "إدارة بيانات الدفع والفواتير",
+      "nameEn": "Manage Payments & Invoices",
+      "needs": "clinics.view"
+    },
+    {
+      "code": "clinics.integrations",
+      "group": "clinics",
+      "nameAr": "إدارة تكاملات العيادة",
+      "nameEn": "Manage Clinic Integrations",
+      "needs": "clinics.view"
+    },
+    {
+      "code": "clinics.users",
+      "group": "clinics",
+      "nameAr": "إدارة مستخدمي العيادة",
+      "nameEn": "Manage Clinic Users",
+      "needs": "clinics.view"
+    },
+    {
+      "code": "clinics.topups",
+      "group": "clinics",
+      "nameAr": "إضافة رصيد إضافي للعيادات",
+      "nameEn": "Add Extra Quota to Clinics",
+      "needs": "clinics.view"
+    },
+    {
+      "code": "tickets.view",
+      "group": "tickets",
+      "nameAr": "عرض التذاكر المُسندة إليّ",
+      "nameEn": "View Assigned Tickets",
+      "needs": null
+    },
+    {
+      "code": "tickets.viewAll",
+      "group": "tickets",
+      "nameAr": "عرض كل التذاكر",
+      "nameEn": "View All Tickets",
+      "needs": "tickets.view"
+    },
+    {
+      "code": "tickets.reply",
+      "group": "tickets",
+      "nameAr": "الرد على التذاكر",
+      "nameEn": "Reply to Tickets",
+      "needs": "tickets.view"
+    },
+    {
+      "code": "tickets.close",
+      "group": "tickets",
+      "nameAr": "إغلاق وإلغاء التذاكر",
+      "nameEn": "Close & Cancel Tickets",
+      "needs": "tickets.view"
+    },
+    {
+      "code": "tickets.assign",
+      "group": "tickets",
+      "nameAr": "إسناد التذاكر للمشغلين",
+      "nameEn": "Assign Tickets to Operators",
+      "needs": "tickets.view"
+    },
+    {
+      "code": "tickets.create",
+      "group": "tickets",
+      "nameAr": "فتح التذاكر",
+      "nameEn": "Open Tickets",
+      "needs": "tickets.view"
+    },
+    {
+      "code": "notices.send",
+      "group": "notices",
+      "nameAr": "إرسال إشعارات للعيادات",
+      "nameEn": "Send Notices to Clinics",
+      "needs": "clinics.view"
+    },
+    {
+      "code": "billing.view",
+      "group": "billing",
+      "nameAr": "عرض الباقات والفواتير",
+      "nameEn": "View Plans & Billing",
+      "needs": null
+    },
+    {
+      "code": "billing.managePlans",
+      "group": "billing",
+      "nameAr": "إدارة الباقات والاشتراكات",
+      "nameEn": "Manage Plans & Subscriptions",
+      "needs": "billing.view"
+    },
+    {
+      "code": "operators.view",
+      "group": "operators",
+      "nameAr": "عرض المشغلين",
+      "nameEn": "View Operators",
+      "needs": null
+    },
+    {
+      "code": "operators.manage",
+      "group": "operators",
+      "nameAr": "إضافة وتعديل المشغلين",
+      "nameEn": "Add & Edit Operators",
+      "needs": "operators.view"
+    },
+    {
+      "code": "operators.manageRoles",
+      "group": "operators",
+      "nameAr": "إدارة الأدوار والصلاحيات",
+      "nameEn": "Manage Roles & Permissions",
+      "needs": "operators.view"
+    },
+    {
+      "code": "reports.financial",
+      "group": "reports",
+      "nameAr": "عرض التقارير المالية",
+      "nameEn": "View Financial Reports",
+      "needs": null
+    },
+    {
+      "code": "reports.security",
+      "group": "reports",
+      "nameAr": "عرض تقارير الأمان",
+      "nameEn": "View Security Reports",
+      "needs": null
+    },
+    {
+      "code": "reports.operators",
+      "group": "reports",
+      "nameAr": "عرض تقارير أداء المشغلين",
+      "nameEn": "View Operator Performance",
+      "needs": null
+    },
+    {
+      "code": "reports.activity",
+      "group": "reports",
+      "nameAr": "عرض تقارير نشاط العيادات",
+      "nameEn": "View Clinic Activity",
+      "needs": null
+    },
+    {
+      "code": "reports.export",
+      "group": "reports",
+      "nameAr": "تصدير التقارير",
+      "nameEn": "Export Reports",
+      "needs": null
+    },
+    {
+      "code": "security.manage",
+      "group": "security",
+      "nameAr": "مراجعة الأحداث الأمنية وحظر عناوين IP",
+      "nameEn": "Review Security Events & Block IP Addresses",
+      "needs": null
+    },
+    {
+      "code": "settings.view",
+      "group": "settings",
+      "nameAr": "عرض الإعدادات",
+      "nameEn": "View Settings",
+      "needs": null
+    },
+    {
+      "code": "settings.edit",
+      "group": "settings",
+      "nameAr": "تعديل إعدادات المنصة",
+      "nameEn": "Edit Platform Settings",
+      "needs": "settings.view"
+    }
+  ],
+  "systemRoles": [
+    {
+      "key": "super-admin",
+      "nameAr": "مسؤول عام",
+      "nameEn": "Super Admin"
+    },
+    {
+      "key": "billing-admin",
+      "nameAr": "مسؤول الفوترة",
+      "nameEn": "Billing Manager"
+    },
+    {
+      "key": "viewer",
+      "nameAr": "مشاهد فقط",
+      "nameEn": "Viewer Only"
+    }
+  ]
+}

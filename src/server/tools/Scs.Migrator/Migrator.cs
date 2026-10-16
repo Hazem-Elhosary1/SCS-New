@@ -21,7 +21,9 @@ public static class Migrator
         new TenancyModule(),
         new Scs.Audit.AuditModule(),
         new Scs.Notifications.NotificationsModule(),
+        new Scs.Files.FilesModule(),
         new Scs.Identity.IdentityModule(),
+        new Scs.Operators.OperatorsModule(),
         new PlatformModule(),
     ];
 

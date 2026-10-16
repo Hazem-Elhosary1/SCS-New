@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Scs.BuildingBlocks.Audit;
+using Scs.BuildingBlocks.Files;
 using Scs.BuildingBlocks.Notifications;
 using Scs.BuildingBlocks.Errors;
 using Scs.SharedKernel;
@@ -85,8 +86,45 @@ public abstract class ClinicAwareDbContext(DbContextOptions options, IClinicCont
         _raised.Add(raised);
     }
 
+    private readonly List<FileChange> _files = [];
+
+    /// <summary>
+    /// Says that the record being saved holds these uploaded files (spec 009). They are attached
+    /// by the next <see cref="SaveChangesAsync(bool, CancellationToken)"/>, in one transaction
+    /// with the record: both take effect or neither does (FR-007). Each file must be of this
+    /// kind, uploaded by the person saving, and not attached yet.
+    /// </summary>
+    public void AttachFiles(string kind, FileRecord record, IReadOnlyCollection<Guid> fileIds)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+        ArgumentNullException.ThrowIfNull(fileIds);
+        _files.Add(new FileChange.Attach(kind, record, [.. fileIds]));
+    }
+
+    /// <summary>Removes a file from its record: not downloadable from this save, restorable for thirty days (FR-030).</summary>
+    public void RemoveFile(string kind, Guid fileId) => _files.Add(new FileChange.Remove(kind, fileId));
+
+    /// <summary>Puts a removed file back on its record, within thirty days and while the record has room (FR-030a).</summary>
+    public void RestoreFile(string kind, Guid fileId) => _files.Add(new FileChange.Restore(kind, fileId));
+
+    /// <summary>Starts the retention period of every file of the record at that moment (FR-031).</summary>
+    public void StartFileRetention(FileRecord record, DateTimeOffset from) => _files.Add(new FileChange.StartRetention(record, from));
+
+    /// <summary>Takes the start back: the period of the record's files has not started (FR-031a).</summary>
+    public void StopFileRetention(FileRecord record) => _files.Add(new FileChange.StopRetention(record));
+
+    /// <summary>Puts every file of the record on hold: nothing of them is erased until released (FR-031b).</summary>
+    public void HoldFiles(FileRecord record) => _files.Add(new FileChange.Hold(record));
+
+    public void ReleaseFiles(FileRecord record) => _files.Add(new FileChange.Release(record));
+
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
+        if (_files.Count > 0)
+        {
+            throw FileRefusedException.NotAttachable("A change to a record's files is saved with SaveChangesAsync.");
+        }
+
         if (_audit.Count > 0)
         {
             throw new AuditRefusedException("A change that is recorded in the audit trail is saved with SaveChangesAsync.");
@@ -106,7 +144,7 @@ public abstract class ClinicAwareDbContext(DbContextOptions options, IClinicCont
     {
         EnforceClinicOwnership();
 
-        if (_audit.Count == 0 && _raised.Count == 0)
+        if (_audit.Count == 0 && _raised.Count == 0 && _files.Count == 0)
         {
             return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken).ConfigureAwait(false);
         }
@@ -115,6 +153,8 @@ public abstract class ClinicAwareDbContext(DbContextOptions options, IClinicCont
         _audit.Clear();
         var raised = _raised.ToList();
         _raised.Clear();
+        var files = _files.ToList();
+        _files.Clear();
         var established = clinic.Require();
         var emailWaiting = false;
 
@@ -128,6 +168,12 @@ public abstract class ClinicAwareDbContext(DbContextOptions options, IClinicCont
             if (_auditMoment?.Transaction != transaction)
             {
                 _auditMoment = (transaction, AuditWriter.Now(this));
+            }
+
+            if (files.Count > 0)
+            {
+                await FileWriter.WriteAsync(this, established, files, _auditMoment.Value.At, cancellationToken)
+                    .ConfigureAwait(false);
             }
 
             if (records.Count > 0)

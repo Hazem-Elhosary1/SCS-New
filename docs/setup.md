@@ -200,6 +200,168 @@ PUT http://localhost:5080/v1/settings/notification-emails/{event}  «إدارة 
 A change of a switch is in the audit trail. Notifications older than ninety days are removed
 every night, with the record of their emails.
 
+### Files and attachments (spec 009)
+
+No page of the product holds files yet. For people building it, signed in at
+<http://localhost:4201>, the page <http://localhost:4201/dev/files> shows every state of the
+upload zone and the file card, and one live field: choose a file, save, download it, remove it
+and put it back.
+
+- **Where files are kept locally**: the folder `scs-files` under the system's temporary files,
+  one folder for each clinic, unless `SCS_FILES__ROOT` names another (a full path).
+- **The scanner**: with `SCS_SCAN__HOST` empty the platform scans for the standard malware test
+  signature only — enough to see a file refused. A PDF protected by a password is refused as
+  "could not be checked" either way. To use ClamAV itself (a large image):
+
+  ```powershell
+  docker compose -f deploy/compose/docker-compose.yml --profile scan up -d clamav
+  ```
+
+  then set `SCS_SCAN__HOST=localhost` in `deploy/compose/.env` and restart the API. With the
+  scanner stopped, files are still taken and read «قيد الفحص» until it returns.
+- **A file is scanned by the API's background worker**, within a minute of its upload; with the
+  worker stopped it stays «قيد الفحص».
+
+The addresses:
+
+```text
+POST   http://localhost:5080/v1/files?kind=dev.sample      multipart, one file
+DELETE http://localhost:5080/v1/files/{id}                  a file not saved with anything yet
+POST   http://localhost:5080/v1/files/{id}/access           a way in, for five minutes, recorded in the audit trail
+GET    http://localhost:5080/v1/files/content/{token}       the file, for the account the way in was given to
+GET    http://localhost:5080/v1/public/files/{id}           a file of a public kind, with no session
+```
+
+After changing the table of kinds (`src/server/shared/Scs.SharedKernel/Files`), write the file
+the web sites read, or `FileKindsFileTests` fails:
+
+```powershell
+dotnet run --project src/server/tools/Scs.Migrator -- file-kinds src/web/projects/core/src/lib/files/file-kinds.json
+```
+
+### The operators console (spec 010)
+
+The console of the people who run the platform is its own application, at
+`http://localhost:4203`, with its own sign-in. Nothing of it is reached with a clinic's session,
+and nothing of a clinic with an operator's.
+
+- **The made-up operator.** Seeding invites `operator@heta.example`. Within a minute the local
+  mailbox (`http://localhost:8025`) holds an email "دعوة إلى لوحة التشغيل" with a link, good for
+  72 hours, to choose a password. Nobody is given a password: the operator chooses theirs.
+- **Another operator.** From `src/server`, with the variables of `deploy/compose/.env` set:
+
+  ```bash
+  dotnet run --project tools/Scs.Migrator -c Release --no-build -- operator invite --name "Sara Ahmed" --email sara@heta.example
+  ```
+
+  Run again for someone still invited, it sends a new link and ends the earlier one; for an
+  active account it changes nothing. A mistaken invitation is taken back, before its link is
+  used, with `operator withdraw --email sara@heta.example`.
+- **Signing in.** Email and password, then the six digits sent by email — every time; it cannot
+  be switched off. Five wrong passwords lock the account for fifteen minutes; "forgot password"
+  opens it at once.
+- **One session.** Signing in on a second browser ends the first, which shows the sign-in screen
+  with its reason within half a minute. Thirty minutes without activity end a session too; to
+  see it sooner, lower `SCS_OPS__IDLE_MINUTES` (fifteen at the least).
+- **My profile** (the account menu): the account, its recent sessions, "sign out of all
+  devices", and changing the password, which asks for a code by email before anything changes.
+
+#### The team and its roles (spec 011)
+
+What an operator sees and may do is what their **role** holds, checked by the platform on every
+request. The catalogue is closed: 28 permissions in nine groups
+(`src/server/shared/Scs.SharedKernel/Access/OperatorPermissions.cs`; the console reads the same
+list from `projects/ops/src/app/access/operator-permissions.json`, regenerated with
+`dotnet run --project src/server/tools/Scs.Migrator -- ops-catalogue <that path>` — a test fails
+while the file is out of date).
+
+- **Three roles are the platform's own** and cannot be edited or deleted: «مسؤول عام» (all 28),
+  «مسؤول الفوترة» (11) and «مشاهد فقط» (the 11 views). Others are made in the console, under
+  «المشغلون» → «الأدوار والصلاحيات».
+- **Whoever the command invites is «مسؤول عام»** — the made-up operator, and any
+  `operator invite`. Everyone who was an operator before roles existed became one too.
+- **«المشغلون»** in the side bar (with `operators.view`): the team's list with its cards, search
+  and filter; an operator's page; and, with `operators.manage`, adding an operator, editing one,
+  suspending, reactivating, sending a password link and unlocking. An operator added from the
+  console gets the invitation by email within a minute, naming who invited them and in what
+  role; no screen ever shows the link.
+- **Guards worth trying**: nobody changes their own role; nobody grants a role that holds a
+  permission they lack; the last active «مسؤول عام» cannot be moved to another role or
+  suspended; a role that operators hold cannot be deleted. A changed role signs its holder out
+  with the reason; an edit to a role's permissions reaches its holders at their next request,
+  without signing anyone out.
+- **To look at it as someone else**, invite a second account with the command, sign in as it,
+  and from the first account give it another role. Keep such accounts apart from
+  `operator@heta.example`, whose password is the developer's own.
+- **Digits.** The operators console writes Western digits in Arabic too (the clinic's console
+  keeps its own rule).
+
+### The emails (spec 094)
+
+Every email is laid out by one template, in the recipient's language only, with a text-only
+form beside it. Locally they arrive in the mailbox at `http://localhost:8025`, sent under the
+platform's name.
+
+- **Looking at all of them.** After `dotnet build src/server/Scs.sln`, from `src/web`:
+
+  ```bash
+  npm run emails
+  ```
+
+  exports the catalogue into `src/web/e2e/.emails/` and opens its index: every email the
+  platform can send, with sample values, in Arabic, in English and as text only. Nothing of the
+  running platform serves it. `npx playwright test emails` checks each one as an eye would.
+- **The platform's identity.** The footer and the sender's name are read from configuration:
+
+  | Variable | Required outside local | Local value |
+  |---|---|---|
+  | `SCS_PLATFORM__NAME_AR` | yes | سمارت كلينك أو إس |
+  | `SCS_PLATFORM__NAME_EN` | yes | Smart Clinic OS |
+  | `SCS_PLATFORM__SUPPORT_EMAIL` | yes | support@scs.localhost |
+  | `SCS_PLATFORM__SUPPORT_PHONE` | no | (not shown) |
+  | `SCS_PLATFORM__ADDRESS_AR`, `SCS_PLATFORM__ADDRESS_EN` | no | (not shown) |
+
+  A line that is not set is left out of the footer; an address set in one language is shown in
+  both. The address and phone in the design's frames are samples: the real ones are the
+  owner's to supply. Spec 024 will make these values settings of the operators console.
+- **Where a link may lead.** `SCS_AUTH__STAFF_APP_URL` and `SCS_OPS__APP_URL` are what the
+  emails' buttons open, so each must be `https://…`, or — on a developer's machine only —
+  `http://localhost:…` (or `127.0.0.1`). A plain `http://` address on another machine is
+  refused when the platform starts, with the variable named, rather than when an email is sent.
+- **Adding one.** See `docs/adding-an-email.md`.
+
+### The design components (spec 095)
+
+Every component of the design files, in every state the files draw, is on one page of the
+operators console that exists in development only:
+
+- **The gallery.** With the console running (`npm run start:ops` or the "ops" preview), open
+  `http://localhost:4203/dev/components`. Pick a section from the list at the top; the bar switches
+  the language (عربي · English) and the look (the operators' or the clinic's — the clinic's look
+  shows only the parts both consoles share, drawn from the clinic's own tokens). Each section shows
+  its specimens with their design ids and a working example. Nothing of it is in a production
+  build: `node tools/check-production.mjs` fails if any file of `dist/ops` names it.
+- **Icons.** Every icon comes from the registry `projects/ui/src/lib/icon/icon-registry.ts`, copied
+  from the design file by the icon tool — nothing is downloaded and no package is added:
+
+  ```bash
+  node tools/icons.mjs list wifi
+  node tools/icons.mjs add "Computer-Devices/wifi-disabled" --as wifi-off
+  node tools/icons.mjs check
+  ```
+
+  Give `--points` to an arrow, a chevron, "back" or "sign-out" drawn left to right (`--points rtl`
+  for one drawn the other way): it is mirrored on a page of the other direction. `check` fails on a
+  registered icon nothing uses. The gallery's "Icons" section shows them all at 16–24.
+- **Kept pictures.** `npx playwright test gallery/pictures` holds every specimen against its kept
+  picture in `e2e/gallery/__pictures__/` (both languages, 1440 and 390, both looks for shared parts).
+  When a change alters a picture **on purpose**, look at it first — the actual, the expected and the
+  difference are under `test-results/` — and only then accept it with
+  `npx playwright test gallery/pictures -g "<Section> —" --update-snapshots`. Never accept a whole
+  run unseen. The other gallery suites: `coverage` (every drawn variant is there; nothing is outside
+  its frame at 1440 or 390), `keyboard`, `settings` (states, long words, reduced motion, 40 by 40 on
+  a phone) and `patterns`.
+
 ### Check the "not ready" behaviour
 
 ```bash

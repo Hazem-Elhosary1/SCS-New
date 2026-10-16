@@ -23,6 +23,12 @@ public interface IEmailSender
 /// <param name="To">The recipient. Personal data: never logged.</param>
 public sealed record EmailMessage(string To, string Subject, string TextBody, string HtmlBody)
 {
+    /// <summary>
+    /// The name shown as the sender: the platform's, in the email's language (spec 094,
+    /// FR-009a). Empty for a message not made by the template.
+    /// </summary>
+    public string SenderName { get; init; } = "";
+
     /// <summary>The type name only, so a message logged by mistake shows nothing.</summary>
     public override string ToString() => nameof(EmailMessage);
 }
@@ -54,7 +60,14 @@ public sealed partial class SmtpEmailSender(IOptions<ScsOptions> options, ILogge
         var mail = options.Value.Mail;
 
         using var mime = new MimeMessage();
-        mime.From.Add(MailboxAddress.Parse(mail.From));
+        var from = MailboxAddress.Parse(mail.From);
+        if (message.SenderName.Length > 0)
+        {
+            // The address is the mail server's; the name beside it is the platform's.
+            from.Name = message.SenderName;
+        }
+
+        mime.From.Add(from);
         mime.To.Add(MailboxAddress.Parse(message.To));
         mime.Subject = message.Subject;
         mime.Body = new BodyBuilder { TextBody = message.TextBody, HtmlBody = message.HtmlBody }.ToMessageBody();
@@ -98,6 +111,7 @@ public static class MailExtensions
     public static IServiceCollection AddScsMail(this IServiceCollection services)
     {
         services.TryAddSingleton<IEmailSender, SmtpEmailSender>();
+        services.TryAddSingleton<EmailRenderer>();
         return services;
     }
 }

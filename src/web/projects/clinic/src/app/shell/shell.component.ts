@@ -16,6 +16,7 @@ import {
   ClinicTraitsSource,
   LanguageService,
   OnlineService,
+  UnsavedWork,
   PreferencesService,
   ScsCanDirective,
   SubscriptionSource,
@@ -432,6 +433,7 @@ export class ShellComponent {
   protected readonly language = inject(LanguageService);
   protected readonly preferences = inject(PreferencesService);
   protected readonly online = inject(OnlineService);
+  private readonly unsaved = inject(UnsavedWork);
   protected readonly branches = inject(BranchesSource);
   protected readonly traits = inject(ClinicTraitsSource);
   protected readonly toasts = inject(ToastService);
@@ -452,13 +454,19 @@ export class ShellComponent {
 
   constructor() {
     // When the connection returns, what the person may do and the page itself are read again
-    // (FR-021): what was on screen is the last copy loaded before the connection went.
+    // (FR-021): what was on screen is the last copy loaded before the connection went. A page
+    // that holds work not yet saved — a chosen file — is left as it is: reading it again
+    // would lose that work (spec 009, US4).
     effect(() => {
       if (!this.online.online()) {
         this.wasOffline = true;
       } else if (this.wasOffline) {
         this.wasOffline = false;
-        void this.auth.refreshSession().then(() => this.reading.update((times) => times + 1));
+        void this.auth.refreshSession().then(() => {
+          if (!this.unsaved.any()) {
+            this.reading.update((times) => times + 1);
+          }
+        });
       }
     });
   }

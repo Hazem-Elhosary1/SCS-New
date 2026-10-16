@@ -1,35 +1,53 @@
 /*
  * The look of a table (design: Table Header Row, Table Row). Put `scsTable` on a real <table>;
  * each app's styles.css imports this file. Appearance comes only from the app's tokens.
+ *
+ * Spec 095 (Table, 273:52 / 309:166, example 273:55; clinic 4267:903, 4267:1004, 4267:744): a row
+ * is under the pointer when it opens its record, and chosen with aria-selected="true". Each look sets
+ * its table through --scs-table-*; the defaults are the table before spec 095.
  */
 .scs-table {
   inline-size: 100%;
-  border-collapse: collapse;
+  /* Rounded rows need separate cells: the operators' look sets it. */
+  border-collapse: var(--scs-table-collapse, collapse);
+  border-spacing: 0;
   font-size: var(--scs-text-body);
 }
 
 .scs-table th {
-  padding: var(--scs-spacing-12);
-  background: var(--scs-color-bg-muted, var(--scs-color-bg-surface-secondary));
-  color: var(--scs-color-text-secondary);
-  font-size: var(--scs-text-body-sm);
-  font-weight: 500;
+  padding: var(--scs-table-head-pad, var(--scs-spacing-12));
+  border-block-end: var(--scs-table-head-rule, 0px) solid var(--scs-color-border-control, var(--scs-color-border-default));
+  background: var(--scs-table-head-bg, var(--scs-color-bg-muted, var(--scs-color-bg-surface-secondary)));
+  color: var(--scs-table-head-text, var(--scs-color-text-secondary));
+  font-size: var(--scs-table-head-size, var(--scs-text-body-sm));
+  font-weight: var(--scs-table-head-weight, 500);
   text-align: start;
   white-space: nowrap;
 }
 
 .scs-table td {
-  padding: var(--scs-spacing-10) var(--scs-spacing-12);
-  border-block-end: 1px solid var(--scs-color-border-subtle, var(--scs-color-border-default));
+  padding: var(--scs-table-cell-pad, var(--scs-spacing-10) var(--scs-spacing-12));
+  border-block-end: var(--scs-table-row-rule, 1px) solid var(--scs-color-border-subtle, var(--scs-color-border-default));
   color: var(--scs-color-text-primary);
   vertical-align: middle;
+}
+
+/* The operators' rows are rounded (corners 10). */
+.scs-table td:first-child {
+  border-start-start-radius: var(--scs-table-row-radius, 0px);
+  border-end-start-radius: var(--scs-table-row-radius, 0px);
+}
+
+.scs-table td:last-child {
+  border-start-end-radius: var(--scs-table-row-radius, 0px);
+  border-end-end-radius: var(--scs-table-row-radius, 0px);
 }
 
 .scs-table td .sub {
   display: block;
   margin-block-start: var(--scs-spacing-2);
-  color: var(--scs-color-text-secondary);
-  font-size: var(--scs-text-label);
+  color: var(--scs-table-sub-text, var(--scs-color-text-secondary));
+  font-size: var(--scs-table-sub-size, var(--scs-text-label));
 }
 
 .scs-table [data-kind='number'] {
@@ -52,25 +70,39 @@
 }
 
 .scs-table tr[data-opens='true']:hover td,
-.scs-table tr[data-marked='true'] td {
-  background: var(--scs-color-bg-surface-secondary);
+.scs-table tr[data-marked='true'] td,
+[data-scs-state~='hover'] .scs-table tbody tr td {
+  background: var(--scs-table-row-hover, var(--scs-color-bg-surface-secondary));
 }
 
+.scs-table tr[aria-selected='true'] td,
+.scs-table tr[aria-selected='true']:hover td {
+  background: var(--scs-table-row-chosen, var(--scs-color-brand-subtle));
+}
+
+/* A row's actions (design: Row Actions Menus, 2201:86): a 32 circle in the operators' look. */
 .scs-row-menu {
   display: inline-grid;
   place-items: center;
-  inline-size: 32px;
-  block-size: 32px;
+  inline-size: max(var(--scs-touch, 0px), 32px);
+  block-size: max(var(--scs-touch, 0px), 32px);
   border: 0;
-  border-radius: var(--scs-radius-sm);
+  border-radius: var(--scs-row-menu-radius, var(--scs-radius-sm));
   background: none;
   color: var(--scs-color-icon-default);
   cursor: pointer;
 }
 
 .scs-row-menu:hover,
-.scs-row-menu[aria-expanded='true'] {
-  background: var(--scs-color-bg-surface-secondary);
+.scs-row-menu[aria-expanded='true'],
+[data-scs-state~='hover'] > .scs-row-menu {
+  background: var(--scs-row-menu-hover, var(--scs-color-bg-surface-secondary));
+  color: var(--scs-row-menu-hover-ink, var(--scs-color-icon-default));
+}
+
+[data-scs-state~='focus'] > .scs-row-menu {
+  outline: 2px solid var(--scs-color-brand-default);
+  outline-offset: 1px;
 }
 
 .scs-row-menu:focus-visible {

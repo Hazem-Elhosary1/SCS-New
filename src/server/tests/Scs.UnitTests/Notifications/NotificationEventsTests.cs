@@ -44,8 +44,17 @@ public partial class NotificationEventsTests
     [Fact]
     public void The_table_holds_exactly_the_twenty_events_of_the_BRD_with_who_is_told_and_how()
     {
+        // And the two a later spec added the way the table says to: spec 009's, for a file
+        // its uploader sent that the check refused.
+        (string, string, RecipientRuleKind, string?, NotificationEmail, string)[] added =
+        [
+            ("file.scan-refused", "accounts", RecipientRuleKind.Owner, null, NotificationEmail.Never, "warning"),
+            ("file.unreadable", "accounts", RecipientRuleKind.Owner, null, NotificationEmail.Never, "warning"),
+        ];
+
+        Assert.Equal(20, Expected.Length);
         Assert.Equal(
-            Expected.OrderBy(e => e.Key, StringComparer.Ordinal),
+            Expected.Concat(added).OrderBy(e => e.Item1, StringComparer.Ordinal),
             NotificationEvents.All
                 .Select(e => (e.Key, e.Group, e.Recipients.Kind, e.Recipients.Permission, e.Email, e.Mark))
                 .OrderBy(e => e.Key, StringComparer.Ordinal));
@@ -95,8 +104,10 @@ public partial class NotificationEventsTests
         Assert.All(NotificationEvents.All, e =>
             Assert.Equal(string.IsNullOrWhiteSpace(e.LineAr), string.IsNullOrWhiteSpace(e.LineEn)));
 
-        // Only the event this spec raises has its line; the others get theirs with their cause.
-        Assert.Equal(["account.new-device"], NotificationEvents.All.Where(e => e.HasLine).Select(e => e.Key));
+        // Only the events that have a cause have a line; the others get theirs with their cause.
+        Assert.Equal(
+            ["account.new-device", "file.scan-refused", "file.unreadable"],
+            NotificationEvents.All.Where(e => e.HasLine).Select(e => e.Key));
     }
 
     [Fact]
@@ -213,15 +224,56 @@ public partial class NotificationWordsTests
         Assert.Equal(english, Words.Moment(moment, english: true));
     }
 
+    private static EmailMessage Render(EmailContent content) => EmailRenderer.Render(content, Mail.EmailRendererTests.Full);
+
     [Fact]
     public void An_email_says_when_between_the_line_and_the_way_in()
     {
-        var email = NotificationEmails.Build("a@b.example", "en", "Title", "Line", "https://app.scs.test/", "11 October 2026, 3:04 PM");
+        var email = Render(NotificationEmails.Notification(
+            "a@b.example", "en", "Title", "Line", "https://app.scs.test/", "11 October 2026, 3:04 PM"));
 
         Assert.Equal(
-            ["Title", "Line", "11 October 2026, 3:04 PM", "Open in Smart Clinic OS: https://app.scs.test/"],
-            email.TextBody.Split("\n\n").Take(4));
+            ["NOTIFICATION", "Title", "", "Line", "", "When: 11 October 2026, 3:04 PM", "", "Open in Smart Clinic OS:", "https://app.scs.test/"],
+            email.TextBody.Split('\n').Take(9));
         Assert.Contains("11 October 2026, 3:04 PM", email.HtmlBody, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void An_email_writes_western_digits_whatever_the_bell_writes()
+    {
+        var email = Render(NotificationEmails.Notification(
+            "a@b.example", "ar", "تستحق خلال ٧ أيام", "الفاتورة INV-2026-0012 · تستحق خلال ٧ أيام", "https://app.scs.test/", "١١ أكتوبر ٢٠٢٦، ٣:٠٤ م"));
+
+        Assert.Equal("تستحق خلال 7 أيام", email.Subject);
+        Assert.Contains("الوقت: 11 أكتوبر 2026، 3:04 م", email.TextBody, StringComparison.Ordinal);
+        Assert.DoesNotMatch("[٠-٩]", email.Subject + email.TextBody + email.HtmlBody);
+    }
+
+    [Theory]
+    [InlineData("١١ أكتوبر ٢٠٢٦، ٣:٠٤ م", "11 أكتوبر 2026، 3:04 م")]
+    [InlineData("۱۲ فاتورة · ۰۹۸۷۶۵۴۳", "12 فاتورة · 09876543")]
+    [InlineData("٠١٢٣٤٥٦٧٨٩ ۰۱۲۳۴۵۶۷۸۹", "0123456789 0123456789")]
+    [InlineData("INV-2026-0012 · 7 days", "INV-2026-0012 · 7 days")]
+    [InlineData("", "")]
+    public void Western_digits_are_written_for_both_ranges_of_arabic_digits(string written, string western)
+    {
+        Assert.Equal(western, Words.Western(written));
+
+        var email = Render(NotificationEmails.Notification("a@b.example", "ar", "عنوان", written, "https://app.scs.test/"));
+        Assert.DoesNotMatch("[٠-٩۰-۹]", email.TextBody + email.HtmlBody);
+    }
+
+    [Fact]
+    public void A_long_title_is_cut_at_a_word_in_the_subject_and_nothing_empty_is_drawn()
+    {
+        var title = string.Join(' ', Enumerable.Repeat("reminder", 20));
+        var content = NotificationEmails.Notification("a@b.example", "en", title, "", "https://app.scs.test/");
+
+        Assert.True(content.Subject.Length <= 120);
+        Assert.EndsWith("reminder…", content.Subject, StringComparison.Ordinal);
+        Assert.Equal(title, content.Title);
+        Assert.DoesNotContain("data-part=\"paragraph\"", Render(content).HtmlBody, StringComparison.Ordinal);
+        Assert.Empty(content.Parts.OfType<EmailFacts>());
     }
 
     [Fact]
@@ -269,32 +321,45 @@ public partial class NotificationWordsTests
     }
 
     [Theory]
-    [InlineData("ar", "rtl", "فتح في Smart Clinic OS")]
-    [InlineData("en", "ltr", "Open in Smart Clinic OS")]
-    public void An_email_is_in_one_language_and_says_only_what_the_bell_says(string language, string direction, string open)
+    [InlineData("ar", "rtl", "فتح في سمارت كلينك أو إس", "إشعار", "أُرسلت هذه الرسالة تلقائيًّا، ولا تُقرأ الردود عليها.", "وصلتك هذه الرسالة لأن تنبيهات البريد مفعّلة لحسابك في سمارت كلينك أو إس.")]
+    [InlineData("en", "ltr", "Open in Smart Clinic OS", "NOTIFICATION", "This message was sent automatically; replies to it are not read.", "You’re receiving this email because email notifications are on for your Smart Clinic OS account.")]
+    public void An_email_is_in_one_language_and_says_only_what_the_bell_says(
+        string language, string direction, string open, string eyebrow, string note, string reason)
     {
         var title = NotificationWords.Title(NewDevice, NewDevice.Key, language);
         var line = NotificationWords.Line(NewDevice, null, Facts($$"""{"device":"{{Chrome}}"}"""), language);
 
-        EmailMessage email = NotificationEmails.Build("sara@noor.example", language, title, line, "https://app.scs.test/");
+        var content = NotificationEmails.Notification("sara@noor.example", language, title, line, "https://app.scs.test/");
+        EmailMessage email = Render(content);
 
-        Assert.Equal(("sara@noor.example", title), (email.To, email.Subject));
+        Assert.Equal(("sara@noor.example", title, eyebrow), (email.To, email.Subject, content.Eyebrow));
         Assert.Contains(title, email.TextBody, StringComparison.Ordinal);
         Assert.Contains(line, email.TextBody, StringComparison.Ordinal);
-        Assert.Contains($"{open}: https://app.scs.test/", email.TextBody, StringComparison.Ordinal);
-        Assert.Contains($"dir=\"{direction}\" lang=\"{language}\"", email.HtmlBody, StringComparison.Ordinal);
+        Assert.Contains($"{open}:\nhttps://app.scs.test/", email.TextBody, StringComparison.Ordinal);
+        Assert.Contains(note, email.TextBody, StringComparison.Ordinal);
+        Assert.Contains(reason, email.TextBody, StringComparison.Ordinal);
+        Assert.Contains($"<html lang=\"{language}\" dir=\"{direction}\">", email.HtmlBody, StringComparison.Ordinal);
         Assert.Contains("href=\"https://app.scs.test/\"", email.HtmlBody, StringComparison.Ordinal);
 
         // One language: the other one's words are nowhere in it, and neither is the address.
-        Assert.Equal(language == "ar", ArabicLetter().IsMatch(email.TextBody));
+        if (language == "en")
+        {
+            Assert.DoesNotMatch(ArabicLetter(), email.TextBody);
+        }
+        else
+        {
+            Assert.DoesNotContain("Smart Clinic OS", email.TextBody, StringComparison.Ordinal);
+            Assert.DoesNotContain("Open in", email.TextBody, StringComparison.Ordinal);
+        }
+
         Assert.DoesNotContain("sara@noor.example", email.TextBody + email.HtmlBody, StringComparison.Ordinal);
-        Assert.Equal(1, Regex.Count(email.HtmlBody, "<div "));
     }
 
     [Fact]
     public void What_a_person_wrote_cannot_break_out_of_the_email()
     {
-        var email = NotificationEmails.Build("a@b.example", "en", "Title", "<script>alert(1)</script> & co", "https://app.scs.test/x");
+        var email = Render(NotificationEmails.Notification(
+            "a@b.example", "en", "Title", "<script>alert(1)</script> & co", "https://app.scs.test/x"));
 
         Assert.DoesNotContain("<script>", email.HtmlBody, StringComparison.Ordinal);
         Assert.Contains("&lt;script&gt;", email.HtmlBody, StringComparison.Ordinal);
