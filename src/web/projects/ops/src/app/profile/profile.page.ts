@@ -7,13 +7,15 @@ import {
   ScsDialogComponent,
   ScsIconComponent,
   ScsStateComponent,
+  ScsBadgeComponent,
+  ScsSwitchComponent,
   ScsTextFieldComponent,
+  initialsOf,
 } from 'ui';
 import { firstValueFrom } from 'rxjs';
 import { OpsAuthService, OpsCodeStep, OpsCodes } from '../auth/ops-auth.service';
 import { passwordRules } from '../password/password.pages';
 import { CodeProblem, CodeStepComponent } from '../sign-in/code-step.component';
-import { initialsOf } from '../shell/ops-shell.component';
 import { opsAgo } from '../i18n/ops-format';
 
 interface RecentSession {
@@ -49,10 +51,12 @@ export function agoLabel(from: string, now: number, language: ScsLanguage): stri
   selector: 'app-profile-page',
   imports: [
     TranslocoPipe,
+    ScsBadgeComponent,
     ScsButtonDirective,
     ScsDialogComponent,
     ScsIconComponent,
     ScsStateComponent,
+    ScsSwitchComponent,
     ScsTextFieldComponent,
     CodeStepComponent,
   ],
@@ -137,32 +141,6 @@ export function agoLabel(from: string, now: number, language: ScsLanguage): stri
       align-items: center;
       gap: var(--scs-spacing-sm);
     }
-    .switch {
-      display: flex;
-      align-items: flex-start;
-      gap: var(--scs-spacing-12);
-    }
-    .track {
-      position: relative;
-      flex: none;
-      inline-size: 36px;
-      block-size: 20px;
-      margin-block-start: 2px;
-      border-radius: var(--scs-radius-full);
-      background: var(--scs-color-brand-default);
-      opacity: 0.7;
-    }
-    .track::after {
-      content: '';
-      position: absolute;
-      inset-block-start: 2px;
-      right: 2px;
-      inline-size: 16px;
-      block-size: 16px;
-      border-radius: var(--scs-radius-full);
-      background: var(--scs-color-bg-surface);
-    }
-    .switch p,
     .note {
       margin: var(--scs-spacing-xs) 0 0;
       font-size: var(--scs-text-body-sm);
@@ -205,14 +183,6 @@ export function agoLabel(from: string, now: number, language: ScsLanguage): stri
     td small {
       display: block;
       color: var(--scs-color-text-tertiary);
-    }
-    .now {
-      display: inline-block;
-      padding: 2px var(--scs-spacing-sm);
-      border-radius: var(--scs-radius-sm);
-      background: var(--scs-color-feedback-success-bg);
-      color: var(--scs-color-feedback-success-text);
-      font-size: var(--scs-text-caption);
     }
     .muted {
       color: var(--scs-color-text-tertiary);
@@ -296,7 +266,7 @@ export function agoLabel(from: string, now: number, language: ScsLanguage): stri
             <strong dir="ltr" data-testid="profile-mobile">{{ me.mobile ?? '—' }}</strong>
             <span>{{ 'app.profile.account.mobile' | transloco }}</span>
           </div>
-          <button type="button" scsButton="secondary" class="with-mark" data-testid="change-password" (click)="openChange()">
+          <button type="button" scsButton="secondary" class="with-mark" size="md" data-testid="change-password" (click)="openChange()">
             <scs-icon name="key" [size]="16" />
             <span>{{ 'app.profile.account.changePassword' | transloco }}</span>
           </button>
@@ -305,20 +275,14 @@ export function agoLabel(from: string, now: number, language: ScsLanguage): stri
 
       <section data-testid="profile-security">
         <h2>{{ 'app.profile.security.title' | transloco }}</h2>
-        <div class="switch">
-          <span
-            class="track"
-            role="switch"
-            aria-checked="true"
-            aria-disabled="true"
-            data-testid="two-factor"
-            [attr.aria-label]="'app.profile.security.twoFactor' | transloco"
-          ></span>
-          <div>
-            <strong>{{ 'app.profile.security.twoFactor' | transloco }}</strong>
-            <p data-testid="two-factor-locked">{{ 'app.profile.security.twoFactorLocked' | transloco }}</p>
-          </div>
-        </div>
+        <!-- Required of every operator by the settings: on, and it cannot be turned off here. -->
+        <scs-switch
+          testId="two-factor"
+          disabled
+          [on]="true"
+          [label]="'app.profile.security.twoFactor' | transloco"
+          [reason]="'app.profile.security.twoFactorLocked' | transloco"
+        />
 
         <div class="sessions-head">
           <h3>{{ 'app.profile.sessions.title' | transloco }}</h3>
@@ -341,7 +305,7 @@ export function agoLabel(from: string, now: number, language: ScsLanguage): stri
                 </td>
                 <td>
                   @if (session.current) {
-                    <span class="now">{{ 'app.profile.sessions.activeNow' | transloco }}</span>
+                    <scs-badge intent="success" [dot]="false">{{ 'app.profile.sessions.activeNow' | transloco }}</scs-badge>
                   } @else {
                     <span class="muted">
                       {{ 'app.profile.sessions.ended' | transloco }} {{ ago(session.endedAt ?? session.startedAt) }}
@@ -357,7 +321,7 @@ export function agoLabel(from: string, now: number, language: ScsLanguage): stri
         </table>
 
         <div class="everywhere">
-          <button type="button" class="ops-danger" data-testid="sign-out-everywhere" (click)="everywhereOpen.set(true)">
+          <button type="button" scsButton="destructive" size="md" data-testid="sign-out-everywhere" (click)="everywhereOpen.set(true)">
             <scs-icon name="sign-out" [size]="16" />
             <span>{{ 'app.profile.everywhere.button' | transloco }}</span>
           </button>
@@ -371,15 +335,15 @@ export function agoLabel(from: string, now: number, language: ScsLanguage): stri
         <!-- The button that acts is at the right in both languages, as the design's dialogs. -->
         <div class="buttons even">
           @if (leftToRight()) {
-            <button type="button" scsButton="secondary" data-testid="everywhere-cancel" (click)="everywhereOpen.set(false)">
+            <button type="button" scsButton="secondary" size="md" data-testid="everywhere-cancel" (click)="everywhereOpen.set(false)">
               {{ 'app.profile.cancel' | transloco }}
             </button>
           }
-          <button type="button" class="ops-danger" data-testid="everywhere-confirm" (click)="signOutEverywhere()">
+          <button type="button" scsButton="destructive" size="md" data-testid="everywhere-confirm" (click)="signOutEverywhere()">
             {{ 'app.profile.everywhere.button' | transloco }}
           </button>
           @if (!leftToRight()) {
-            <button type="button" scsButton="secondary" data-testid="everywhere-cancel" (click)="everywhereOpen.set(false)">
+            <button type="button" scsButton="secondary" size="md" data-testid="everywhere-cancel" (click)="everywhereOpen.set(false)">
               {{ 'app.profile.cancel' | transloco }}
             </button>
           }
@@ -412,7 +376,7 @@ export function agoLabel(from: string, now: number, language: ScsLanguage): stri
               />
             }
             <div class="buttons whole">
-              <button type="button" scsButton="secondary" data-testid="change-cancel" (click)="closeChange()">
+              <button type="button" scsButton="secondary" size="md" data-testid="change-cancel" (click)="closeChange()">
                 {{ 'app.profile.cancel' | transloco }}
               </button>
             </div>
@@ -421,7 +385,7 @@ export function agoLabel(from: string, now: number, language: ScsLanguage): stri
             <span class="ops-tick" aria-hidden="true"><scs-icon name="check" [size]="32" /></span>
             <strong data-testid="change-done">{{ 'app.profile.change.doneTitle' | transloco }}</strong>
             <p>{{ 'app.profile.change.doneLine' | transloco }}</p>
-            <button type="button" scsButton data-testid="change-done-close" (click)="closeChange()">
+            <button type="button" scsButton size="md" data-testid="change-done-close" (click)="closeChange()">
               {{ 'app.profile.change.done' | transloco }}
             </button>
           }
@@ -463,15 +427,15 @@ export function agoLabel(from: string, now: number, language: ScsLanguage): stri
             <!-- "Save" is at the right in both languages (frames 1851:2003 and 1853:2115). -->
             <div class="buttons even">
               @if (leftToRight()) {
-                <button type="button" scsButton="secondary" data-testid="change-cancel" (click)="closeChange()">
+                <button type="button" scsButton="secondary" size="md" data-testid="change-cancel" (click)="closeChange()">
                   {{ 'app.profile.cancel' | transloco }}
                 </button>
               }
-              <button type="button" scsButton data-testid="change-save" [busy]="busy()" (click)="beginChange()">
+              <button type="button" scsButton size="md" data-testid="change-save" [busy]="busy()" (click)="beginChange()">
                 {{ 'app.profile.change.save' | transloco }}
               </button>
               @if (!leftToRight()) {
-                <button type="button" scsButton="secondary" data-testid="change-cancel" (click)="closeChange()">
+                <button type="button" scsButton="secondary" size="md" data-testid="change-cancel" (click)="closeChange()">
                   {{ 'app.profile.cancel' | transloco }}
                 </button>
               }

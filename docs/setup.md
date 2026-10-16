@@ -330,6 +330,38 @@ platform's name.
   refused when the platform starts, with the variable named, rather than when an email is sent.
 - **Adding one.** See `docs/adding-an-email.md`.
 
+### The design components (spec 095)
+
+Every component of the design files, in every state the files draw, is on one page of the
+operators console that exists in development only:
+
+- **The gallery.** With the console running (`npm run start:ops` or the "ops" preview), open
+  `http://localhost:4203/dev/components`. Pick a section from the list at the top; the bar switches
+  the language (عربي · English) and the look (the operators' or the clinic's — the clinic's look
+  shows only the parts both consoles share, drawn from the clinic's own tokens). Each section shows
+  its specimens with their design ids and a working example. Nothing of it is in a production
+  build: `node tools/check-production.mjs` fails if any file of `dist/ops` names it.
+- **Icons.** Every icon comes from the registry `projects/ui/src/lib/icon/icon-registry.ts`, copied
+  from the design file by the icon tool — nothing is downloaded and no package is added:
+
+  ```bash
+  node tools/icons.mjs list wifi
+  node tools/icons.mjs add "Computer-Devices/wifi-disabled" --as wifi-off
+  node tools/icons.mjs check
+  ```
+
+  Give `--points` to an arrow, a chevron, "back" or "sign-out" drawn left to right (`--points rtl`
+  for one drawn the other way): it is mirrored on a page of the other direction. `check` fails on a
+  registered icon nothing uses. The gallery's "Icons" section shows them all at 16–24.
+- **Kept pictures.** `npx playwright test gallery/pictures` holds every specimen against its kept
+  picture in `e2e/gallery/__pictures__/` (both languages, 1440 and 390, both looks for shared parts).
+  When a change alters a picture **on purpose**, look at it first — the actual, the expected and the
+  difference are under `test-results/` — and only then accept it with
+  `npx playwright test gallery/pictures -g "<Section> —" --update-snapshots`. Never accept a whole
+  run unseen. The other gallery suites: `coverage` (every drawn variant is there; nothing is outside
+  its frame at 1440 or 390), `keyboard`, `settings` (states, long words, reduced motion, 40 by 40 on
+  a phone) and `patterns`.
+
 ### Check the "not ready" behaviour
 
 ```bash

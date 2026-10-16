@@ -5,6 +5,9 @@
 @import '../../ui/src/lib/overlay/overlay.css';
 @import '../../ui/src/lib/list/list.css';
 
+/* The design file's typeface, served from this site: no page calls a third party (spec 095). */
+@import '@fontsource-variable/cairo';
+
 /* Shared libraries are part of this app's styles. */
 @source '../../core/src';
 @source '../../ui/src';
@@ -28,29 +31,22 @@ body {
   color: var(--scs-color-feedback-success-icon);
 }
 
-/* The red button of an action that ends something (ops design, Profile page). */
-.ops-danger {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--scs-spacing-sm);
-  padding: var(--scs-spacing-12) var(--scs-spacing-lg);
-  border: 0;
-  border-radius: var(--scs-radius-md);
-  background: var(--scs-color-feedback-danger-icon);
-  color: var(--scs-color-text-inverse);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-.ops-danger:focus-visible {
-  outline: 2px solid var(--scs-color-feedback-danger-icon);
-  outline-offset: 2px;
-}
-
 /* An email named in a sentence stays whole: it goes to the next line rather than break at a
    hyphen or a dot, and breaks only when it is wider than the line itself. */
 .ops-address {
   display: inline-block;
   max-inline-size: 100%;
   overflow-wrap: anywhere;
+}
+
+/*
+ * A named option of the shared fields (spec 095, research R13): the frames of "Template — Operators"
+ * draw a form's labels small, grey and regular, and an empty drop-down dark, where the component
+ * pages draw them bold and grey. The owner chose the template's for the operators' forms
+ * (14 Oct 2026); everywhere else the component pages' look stands.
+ */
+.scs-form--template {
+  --scs-field-label-weight: 400;
+  --scs-field-label-color: var(--scs-color-text-secondary);
+  --scs-select-empty-color: var(--scs-color-text-primary);
 }

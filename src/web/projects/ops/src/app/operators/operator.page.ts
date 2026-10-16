@@ -3,6 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { LanguageService } from 'core';
 import {
+  ScsAvatarComponent,
   ScsBannerComponent,
   ScsBreadcrumbComponent,
   ScsButtonDirective,
@@ -11,7 +12,7 @@ import {
   ScsEmptyStateComponent,
   ScsLinkDirective,
   ScsSkeletonComponent,
-  ScsStatusMarkComponent,
+  ScsBadgeComponent,
   ScsTextareaComponent,
   ToastService,
 } from 'ui';
@@ -19,7 +20,7 @@ import { OpsAccess } from '../access/ops-access.service';
 import { opsDate, opsNumber, opsRelative } from '../i18n/ops-format';
 import { activitySentence } from './activity-sentences';
 import { STATE_TONES } from './operators-list.component';
-import { ActivityLine, OperatorDetail, OperatorsService, TeamCodes, codeOf, initials } from './operators.service';
+import { ActivityLine, OperatorDetail, OperatorsService, TeamCodes, codeOf } from './operators.service';
 
 type Working = 'reactivate' | 'unlock' | 'suspend' | 'link' | null;
 
@@ -34,11 +35,12 @@ type Working = 'reactivate' | 'unlock' | 'suspend' | 'link' | null;
   imports: [
     RouterLink,
     TranslocoPipe,
+    ScsAvatarComponent,
     ScsBreadcrumbComponent,
     ScsCardComponent,
     ScsButtonDirective,
     ScsLinkDirective,
-    ScsStatusMarkComponent,
+    ScsBadgeComponent,
     ScsSkeletonComponent,
     ScsEmptyStateComponent,
     ScsDialogComponent,
@@ -63,18 +65,6 @@ type Working = 'reactivate' | 'unlock' | 'suspend' | 'link' | null;
       align-items: center;
       gap: var(--scs-spacing-md);
       min-inline-size: 0;
-    }
-    .initials {
-      display: grid;
-      place-items: center;
-      flex: none;
-      inline-size: 48px;
-      block-size: 48px;
-      border-radius: var(--scs-radius-full);
-      background: var(--scs-color-brand-subtle);
-      color: var(--scs-color-brand-default);
-      font-size: var(--scs-text-body-lg);
-      font-weight: 600;
     }
     h1 {
       margin: 0;
@@ -256,7 +246,7 @@ type Working = 'reactivate' | 'unlock' | 'suspend' | 'link' | null;
         @if (operator(); as who) {
           <div class="head">
             <div class="who">
-              <span class="initials" aria-hidden="true">{{ initialsOf(who.fullName) }}</span>
+              <scs-avatar size="lg" [name]="who.fullName" aria-hidden="true" />
               <div>
                 <h1 data-testid="operator-title"><bdi>{{ who.fullName }}</bdi></h1>
                 <p class="under" data-testid="operator-under">
@@ -348,7 +338,7 @@ type Working = 'reactivate' | 'unlock' | 'suspend' | 'link' | null;
             <h3>{{ 'app.operators.detail.permissions' | transloco }}</h3>
             <ul class="marks" data-testid="operator-permissions">
               @for (code of who.permissions; track code) {
-                <li><scs-status-mark tone="brand" [dot]="false">{{ access.nameOfPermission(code) }}</scs-status-mark></li>
+                <li><scs-badge intent="brand" [dot]="false">{{ access.nameOfPermission(code) }}</scs-badge></li>
               }
             </ul>
           </scs-card>
@@ -488,10 +478,6 @@ export class OperatorPage {
       this.operator.set(null);
       this.state.set(codeOf(error) === TeamCodes.notFound ? 'missing' : 'failed');
     }
-  }
-
-  protected initialsOf(name: string): string {
-    return initials(name);
   }
 
   protected date(value: string): string {

@@ -23,7 +23,17 @@ export default defineConfig({
   forbidOnly: !!process.env['CI'],
   retries: process.env['CI'] ? 1 : 0,
   reporter: [['list']],
-  use: { ...devices['Desktop Chrome'], trace: 'retain-on-failure' },
+  // The gallery's kept pictures, one per specimen (spec 095, research R7).
+  snapshotPathTemplate: '{testDir}/gallery/__pictures__/{arg}{ext}',
+  // With `SCS_SHOTS` set, every test also leaves a picture of its last screen in its results folder
+  // (spec 095: the clinic's and patients' screens pictured before and after a change of shared parts).
+  use: {
+    ...devices['Desktop Chrome'],
+    trace: 'retain-on-failure',
+    screenshot: process.env['SCS_SHOTS'] ? 'on' : 'off',
+    // Pictures taken for comparing are taken still: the screens honour "reduce motion".
+    ...(process.env['SCS_SHOTS'] ? { contextOptions: { reducedMotion: 'reduce' as const } } : {}),
+  },
   webServer: apps.map((app) => ({
     command: `npx ng serve ${app.name}`,
     url: `http://localhost:${app.port}`,

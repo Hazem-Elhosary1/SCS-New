@@ -345,9 +345,14 @@ for (const language of ['ar', 'en'] as const) {
         expect(email.x - name.x).toBeGreaterThan(250);
         expect(mobile.x - email.x).toBeGreaterThan(200);
       }
+      // On, its knob at the right in both languages (spec 011's answer).
       expect(
-        await page.getByTestId('two-factor').evaluate((track) => getComputedStyle(track, '::after').right),
-      ).toBe('2px');
+        await page.getByTestId('two-factor').evaluate((button) => {
+          const track = button.querySelector('.track')!.getBoundingClientRect();
+          const knob = button.querySelector('.knob')!.getBoundingClientRect();
+          return Math.round(track.right - knob.right);
+        }),
+      ).toBeLessThanOrEqual(3);
       expect(Math.abs(account.width - security.width)).toBeLessThanOrEqual(1);
       expect(security.y).toBeGreaterThan(account.y + account.height);
 

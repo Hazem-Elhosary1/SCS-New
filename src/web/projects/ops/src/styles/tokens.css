@@ -1,50 +1,70 @@
 /*
- * Design tokens for the ops app.
+ * Design tokens for the operators console.
  *
- * NOT YET FROM THE DESIGN FILE. The Figma file "SCS Ops Console — Admin Design System"
- * (fileKey SetO9EhDivNcmurAMfcflY) exposed no variables on the nodes read on 2026-10-10, so the
- * names below match the clinic file and the values are neutral placeholders. Replace the
- * values from the ops file (spec 001, task T098) before any ops screen is built.
+ * Source: Figma "SCS Ops Console — Admin Design System" (fileKey SetO9EhDivNcmurAMfcflY), read on
+ * 2026-10-16 (spec 095, research R2): the collection "Ops Console Colors", the colours the
+ * component pages actually draw (they fill with plain colours, not bound variables), the text
+ * styles (Cairo), the collections "Spacing", "Radius", "Border Width" and the effect styles
+ * "Elevation". The token names are shared with the clinic's and patients' looks; shared
+ * components read these and nothing else.
+ *
+ * The sizes, radii and spacing the screens of specs 010 and 011 were matched against their frames
+ * with keep their values; the design's own scales are added beside them under their own names
+ * (`--scs-radius-4` …, `--scs-elevation-*`, `--scs-text-h1` …) for the components to use.
  */
-:root {
-  --scs-color-text-primary: #111827;
-  --scs-color-text-secondary: #4b5563;
-  --scs-color-text-tertiary: #6b7280;
+[data-scs-look='ops'] {
+  /* Colour: text */
+  --scs-color-text-primary: #1a2024;
+  --scs-color-text-secondary: #57646d;
+  --scs-color-text-tertiary: #74838e;
+  --scs-color-text-placeholder: #9ca7b0;
+  --scs-color-text-disabled: #adb4ba;
   --scs-color-text-inverse: #ffffff;
-  --scs-color-text-link: #6d28d9;
+  --scs-color-text-link: #7c3aed;
 
+  /* Colour: surfaces and borders */
   --scs-color-bg-surface: #ffffff;
-  --scs-color-bg-canvas: #f8fafb;
-  --scs-color-bg-surface-secondary: #f3f4f6;
-  --scs-color-border-default: #e5e7eb;
-  --scs-color-border-subtle: #f1f4f6;
+  --scs-color-bg-canvas: #f9fafb;
+  --scs-color-bg-hover: #f9fafb;
+  --scs-color-bg-surface-secondary: #f1f4f6;
   --scs-color-bg-muted: #f1f4f6;
-  --scs-color-icon-default: #374151;
+  --scs-color-border-default: #f1f4f6;
+  --scs-color-border-subtle: #f1f4f6;
+  --scs-color-border-control: #d9dce0;
+  --scs-color-border-strong: #d9dce0;
+  --scs-color-icon-default: #74838e;
+  --scs-color-focus-ring: #7c3aed;
 
+  /* Colour: brand */
   --scs-color-brand-default: #7c3aed;
-  --scs-color-brand-active: #6d28d9;
+  --scs-color-brand-hover: #6a2ed8;
+  --scs-color-brand-active: #5b21c7;
   --scs-color-brand-on-brand: #ffffff;
-  --scs-color-brand-subtle: #f3edfe;
+  --scs-color-brand-subtle: #f0ecfe;
 
-  --scs-color-feedback-info-icon: #1d4ed8;
-  --scs-color-feedback-info-bg: #eff6ff;
-  --scs-color-feedback-info-border: #dbeafe;
-  --scs-color-feedback-danger-icon: #b91c1c;
+  /* Colour: feedback */
+  --scs-color-feedback-info-icon: #1d66b3;
+  --scs-color-feedback-info-text: #1d66b3;
+  --scs-color-feedback-info-bg: #e6f2f6;
+  --scs-color-feedback-info-border: #cde5ee;
+  --scs-color-feedback-danger-icon: #dc2626;
   --scs-color-feedback-danger-text: #991b1b;
-  --scs-color-feedback-danger-bg: #fdf2f2;
-  --scs-color-feedback-danger-border: #fda29b;
-  --scs-color-feedback-warning-icon: #b45309;
-  --scs-color-feedback-warning-bg: #fffbeb;
-  --scs-color-feedback-warning-border: #fef3c7;
-  --scs-color-feedback-warning-text: #92400e;
-  --scs-color-feedback-success-icon: #067647;
-  --scs-color-feedback-success-text: #085d3a;
-  --scs-color-feedback-success-bg: #ecfdf3;
-  --scs-color-feedback-success-border: #abefc6;
-  --scs-color-feedback-info-text: #1e40af;
+  --scs-color-feedback-danger-bg: #fbe9e9;
+  --scs-color-feedback-danger-border: #f7d3d3;
+  --scs-color-danger-hover: #c31c1c;
+  --scs-color-danger-active: #aa1313;
+  --scs-color-feedback-warning-icon: #c98b05;
+  --scs-color-feedback-warning-text: #b45309;
+  --scs-color-feedback-warning-bg: #fef1e1;
+  --scs-color-feedback-warning-border: #fde3c3;
+  --scs-color-feedback-success-icon: #1e8e5a;
+  --scs-color-feedback-success-text: #116932;
+  --scs-color-feedback-success-bg: #e5f2ec;
+  --scs-color-feedback-success-border: #cbe5d9;
   --scs-color-overlay: #0a0f1480;
 
-  --scs-font-family: system-ui, 'Segoe UI', Tahoma, sans-serif;
+  /* Type — the file's text styles are all Cairo */
+  --scs-font-family: 'Cairo Variable', 'Cairo', system-ui, 'Segoe UI', Tahoma, sans-serif;
   --scs-text-caption: 11px;
   --scs-text-label: 12px;
   --scs-text-body-sm: 13px;
@@ -55,7 +75,23 @@
   --scs-text-title: 22px;
   --scs-text-display-sm: 26px;
   --scs-text-display: 34px;
+  /* The design's scale: Display 48, H1 36, H2 30, H3 26, H4 22, H5 18, H6 16; Body 16 · 14 · 13;
+     Caption 12; Label 13 (Medium); Button 15 · 14 · 13 (SemiBold). */
+  --scs-text-h1: 36px;
+  --scs-text-h2: 30px;
+  --scs-text-h3: 26px;
+  --scs-text-h4: 22px;
+  --scs-text-h5: 18px;
+  --scs-text-h6: 16px;
+  --scs-text-body-l: 16px;
+  --scs-text-body-m: 14px;
+  --scs-text-body-s: 13px;
+  --scs-text-caption-design: 12px;
+  --scs-text-button-lg: 15px;
+  --scs-text-button-md: 14px;
+  --scs-text-button-sm: 13px;
 
+  /* Spacing */
   --scs-spacing-2: 2px;
   --scs-spacing-xs: 4px;
   --scs-spacing-6: 6px;
@@ -69,8 +105,403 @@
   --scs-spacing-40: 40px;
   --scs-spacing-3xl: 64px;
 
+  /* Shape */
   --scs-radius-sm: 6px;
   --scs-radius-md: 10px;
   --scs-radius-full: 999px;
+  /* The design's radii and border widths */
+  --scs-radius-4: 4px;
+  --scs-radius-8: 8px;
+  --scs-radius-12: 12px;
+  --scs-radius-16: 16px;
+  --scs-border-thin: 1px;
+  --scs-border-medium: 1.5px;
+  --scs-border-thick: 2px;
+
+  /* Elevation — the file's effect styles */
   --scs-shadow-subtle: 0 1px 2px 0 #0a0f140f;
+  --scs-elevation-xs: 0 1px 2px 0 #0a0f140f;
+  --scs-elevation-sm: 0 2px 6px -1px #0a0f1414;
+  --scs-elevation-md: 0 4px 12px -2px #0a0f141a;
+  --scs-elevation-lg: 0 8px 20px -4px #0a0f141a, 0 2px 6px -2px #0a0f140f;
+  --scs-elevation-xl: 0 16px 32px -6px #0a0f1424, 0 4px 8px -2px #0a0f1414;
+  --scs-elevation-overlay: 0 24px 48px -8px #0a0f1433;
+
+  /* The button as the Button page draws it (8:37); the settings are read by ui/controls/controls.css. */
+  --scs-button-radius-sm: 8px;
+  --scs-button-primary-hover: #6a2ed8;
+  --scs-button-primary-pressed: #5b21c7;
+  --scs-button-secondary-hover: #f9fafb;
+  --scs-button-secondary-pressed: #f1f4f6;
+  --scs-button-secondary-shadow: none;
+  --scs-button-secondary-weight: 600;
+  --scs-button-secondary-focus-border: #7c3aed;
+  --scs-button-tertiary-hover: #e6e0fc;
+  --scs-button-tertiary-pressed: #dcd4fa;
+  --scs-button-ghost-hover: #f9fafb;
+  --scs-button-ghost-pressed: #f1f4f6;
+  --scs-button-link-hover: #6a2ed8;
+  --scs-button-link-pressed: #5b21c7;
+  --scs-button-disabled-opacity: 1;
+  --scs-button-disabled-bg: #f1f4f6;
+  --scs-button-disabled-fg: #adb4ba;
+  --scs-button-focus-color: #7c3aed;
+  --scs-button-focus-offset: 1px;
+  --scs-button-busy-opacity: 1;
+  --scs-button-busy-words: transparent;
+  --scs-button-busy-ring: absolute;
+  --scs-button-busy-anchor: relative;
+  --scs-button-busy-margin: auto;
+  --scs-button-spinner-track: 25%;
+  --scs-button-spinner-gap: 25%;
+
+  /* Checkbox (35:2) and Switch (35:4) */
+  --scs-check-border: #babfc4;
+  --scs-switch-off-hover: #c4c9ce;
+  --scs-switch-knob-disabled: #f8f9fa;
+  /* On and locked: the brand at half strength, a white knob, the words as dark as ever (2185:611). */
+  --scs-switch-locked: rgb(124 58 237 / 50%);
+  --scs-switch-locked-knob: #ffffff;
+  --scs-switch-locked-text: #1a2024;
+
+  /* Slider (35:5) and Segmented Control (385:2) */
+  --scs-slider-track: #e5e7ea;
+  --scs-slider-off: #c7c7cc;
+  --scs-segment-track: #e9ecef;
+
+  /* Input (41:2), Textarea (41:3), Dropdown (57:2): the fields */
+  --scs-field-border: #d9dce0;
+  --scs-field-hover-border: #adb4ba;
+  --scs-field-shadow: none;
+  --scs-field-placeholder: #9ca7b0;
+  --scs-field-label-weight: 500;
+  --scs-field-focus-color: #7c3aed;
+  --scs-field-focus-border: 1.5px;
+  --scs-field-focus-offset: 2px;
+  --scs-field-state-border: 1.5px;
+  --scs-field-message-size: 11px;
+  --scs-field-error-color: #dc2626;
+  --scs-field-disabled-text: #adb4ba;
+  --scs-area-disabled: #f6f7f8;
+
+  /* File Upload (41:4): the zone, and the card under it */
+  --scs-upload-height: 132px;
+  --scs-upload-border: 1.5px;
+  --scs-upload-radius: 10px;
+  --scs-upload-hover-accent: #7c3aed;
+  --scs-upload-hover-bg: #ffffff;
+  --scs-upload-drag-border: 2px;
+  --scs-upload-drag-text: #7c3aed;
+  --scs-upload-drag-weight: 600;
+  --scs-upload-mark-border: 1.5px;
+  --scs-upload-mark-line: #74838e;
+  --scs-upload-mark-bg: #ffffff;
+  --scs-file-card-radius: 10px;
+  --scs-file-card-uploading-bg: #f9fafb;
+  --scs-file-card-uploading-border: #d9dce0;
+  --scs-file-card-ready-bg: #ecf8ef;
+  --scs-file-card-ready-border: #279850;
+  --scs-file-card-error-bg: #feefef;
+
+  /* Date Picker (74:2): the calendar panel (75:4) and its range (76:3) */
+  --scs-calendar-cell: 36px;
+  --scs-calendar-gap: 6px;
+  --scs-calendar-pad: 16px;
+  --scs-calendar-pad-end: 32px;
+  --scs-calendar-radius: 12px;
+  --scs-calendar-border: #d9dce0;
+  --scs-calendar-shadow: 0 4px 16px rgb(26 32 36 / 12%);
+  --scs-calendar-head-gap: 12px;
+  --scs-calendar-nav: 28px;
+  --scs-calendar-nav-radius: 8px;
+  --scs-calendar-nav-border: 1px;
+  --scs-calendar-title-weight: 700;
+  --scs-calendar-weekday-height: 16px;
+  --scs-calendar-weekday-weight: 500;
+  --scs-calendar-weekday-color: #74838e;
+  --scs-calendar-week-gap: 8px;
+  --scs-calendar-day-size: 12px;
+  --scs-calendar-day-weight: 400;
+  --scs-calendar-out-color: #adb4ba;
+  --scs-calendar-hover-bg: #efe6fe;
+  --scs-calendar-today-ring: 1.5px;
+  --scs-calendar-today-color: #1a2024;
+  --scs-calendar-today-weight: 700;
+  --scs-calendar-off-bg: #f1f4f6;
+  --scs-calendar-off-color: #adb4ba;
+  --scs-calendar-chosen-weight: 700;
+  --scs-calendar-band: #efe6fe;
+  --scs-calendar-band-color: #1a2024;
+
+  /* Time Picker (77:2): the time list (78:4) and the wheels (78:16) */
+  --scs-time-panel-width: 200px;
+  --scs-time-radius: 12px;
+  --scs-time-border: #d9dce0;
+  --scs-time-shadow: 0 4px 16px rgb(26 32 36 / 12%);
+  --scs-time-columns: 1;
+  --scs-time-row-pad: 16px;
+  --scs-time-row-radius: 8px;
+  --scs-time-row-weight: 400;
+  --scs-time-hover-bg: #efe6fe;
+  --scs-time-chosen-bg: #7c3aed;
+  --scs-time-chosen-color: #ffffff;
+  --scs-time-chosen-weight: 700;
+  --scs-time-tick: inline-flex;
+
+  /* Avatar (294:131) and Badge (294:147) */
+  --scs-avatar-sm: 28px;
+  --scs-avatar-md: 44px;
+  --scs-avatar-lg: 64px;
+  --scs-avatar-sm-text: 11px;
+  --scs-avatar-md-text: 15px;
+  --scs-avatar-lg-text: 20px;
+  --scs-avatar-weight: 700;
+  --scs-avatar-text: #7c3aed;
+  --scs-badge-height: 28px;
+  --scs-badge-pad: 10px;
+  --scs-badge-radius: 8px;
+  --scs-badge-neutral-text: #74838e;
+  --scs-badge-brand-text: #7c3aed;
+
+  /* KPI Card (294:315); its icon is the list template's (spec 011) */
+  --scs-kpi-gap: 4px;
+  --scs-kpi-radius: 14px;
+  --scs-kpi-label-size: 12px;
+  --scs-kpi-label-color: #74838e;
+  --scs-kpi-value-size: 28px;
+  --scs-kpi-note-pad: 8px;
+  --scs-kpi-note-radius: 6px;
+  --scs-kpi-note-size: 11px;
+  --scs-kpi-icon: 28px;
+  --scs-kpi-icon-radius: 999px;
+
+  /* Sidebar Nav Item (294:323) */
+  --scs-nav-height: 48px;
+  --scs-nav-pad: 16px;
+  --scs-nav-gap: 10px;
+  --scs-nav-icon: 18px;
+  --scs-nav-text: #1a2024;
+  --scs-nav-on-text: #7c3aed;
+  --scs-nav-on-weight: 600;
+  --scs-nav-hover-bg: #f9fafb;
+  --scs-nav-off-text: #b2b8bd;
+  --scs-nav-bar: 24px;
+  --scs-nav-bar-radius: 2px;
+
+  /* Loading (289:27, 289:38, 289:48 and the composed examples) */
+  --scs-spinner-md: 24px;
+  --scs-spinner-lg: 32px;
+  --scs-spinner-xl: 48px;
+  --scs-progress-height: 6px;
+  --scs-progress-radius: 3px;
+  --scs-progress-track: #eceef1;
+  --scs-progress-text: 13px;
+  --scs-progress-weight: 400;
+  --scs-progress-color: #1a2024;
+  --scs-progress-gap: 4px;
+  --scs-skeleton-line: 14px;
+  --scs-skeleton-radius: 4px;
+  --scs-skeleton-block-radius: 6px;
+  --scs-skeleton-bg: #eceef1;
+
+  /* Alert (60:46): the banner and the toast */
+  --scs-banner-pad: 14px 16px;
+  --scs-banner-border: 0px;
+  --scs-banner-radius: 12px;
+  --scs-banner-bar: 4px;
+  --scs-banner-anchor: relative;
+  --scs-banner-clip: hidden;
+  --scs-banner-ink: 1;
+  --scs-banner-mark: 28px;
+  --scs-banner-mark-fill: 1;
+  --scs-banner-icon: 16px;
+  --scs-banner-text: 12px;
+  --scs-banner-weight: 400;
+  --scs-banner-title-gap: 6px;
+  --scs-banner-close: #74838e;
+  --scs-toast-width: 340px;
+  --scs-toast-border: 0px;
+  --scs-toast-radius: 12px;
+  --scs-toast-shadow: 0 12px 24px rgb(26 32 36 / 14%), 0 4px 8px rgb(26 32 36 / 8%);
+  --scs-toast-icon: none;
+  --scs-toast-bar: block;
+  --scs-toast-gap: 8px;
+  --scs-toast-text: 13px;
+  --scs-toast-text-gap: 4px;
+
+  /* Navigation (284:12 tabs, 284:21 breadcrumb, 284:34 pagination, 284:53 stepper) */
+  --scs-tabs-gap: 8px;
+  --scs-tabs-min: 100px;
+  --scs-tabs-size: 13px;
+  --scs-tabs-weight: 400;
+  --scs-tabs-text: #74838e;
+  --scs-tabs-on-text: #7c3aed;
+  --scs-crumb-size: 13px;
+  --scs-crumb-text: #74838e;
+  --scs-crumb-on-weight: 600;
+  --scs-pager-gap: 8px;
+  --scs-pager-size: 36px;
+  --scs-pager-radius: 8px;
+  --scs-pager-bg: #ffffff;
+  --scs-pager-text: #1a2024;
+  --scs-pager-font: 13px;
+  --scs-pager-on-weight: 400;
+  --scs-pager-off-opacity: 1;
+  --scs-pager-off-color: #9ca7b0;
+  --scs-pager-more-width: 48px;
+  --scs-pager-more-border: 1px;
+  --scs-pager-more-mark: inline-flex;
+  --scs-stepper-gap: 0px;
+  --scs-stepper-flow: column;
+  --scs-stepper-width: 120px;
+  --scs-stepper-line: none;
+  --scs-stepper-text: 11px;
+  --scs-stepper-weight: 400;
+  --scs-stepper-ring: 1.5px;
+  --scs-stepper-now-ring: 1.5px;
+  --scs-stepper-ring-color: #f1f4f6;
+  --scs-stepper-number-weight: 400;
+  --scs-stepper-now-number: #7c3aed;
+  --scs-stepper-ahead-number: #9ca7b0;
+  --scs-stepper-ahead-text: #9ca7b0;
+
+  /* Data Display (281:64 tag and the applied chips, 281:77 accordion, 281:88 divider) */
+  --scs-tag-gap: 4px;
+  --scs-tag-height: 28px;
+  --scs-tag-pad: 12px;
+  --scs-tag-radius: 14px;
+  --scs-tag-text: 12px;
+  --scs-tag-default-bg: #f0ecfe;
+  --scs-tag-default-text: #7c3aed;
+  --scs-chip-gap: 4px;
+  --scs-chip-pad: 12px;
+  --scs-chip-radius: 14px;
+  --scs-chip-remove: currentColor;
+  /* Applied chips in the brand's pale tint, their words in the brand (Search & Filter 111:2). */
+  --scs-chip-bg: #f0ecfe;
+  --scs-chip-ink: #7c3aed;
+  --scs-chip-text: 13px;
+  --scs-chips-clear-push: 2px;
+  --scs-accordion-gap: 12px;
+  --scs-accordion-frame: 1px;
+  --scs-accordion-radius: 12px;
+  --scs-accordion-pad: 14px 16px;
+  --scs-accordion-title: 13px;
+  --scs-accordion-weight: 400;
+  --scs-accordion-chevron: 14px;
+  --scs-accordion-rule: 1px;
+  --scs-accordion-body-pad: 16px;
+  --scs-accordion-body-text: #74838e;
+  --scs-accordion-body-size: 12px;
+  --scs-divider-line: #c7cbd0;
+
+  /* Table (273:52 rows, 273:55 the composed table) */
+  --scs-table-collapse: separate;
+  --scs-table-head-pad: 13px 20px;
+  --scs-table-head-rule: 1px;
+  --scs-table-head-bg: #f9fafb;
+  --scs-table-head-text: #74838e;
+  --scs-table-head-size: 12px;
+  --scs-table-head-weight: 600;
+  --scs-table-cell-pad: 11px 20px;
+  --scs-table-row-rule: 0px;
+  --scs-table-row-radius: 10px;
+  --scs-table-row-hover: #f9fafb;
+  --scs-table-row-chosen: #f0ecfe;
+  --scs-table-sub-text: #74838e;
+  --scs-table-sub-size: 12px;
+
+  /* Navbar (278:3) and Notifications (362:23 bell, 362:43 item, 364:32 panel) */
+  --scs-navbar-line: #d9dce0;
+  --scs-navbar-name-weight: 700;
+  /* The avatar 24 from the edge and 8 from the names (278:3 / 311:16). */
+  --scs-navbar-account-gap: 8px;
+  --scs-navbar-account-inset: -8px;
+  --scs-notice-panel-width: 380px;
+  --scs-notice-panel-radius: 12px;
+  --scs-notice-panel-shadow: 0 12px 24px rgb(26 32 36 / 14%), 0 4px 8px rgb(26 32 36 / 8%);
+  --scs-notice-title: 16px;
+  --scs-notice-title-weight: 700;
+  --scs-notice-footer-bg: #ffffff;
+  --scs-notice-list-pad: 8px 10px;
+  --scs-notice-gap: 4px;
+  --scs-notice-radius: 8px;
+  --scs-notice-unread-bg: #f8f6fe;
+  --scs-notice-dot: #7c3aed;
+
+  /* Menu (368:23 item, 368:26 panel, 2201:86 the row menus) */
+  --scs-menu-min: 200px;
+  --scs-menu-pad: 6px;
+  --scs-menu-radius: 10px;
+  --scs-menu-border: #d9dce0;
+  --scs-menu-shadow: 0 8px 20px rgb(26 32 36 / 14%), 0 2px 6px rgb(26 32 36 / 8%);
+  --scs-menu-item-radius: 6px;
+  --scs-menu-item-text: 13px;
+  --scs-menu-item-gap: 10px;
+  --scs-row-menu-radius: 50%;
+  --scs-row-menu-hover: #f6f8f9;
+  --scs-row-menu-hover-ink: #1a2024;
+
+  /* Empty State (374:35) and Tooltip (383:23) */
+  --scs-empty-mark: 72px;
+  --scs-empty-mark-bg: #f1f4f6;
+  --scs-empty-mark-ink: #adb4ba;
+  --scs-empty-icon: 32px;
+  --scs-empty-title: 17px;
+  --scs-empty-title-weight: 600;
+  --scs-empty-text: 14px;
+  --scs-empty-text-color: #74838e;
+  --scs-tooltip-bg: #25292e;
+  --scs-tooltip-pad: 8px 10px;
+  --scs-tooltip-radius: 6px;
+  --scs-tooltip-text: 12px;
+  --scs-tooltip-weight: 400;
+  --scs-tooltip-arrow: block;
+
+  /* Usage Meter (387:24) and the bar chart (394:16) */
+  --scs-meter-gap: 8px;
+  --scs-meter-label-weight: 600;
+  --scs-meter-value-weight: 400;
+  --scs-meter-value-tint: 0;
+  --scs-meter-value-plain: #74838e;
+  --scs-meter-note-weight: 500;
+  --scs-meter-note-tint: 1;
+  --scs-meter-radius: 4px;
+  --scs-meter-track: #e9ecef;
+  --scs-meter-fill-ink: 1;
+  --scs-chart-axis: none;
+  --scs-chart-axis-room: 0px;
+  --scs-chart-pale: #e6ddfb;
+  --scs-chart-height: 132px;
+
+  /* AI (399:13 badge, 401:19 insight card, 404:10 message bubble, 402:3 FAB, 405:2 chat) */
+  --scs-ai-tint: #f1edfe;
+  --scs-ai-ink: #5e27ce;
+  --scs-ai-gradient: linear-gradient(135deg, #8b53f6, #5e27ce);
+  --scs-insight-pad: 16px;
+  --scs-insight-radius: 12px;
+  --scs-insight-border: #d3c4fb;
+  --scs-insight-shadow: 0 4px 12px rgb(94 39 206 / 8%);
+  --scs-insight-head: #5e27ce;
+  --scs-insight-shape: #edf0f2;
+  --scs-bubble-pad: 10px 14px;
+  --scs-bubble-radius: 12px;
+  --scs-bubble-tail: 4px;
+  --scs-bubble-bot-bg: #f1f4f6;
+  --scs-bubble-mine-bg: #7c3aed;
+  --scs-bubble-mine-text: #ffffff;
+}
+
+/*
+ * At a phone's width everything pressed is at least 40 by 40 (FR-012, as in spec 011). Each small
+ * part reads --scs-touch; where its drawing is smaller, the room is made around it. The calendar's
+ * days take the 40 and give up their gap, so the month is as wide as at a desk.
+ */
+@media (max-width: 720px) {
+  [data-scs-look='ops'] {
+    --scs-touch: 40px;
+    --scs-calendar-cell: 40px;
+    --scs-calendar-gap: 2px;
+    --scs-calendar-nav: 40px;
+  }
 }

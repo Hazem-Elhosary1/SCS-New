@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { OpsCan } from './access/ops-access.service';
 import { guarded } from './access/ops-can';
 import { signedInOnly, signedOutOnly } from './auth/ops-auth.guard';
+import { galleryRoutes } from './gallery/gallery.routes';
 
 /**
  * The operators console (spec 010). The screens before sign-in stand alone; everything after
@@ -32,6 +33,8 @@ export const routes: Routes = [
     path: 'password/first',
     loadComponent: () => import('./password/password.pages').then((file) => file.SetPasswordPage),
   },
+  // The design components' gallery: development only, empty in production (spec 095).
+  ...galleryRoutes,
   {
     path: 'privacy',
     loadComponent: () => import('./home/home.pages').then((file) => file.NotYetPage),

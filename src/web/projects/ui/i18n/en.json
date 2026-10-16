@@ -114,7 +114,9 @@
         "hint": "{{ types }} · up to {{ size }}",
         "uploading": "Uploading the file…",
         "failed": "The file could not be uploaded",
-        "full": "The limit is reached: {{ max }}"
+        "full": "The limit is reached: {{ max }}",
+        "drop": "Drop your file here",
+        "release": "Release to upload"
       },
       "card": {
         "uploading": "Uploading… {{ percent }}%",
@@ -146,6 +148,16 @@
         "refused": "{{ name }} was not uploaded: {{ reason }}",
         "removed": "{{ name }} was removed"
       }
+    },
+    "date": {
+      "previous": "Previous month",
+      "next": "Next month",
+      "calendar": "Choose a date",
+      "today": "Today",
+      "hour": "Hour",
+      "minute": "Minute",
+      "period": "AM or PM",
+      "done": "Done"
     }
   }
 }

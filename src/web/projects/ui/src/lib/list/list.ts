@@ -1,8 +1,10 @@
-import { CdkConnectedOverlay, CdkOverlayOrigin } from '@angular/cdk/overlay';
+import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
+import { CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition } from '@angular/cdk/overlay';
 import {
   ChangeDetectionStrategy,
   Component,
   Directive,
+  ElementRef,
   booleanAttribute,
   computed,
   inject,
@@ -13,8 +15,15 @@ import {
 import { TranslocoPipe } from '@jsverse/transloco';
 import { OnlineService } from 'core';
 import { ScsBannerComponent, ScsButtonDirective } from '../controls/controls';
+import { ScsTagComponent } from '../tag/tag.component';
 import { ScsDialogComponent } from '../dialog/dialog.component';
-import { ScsIconComponent, ScsIconName } from '../icon/icon.component';
+import { ScsIconComponent } from '../icon/icon.component';
+
+// Parts the clinic's first screen needs live in files of their own, so that screen does not carry
+// the rest of this file (the table footer's menu, the filter panel, the chips); found here as before.
+export * from './skeleton.component';
+export * from './empty-state.component';
+export * from './language-toggle.component';
 
 /**
  * The parts every list of the console is built from, in one order: heading, toolbar, applied
@@ -138,10 +147,15 @@ export class ScsPageHeaderComponent {
   readonly note = input('');
 }
 
-/** A list's container, with its name and one line about it. */
+/**
+ * A list's container, with its name and one line about it. Design: Data Display — Card (`281:27` /
+ * `313:26`; the clinic's `4252:61428`): its look is kept as the owner chose; the page's states are
+ * `interactive` (it tints under the pointer) and `selected` (the brand's tint and border).
+ */
 @Component({
   selector: 'scs-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[class.interactive]': 'interactive()', '[class.selected]': 'selected()' },
   styles: `
     :host {
       display: block;
@@ -149,6 +163,18 @@ export class ScsPageHeaderComponent {
       border: 1px solid var(--scs-color-border-default);
       border-radius: var(--scs-radius-md);
       background: var(--scs-color-bg-surface);
+    }
+    :host(.interactive) {
+      cursor: pointer;
+    }
+    :host(.interactive:hover),
+    :host-context([data-scs-state~='hover']) {
+      background: var(--scs-color-bg-hover, var(--scs-color-bg-surface-secondary));
+    }
+    :host(.selected),
+    :host(.selected:hover) {
+      border-color: var(--scs-color-brand-default);
+      background: var(--scs-color-brand-subtle);
     }
     :host + :host {
       margin-block-start: var(--scs-spacing-md);
@@ -181,6 +207,9 @@ export class ScsPageHeaderComponent {
 export class ScsCardComponent {
   readonly heading = input('');
   readonly note = input('');
+  /** It opens or chooses something: it tints under the pointer. */
+  readonly interactive = input(false, { transform: booleanAttribute });
+  readonly selected = input(false, { transform: booleanAttribute });
 }
 
 /**
@@ -190,137 +219,8 @@ export class ScsCardComponent {
 @Directive({ selector: 'table[scsTable]', host: { class: 'scs-table' } })
 export class ScsTableDirective {}
 
-/** Grey shapes in place of content that is loading. */
-@Component({
-  selector: 'scs-skeleton',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { role: 'status', 'aria-busy': 'true', '[attr.aria-label]': 'label() || null' },
-  styles: `
-    :host {
-      display: flex;
-      flex-direction: column;
-      gap: var(--scs-spacing-12);
-    }
-    span {
-      display: block;
-      block-size: 16px;
-      border-radius: var(--scs-radius-sm);
-      background: var(--scs-color-bg-surface-secondary);
-      animation: pulse 1.4s ease-in-out infinite;
-    }
-    span:nth-child(3n + 1) {
-      inline-size: 60%;
-    }
-    span:nth-child(3n + 2) {
-      inline-size: 85%;
-    }
-    @keyframes pulse {
-      50% {
-        opacity: 0.5;
-      }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      span {
-        animation: none;
-      }
-    }
-  `,
-  template: `
-    @for (line of lines(); track line) {
-      <span></span>
-    }
-  `,
-})
-export class ScsSkeletonComponent {
-  readonly rows = input(4);
 
-  /** Already translated; what is loading, for assistive technology. */
-  readonly label = input('');
-
-  protected readonly lines = computed(() => Array.from({ length: this.rows() }, (_, i) => i));
-}
-
-export type ScsEmptyContext = 'no-data' | 'no-results' | 'error' | 'not-in-plan' | 'not-found';
-
-const EMPTY_ICONS: Record<ScsEmptyContext, ScsIconName> = {
-  'no-data': 'clipboard',
-  'no-results': 'search',
-  error: 'alert-triangle',
-  'not-in-plan': 'lock',
-  'not-found': 'help-circle',
-};
-
-/**
- * What stands where rows would be when there are none to show (design: Empty State): nothing
- * yet, nothing matching, or a failure. A title, one line, and at most one action, projected.
- */
-@Component({
-  selector: 'scs-empty-state',
-  imports: [ScsIconComponent],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: {
-    '[attr.data-context]': 'context()',
-    '[attr.role]': 'context() === "error" ? "alert" : null',
-  },
-  styles: `
-    :host {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: var(--scs-spacing-sm);
-      padding: var(--scs-spacing-40) var(--scs-spacing-lg);
-      text-align: center;
-    }
-    .mark {
-      display: grid;
-      place-items: center;
-      inline-size: 64px;
-      block-size: 64px;
-      margin-block-end: var(--scs-spacing-sm);
-      border-radius: var(--scs-radius-full);
-      background: var(--scs-color-brand-subtle, var(--scs-color-bg-surface-secondary));
-      color: var(--scs-color-brand-default);
-    }
-    :host([data-context='error']) .mark {
-      background: var(--scs-color-feedback-danger-bg);
-      color: var(--scs-color-feedback-danger-icon);
-    }
-    h3 {
-      margin: 0;
-      font-size: var(--scs-text-heading-sm);
-      font-weight: 500;
-      color: var(--scs-color-text-primary);
-    }
-    p {
-      max-inline-size: 320px;
-      margin: 0;
-      font-size: var(--scs-text-body-sm);
-      line-height: 1.7;
-      color: var(--scs-color-text-secondary);
-    }
-    .action:not(:empty) {
-      margin-block-start: var(--scs-spacing-sm);
-    }
-  `,
-  template: `
-    <span class="mark"><scs-icon [name]="icon()" [size]="26" /></span>
-    <h3 data-testid="empty-title">{{ title() }}</h3>
-    @if (text()) {
-      <p data-testid="empty-text">{{ text() }}</p>
-    }
-    <div class="action"><ng-content /></div>
-  `,
-})
-export class ScsEmptyStateComponent {
-  readonly context = input<ScsEmptyContext>('no-data');
-  readonly title = input.required<string>();
-  readonly text = input('');
-
-  /** The mark of what is missing, when the page has a better one than the context's own. */
-  readonly mark = input<ScsIconName | null>(null);
-
-  protected readonly icon = computed(() => this.mark() ?? EMPTY_ICONS[this.context()]);
-}
+let nextToolbar = 0;
 
 /**
  * The one row above a list's rows: search at the reading start, «تصفية» at the other end, and
@@ -364,6 +264,12 @@ export class ScsEmptyStateComponent {
       font: inherit;
       outline: none;
     }
+    /* The toolbar draws its own clear button; the browser's (Edge, Chrome) would be a second ×. */
+    input::-webkit-search-cancel-button,
+    input::-webkit-search-decoration {
+      -webkit-appearance: none;
+      appearance: none;
+    }
     input::placeholder {
       color: var(--scs-color-text-tertiary);
     }
@@ -393,6 +299,29 @@ export class ScsEmptyStateComponent {
     .filter[aria-expanded='true'] {
       background: var(--scs-color-bg-surface-secondary);
       border-color: var(--scs-color-brand-default);
+    }
+    /* How many filters are applied: a round count between the icon and the word. */
+    .filter .count {
+      display: inline-grid;
+      place-items: center;
+      box-sizing: border-box;
+      min-inline-size: 18px;
+      block-size: 18px;
+      padding-inline: 4px;
+      border-radius: 9px;
+      background: var(--scs-color-brand-default);
+      color: var(--scs-color-brand-on-brand);
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .unseen {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
     .filter:focus-visible,
     .clear:focus-visible {
@@ -433,10 +362,15 @@ export class ScsEmptyStateComponent {
         cdkOverlayOrigin
         #origin="cdkOverlayOrigin"
         [attr.aria-expanded]="filterOpen()"
+        [attr.aria-describedby]="filterCount() !== 0 && filterCountLabel() ? id + '-count' : null"
         aria-haspopup="dialog"
         (click)="filterOpen.set(!filterOpen())"
       >
         <scs-icon name="filter" [size]="18" />
+        @if (filterCount() > 0) {
+          <span class="count" aria-hidden="true" data-testid="list-filter-count">{{ filterCountText() || filterCount() }}</span>
+          <span class="unseen" [id]="id + '-count'">{{ filterCountLabel() }}</span>
+        }
         <span>{{ filterLabel() }}</span>
       </button>
       <ng-template
@@ -471,6 +405,15 @@ export class ScsListToolbarComponent {
   /** «تصفية». Empty for a list with no filters. */
   readonly filterLabel = input('');
 
+  protected readonly id = `scs-list-toolbar-${nextToolbar++}`;
+
+  /** How many filters are applied; 0 shows no count. */
+  readonly filterCount = input(0);
+  /** The count as the page writes its numbers (the operators' Western digits, the clinic's Arabic ones). */
+  readonly filterCountText = input('');
+  /** Already translated: the count said in words for a screen reader, "2 filters applied". */
+  readonly filterCountLabel = input('');
+
   /** Whether the filter's panel is open; its button is drawn pressed while it is. */
   readonly filterOpen = model(false);
 
@@ -493,10 +436,14 @@ export interface ScsAppliedChip {
   readonly label: string;
 }
 
-/** What is applied to a list, in one place: chips under the toolbar, and «مسح الكل» (CL-SH-048). */
+/**
+ * What is applied to a list, in one place: chips under the toolbar, and «مسح الكل» (CL-SH-048). Each
+ * chip is an `scs-tag` that can be taken away; it keeps the chip's look of before spec 095 through
+ * `--scs-chip-*`, which a look may set.
+ */
 @Component({
   selector: 'scs-applied-chips',
-  imports: [ScsIconComponent],
+  imports: [ScsTagComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[hidden]': 'chips().length === 0' },
   styles: `
@@ -509,17 +456,18 @@ export interface ScsAppliedChip {
     :host([hidden]) {
       display: none;
     }
-    .chip {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--scs-spacing-6);
-      block-size: 28px;
-      padding-inline: var(--scs-spacing-10);
-      border-radius: var(--scs-radius-full);
-      background: var(--scs-color-bg-surface-secondary);
-      color: var(--scs-color-text-primary);
-      font-size: var(--scs-text-body-sm);
-      font-weight: 500;
+    scs-tag {
+      --scs-tag-gap: var(--scs-chip-gap, var(--scs-spacing-6));
+      --scs-tag-height: var(--scs-chip-height, 28px);
+      --scs-tag-pad: var(--scs-chip-pad, var(--scs-spacing-10));
+      --scs-tag-radius: var(--scs-chip-radius, var(--scs-radius-full));
+      --scs-tag-text: var(--scs-chip-text, var(--scs-text-body-sm));
+      --scs-tag-hover-bg: var(--scs-chip-hover-bg, var(--scs-color-bg-surface-secondary));
+      --scs-tag-border: var(--scs-chip-border, 0px);
+      --scs-tag-remove: var(--scs-chip-remove, var(--scs-color-icon-default));
+      /* Each look's chip colours; the neutral tag's own where a look sets none. */
+      --scs-tag-neutral-bg: var(--scs-chip-bg, var(--scs-color-bg-surface-secondary));
+      --scs-tag-neutral-text: var(--scs-chip-ink, var(--scs-color-text-primary));
     }
     button {
       display: inline-grid;
@@ -531,8 +479,9 @@ export interface ScsAppliedChip {
       font: inherit;
       cursor: pointer;
     }
+    /* «مسح الكل» at the far end (the clinic), or right after the chips where a look says so. */
     .all {
-      margin-inline-start: auto;
+      margin-inline-start: var(--scs-chips-clear-push, auto);
       color: var(--scs-color-text-link);
       font-size: var(--scs-text-body-sm);
       font-weight: 600;
@@ -544,16 +493,16 @@ export interface ScsAppliedChip {
   `,
   template: `
     @for (chip of chips(); track chip.key) {
-      <span class="chip" data-testid="applied-chip">
+      <scs-tag
+        class="chip"
+        data-testid="applied-chip"
+        intent="neutral"
+        dismissible
+        [removeLabel]="removeLabel() + ' ' + chip.label"
+        (removed)="remove.emit(chip.key)"
+      >
         {{ chip.label }}
-        <button
-          type="button"
-          [attr.aria-label]="removeLabel() + ' ' + chip.label"
-          (click)="remove.emit(chip.key)"
-        >
-          <scs-icon name="close" [size]="14" />
-        </button>
-      </span>
+      </scs-tag>
     }
     @if (chips().length > 0) {
       <button type="button" class="all" data-testid="clear-all" (click)="clearAll.emit()">
@@ -577,7 +526,13 @@ export interface ScsTab {
   readonly count?: string;
 }
 
-/** An exclusive split of a list, with counts: tabs above the toolbar, never chips (BRD §A-7). */
+/**
+ * An exclusive split of a list, with counts: tabs above the toolbar, never chips (BRD §A-7).
+ * Design: Navigation — Tab Item (`284:12` / `312:62`; the clinic's `4252:60720`). The arrows move
+ * between the tabs and choose (following the page's direction), Home and End go to the ends; only
+ * the chosen tab is in the Tab order. Each look draws its tabs through `--scs-tabs-*`; the defaults
+ * are the tabs before spec 095.
+ */
 @Component({
   selector: 'scs-tabs',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -585,27 +540,30 @@ export interface ScsTab {
   styles: `
     :host {
       display: flex;
-      gap: var(--scs-spacing-lg);
+      gap: var(--scs-tabs-gap, var(--scs-spacing-lg));
       margin-block-end: var(--scs-spacing-md);
       border-block-end: 1px solid var(--scs-color-border-default);
     }
     button {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: var(--scs-spacing-sm);
+      min-inline-size: var(--scs-tabs-min, 0px);
       padding: var(--scs-spacing-10) 0;
       border: 0;
       border-block-end: 2px solid transparent;
       margin-block-end: -1px;
       background: none;
-      color: var(--scs-color-text-secondary);
+      color: var(--scs-tabs-text, var(--scs-color-text-secondary));
       font: inherit;
-      font-weight: 500;
+      font-size: var(--scs-tabs-size, inherit);
+      font-weight: var(--scs-tabs-weight, 500);
       cursor: pointer;
     }
     button[aria-selected='true'] {
       border-block-end-color: var(--scs-color-brand-default);
-      color: var(--scs-color-brand-active);
+      color: var(--scs-tabs-on-text, var(--scs-color-brand-active));
       font-weight: 600;
     }
     button:focus-visible {
@@ -626,7 +584,9 @@ export interface ScsTab {
         role="tab"
         [attr.data-testid]="'tab-' + tab.key"
         [attr.aria-selected]="tab.key === active()"
+        [attr.tabindex]="tab.key === active() || (!chosen() && $first) ? 0 : -1"
         (click)="active.set(tab.key)"
+        (keydown)="key($event)"
       >
         {{ tab.label }}
         @if (tab.count !== undefined) {
@@ -639,16 +599,41 @@ export interface ScsTab {
 export class ScsTabsComponent {
   readonly tabs = input.required<readonly ScsTab[]>();
   readonly active = model.required<string>();
+
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  protected readonly chosen = computed(() => this.tabs().some((tab) => tab.key === this.active()));
+
+  /** The arrows move and choose, in the page's direction; Home and End go to the ends. */
+  protected key(event: KeyboardEvent): void {
+    const tabs = this.tabs();
+    const at = Math.max(0, tabs.findIndex((tab) => tab.key === this.active()));
+    const rtl = getComputedStyle(this.host.nativeElement).direction === 'rtl';
+    const to: Record<string, number> = {
+      ArrowRight: at + (rtl ? -1 : 1),
+      ArrowLeft: at + (rtl ? 1 : -1),
+      Home: 0,
+      End: tabs.length - 1,
+    };
+    if (to[event.key] === undefined) return;
+    event.preventDefault();
+    const next = tabs[(to[event.key] + tabs.length) % tabs.length];
+    this.active.set(next.key);
+    setTimeout(() => this.host.nativeElement.querySelector<HTMLElement>(`[data-testid="tab-${next.key}"]`)?.focus());
+  }
 }
 
 /**
  * The one row under a table: the count at the reading start, the paging at the end
  * (CL-SH-051). «السابق» is disabled on the first page and «التالي» on the last; a table that
  * fits one page shows the count alone.
+ *
+ * Past six pages the paging folds (design: Navigation — "folded pagination", `2111:195`): the
+ * three pages around the current one, "…", and the last three; "…" opens upwards a menu of every
+ * page not shown (`2104:140`). Each page button is `.scs-page-item` (controls.css), drawn per look.
  */
 @Component({
   selector: 'scs-table-footer',
-  imports: [ScsIconComponent],
+  imports: [ScsIconComponent, CdkMenuTrigger, CdkMenu, CdkMenuItem],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -660,50 +645,63 @@ export class ScsTabsComponent {
       font-size: var(--scs-text-body-sm);
       color: var(--scs-color-text-secondary);
     }
+    /* On a phone the paging goes under the count, and wraps when it is long. */
+    :host {
+      flex-wrap: wrap;
+    }
     nav {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
-      gap: var(--scs-spacing-xs);
-    }
-    button {
-      display: inline-grid;
-      place-items: center;
-      min-inline-size: 32px;
-      block-size: 32px;
-      padding-inline: var(--scs-spacing-6);
-      border: 0;
-      border-radius: var(--scs-radius-sm);
-      background: none;
-      color: var(--scs-color-text-secondary);
-      font: inherit;
-      cursor: pointer;
-    }
-    button[aria-current='page'] {
-      background: var(--scs-color-brand-default);
-      color: var(--scs-color-brand-on-brand);
-      font-weight: 600;
-    }
-    button:hover:not(:disabled):not([aria-current]) {
-      background: var(--scs-color-bg-surface-secondary);
+      gap: var(--scs-pager-gap, var(--scs-spacing-xs));
     }
     /* «السابق» points back the way the page reads; «التالي» points onward. */
     .onward {
       transform: scaleX(-1);
     }
-    button:disabled {
-      opacity: 0.5;
-      cursor: default;
+    /* The menu of the pages not shown (2104:140). */
+    .hidden-pages {
+      display: grid;
+      min-inline-size: 96px;
+      max-block-size: 240px;
+      overflow-y: auto;
+      box-sizing: border-box;
+      padding: var(--scs-spacing-sm);
+      border: 1px solid var(--scs-color-border-default);
+      border-radius: 10px;
+      background: var(--scs-color-bg-surface);
+      box-shadow: 0 6px 16px rgb(10 15 20 / 12%);
     }
-    button:focus-visible {
-      outline: 2px solid var(--scs-color-brand-default);
-      outline-offset: 2px;
+    .hidden-pages button {
+      block-size: 40px;
+      padding: 0;
+      border: 0;
+      border-radius: var(--scs-radius-md);
+      background: none;
+      color: var(--scs-color-text-primary);
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
     }
-    /* 32 at a desk; 40 where a finger presses them. */
-    @media (max-width: 720px) {
-      button {
-        min-inline-size: 40px;
-        block-size: 40px;
-      }
+    /* Drawn open in place, still, above its "…" (the gallery's specimen of 2104:140). */
+    .more-still {
+      position: relative;
+      display: inline-flex;
+    }
+    .more-still .hidden-pages {
+      position: absolute;
+      inset-block-end: calc(100% + 4px);
+      inset-inline-start: 50%;
+      translate: -50% 0;
+      z-index: 1;
+    }
+    :host-context([dir='rtl']) .more-still .hidden-pages {
+      translate: 50% 0;
+    }
+    .hidden-pages button:hover,
+    .hidden-pages button:focus {
+      background: var(--scs-color-bg-hover, var(--scs-color-bg-surface-secondary));
+      outline: none;
     }
   `,
   template: `
@@ -712,7 +710,7 @@ export class ScsTabsComponent {
       <nav [attr.aria-label]="pagingLabel()" data-testid="table-paging">
         <button
           type="button"
-          class="arrow"
+          class="scs-page-item arrow"
           data-testid="page-previous"
           [attr.aria-label]="previousLabel()"
           [attr.title]="previousLabel()"
@@ -721,19 +719,53 @@ export class ScsTabsComponent {
         >
           <scs-icon name="chevron-start" [size]="16" />
         </button>
-        @for (number of numbers(); track number.value) {
-          <button
-            type="button"
-            [attr.data-testid]="'page-' + number.value"
-            [attr.aria-current]="number.value === page() ? 'page' : null"
-            (click)="page.set(number.value)"
-          >
-            {{ number.shown }}
-          </button>
+        @for (item of items(); track item.key) {
+          @if (item.hidden && menuShown()) {
+            <span class="more-still">
+              <button type="button" class="scs-page-item more" aria-expanded="true" [attr.aria-label]="moreLabel() || null">
+                …<scs-icon name="chevron-down" [size]="14" />
+              </button>
+              <div class="hidden-pages" role="menu">
+                @for (number of item.hidden; track number.value) {
+                  <button type="button" role="menuitem" tabindex="-1">{{ number.shown }}</button>
+                }
+              </div>
+            </span>
+          } @else if (item.hidden) {
+            <button
+              type="button"
+              class="scs-page-item more"
+              data-testid="page-more"
+              [attr.aria-label]="moreLabel() || null"
+              [cdkMenuTriggerFor]="hiddenPages"
+              [cdkMenuPosition]="upwards"
+            >
+              …<scs-icon name="chevron-down" [size]="14" />
+            </button>
+            <ng-template #hiddenPages>
+              <div class="hidden-pages" cdkMenu data-testid="page-menu">
+                @for (number of item.hidden; track number.value) {
+                  <button type="button" cdkMenuItem [attr.data-testid]="'page-' + number.value" (cdkMenuItemTriggered)="page.set(number.value)">
+                    {{ number.shown }}
+                  </button>
+                }
+              </div>
+            </ng-template>
+          } @else {
+            <button
+              type="button"
+              class="scs-page-item"
+              [attr.data-testid]="'page-' + item.value"
+              [attr.aria-current]="item.value === page() ? 'page' : null"
+              (click)="page.set(item.value)"
+            >
+              {{ item.shown }}
+            </button>
+          }
         }
         <button
           type="button"
-          class="arrow"
+          class="scs-page-item arrow"
           data-testid="page-next"
           [attr.aria-label]="nextLabel()"
           [attr.title]="nextLabel()"
@@ -761,9 +793,35 @@ export class ScsTableFooterComponent {
   /** Writes a page number in the page's digits. */
   readonly digits = input<(value: number) => string>((value) => String(value));
 
-  protected readonly numbers = computed(() =>
-    Array.from({ length: this.pages() }, (_, i) => ({ value: i + 1, shown: this.digits()(i + 1) })),
-  );
+  /** Already translated: the name of "…", which opens the pages not shown. */
+  readonly moreLabel = input('');
+  /** Shows the menu of the pages not shown open in place, still (the gallery's specimen of it). */
+  readonly menuShown = input(false, { transform: booleanAttribute });
+
+  /** "…" opens its menu above it, or below when there is no room. */
+  protected readonly upwards: ConnectedPosition[] = [
+    { originX: 'center', originY: 'top', overlayX: 'center', overlayY: 'bottom', offsetY: -4 },
+    { originX: 'center', originY: 'bottom', overlayX: 'center', overlayY: 'top', offsetY: 4 },
+  ];
+
+  /** The page buttons, folded past six pages, with "…" holding the pages not shown. */
+  protected readonly items = computed(() => {
+    const shown = (value: number) => ({ value, shown: this.digits()(value) });
+    const pages = this.pages();
+    const page = Math.min(Math.max(this.page(), 1), pages);
+    const all = Array.from({ length: pages }, (_, i) => i + 1);
+    if (pages <= 6) return all.map((value) => ({ key: String(value), ...shown(value), hidden: null }));
+    const start = Math.max(1, Math.min(page - 1, pages - 5));
+    const visible = [...new Set([start, start + 1, start + 2, pages - 2, pages - 1, pages])];
+    const hidden = all.filter((value) => !visible.includes(value)).map(shown);
+    const items: { key: string; value: number; shown: string; hidden: { value: number; shown: string }[] | null }[] =
+      visible.map((value) => ({ key: String(value), ...shown(value), hidden: null }));
+    if (hidden.length) {
+      const gap = start + 2 < pages - 3;
+      items.splice(gap ? 3 : 0, 0, { key: 'more', value: 0, shown: '…', hidden });
+    }
+    return items;
+  });
 }
 
 /**
@@ -792,108 +850,6 @@ export class ScsWriteDirective {
   protected readonly blocked = computed(() => !this.scsWrite());
 }
 
-/** A thin strip saying this is not the real product (design: Dev Environment Strip). */
-@Component({
-  selector: 'scs-env-strip',
-  imports: [ScsIconComponent],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { role: 'note', 'data-testid': 'env-strip' },
-  styles: `
-    :host {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: var(--scs-spacing-sm);
-      block-size: 32px;
-      background: var(--scs-color-feedback-warning-icon);
-      color: var(--scs-color-brand-on-brand);
-      font-size: var(--scs-text-label);
-      font-weight: 500;
-    }
-  `,
-  template: `<scs-icon name="info" [size]="14" /><ng-content />`,
-})
-export class ScsEnvStripComponent {}
-
-/** A two-way language pill: «عربي · EN». The active half names the current language; no flags. */
-@Component({
-  selector: 'scs-language-toggle',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { dir: 'ltr', role: 'group', '[attr.aria-label]': 'label()' },
-  styles: `
-    :host {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--scs-spacing-2, 2px);
-      padding: var(--scs-spacing-2, 2px);
-      border-radius: var(--scs-radius-full);
-      background: var(--scs-color-bg-surface-secondary);
-    }
-    .segment {
-      display: inline-grid;
-      place-items: center;
-      min-inline-size: 40px;
-      block-size: 28px;
-      padding: 0 var(--scs-spacing-10);
-      border: 0;
-      border-radius: var(--scs-radius-full);
-      background: none;
-      color: var(--scs-color-text-secondary);
-      font: inherit;
-      font-size: var(--scs-text-label);
-      font-weight: 600;
-      line-height: 1;
-    }
-    button.segment {
-      cursor: pointer;
-    }
-    button.segment:hover {
-      color: var(--scs-color-text-primary);
-    }
-    button.segment:focus-visible {
-      outline: 2px solid var(--scs-color-brand-default);
-      outline-offset: 1px;
-    }
-    .segment.on {
-      background: var(--scs-color-bg-surface);
-      color: var(--scs-color-text-primary);
-      box-shadow: var(--scs-shadow-subtle);
-    }
-  `,
-  template: `
-    @for (choice of choices; track choice.code) {
-      @if (current() === choice.code) {
-        <span class="segment on" aria-current="true" [attr.lang]="choice.code">{{
-          choice.label
-        }}</span>
-      } @else {
-        <button
-          type="button"
-          class="segment"
-          data-testid="language-switch"
-          [attr.lang]="choice.code"
-          (click)="chosen.emit(choice.code)"
-        >
-          {{ choice.label }}
-        </button>
-      }
-    }
-  `,
-})
-export class ScsLanguageToggleComponent {
-  readonly current = input.required<'ar' | 'en'>();
-
-  /** Already translated: what the pill is, for assistive technology. */
-  readonly label = input('');
-
-  readonly chosen = output<'ar' | 'en'>();
-
-  /** Not translated: a language is always named in its own words. */
-  protected readonly choices = [
-    { code: 'ar', label: 'عربي' },
-    { code: 'en', label: 'EN' },
-  ] as const;
-}
 
 /**
  * The body of a filter's panel (design: Filter Popover; frame "Shell / Table Filter Open"): its

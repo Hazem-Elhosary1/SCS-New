@@ -7,6 +7,7 @@ import {
   ScsBannerComponent,
   ScsBannerTone,
   ScsButtonDirective,
+  ScsCheckboxComponent,
   ScsLinkDirective,
   ScsTextFieldComponent,
 } from 'ui';
@@ -49,6 +50,7 @@ export const OPS_EMAIL = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
     ScsAuthFrameComponent,
     ScsBannerComponent,
     ScsButtonDirective,
+    ScsCheckboxComponent,
     ScsLinkDirective,
     ScsTextFieldComponent,
   ],
@@ -74,17 +76,6 @@ export const OPS_EMAIL = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
       align-items: center;
       justify-content: space-between;
       gap: var(--scs-spacing-md);
-    }
-    .remember {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--scs-spacing-sm);
-      cursor: pointer;
-    }
-    .remember input {
-      inline-size: 16px;
-      block-size: 16px;
-      accent-color: var(--scs-color-brand-default);
     }
     .together {
       white-space: nowrap;
@@ -154,15 +145,7 @@ export const OPS_EMAIL = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
         />
 
         <div class="row">
-          <label class="remember">
-            <input
-              type="checkbox"
-              data-testid="remember"
-              [checked]="remember()"
-              (change)="remember.set($any($event.target).checked)"
-            />
-            <span>{{ 'app.signIn.remember' | transloco }}</span>
-          </label>
+          <scs-checkbox testId="remember" [label]="'app.signIn.remember' | transloco" [(checked)]="remember" />
           <a scsLink data-testid="forgot-password" routerLink="/forgot-password">{{
             'app.signIn.forgot' | transloco
           }}</a>

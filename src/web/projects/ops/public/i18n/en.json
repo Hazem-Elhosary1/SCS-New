@@ -257,7 +257,13 @@
         "noneText": "No operators match your search or filters.",
         "clearFilters": "Clear filters",
         "failedTitle": "Something went wrong",
-        "failedText": "Couldn't load the operators list. Check your connection and try again."
+        "failedText": "Couldn't load the operators list. Check your connection and try again.",
+        "clearAll": "Clear all",
+        "removeFilter": "Remove",
+        "applied": {
+          "1": "1 filter applied",
+          "2": "2 filters applied"
+        }
       },
       "detail": {
         "crumb": "Operator Details",
@@ -495,6 +501,9 @@
         "done": "Role deleted.",
         "failed": "Couldn't delete the role."
       }
+    },
+    "ai": {
+      "badge": "AI"
     }
   }
 }

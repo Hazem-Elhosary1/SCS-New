@@ -63,13 +63,13 @@ for (const language of ['ar', 'en'] as const) {
       const { team } = await open(page, language, '/');
 
       await expect(page.getByTestId('ops-side-bar').getByRole('link')).toHaveText(ar ? ['الرئيسية', 'المشغلون'] : ['Home', 'Operators']);
-      await expect(page.getByTestId('ops-operator-role')).toHaveText(ar ? 'مسؤول عام' : 'Super Admin');
+      await expect(page.getByTestId('ops-role')).toHaveText(ar ? 'مسؤول عام' : 'Super Admin');
 
       // A custom role is named as it was written, in both languages.
       team.roles.find((role) => role.id === SUCCESS)!.codes = ['dashboard.view', 'clinics.view'];
       team.actAs(SUCCESS);
       await page.goto(`${OPS}/`);
-      await expect(page.getByTestId('ops-operator-role')).toHaveText('نجاح العملاء');
+      await expect(page.getByTestId('ops-role')).toHaveText('نجاح العملاء');
       await expect(page.getByTestId('ops-side-bar').getByRole('link')).toHaveText(ar ? ['الرئيسية'] : ['Home']);
 
       // Its address says so, in the frame, with a way back — and shows nothing of the page.
@@ -86,7 +86,7 @@ for (const language of ['ar', 'en'] as const) {
       // A viewer sees the team and its roles, and may not open a form by its address.
       team.actAs(VIEWER);
       await page.goto(`${OPS}/operators/roles`);
-      await expect(page.getByTestId('ops-operator-role')).toHaveText(ar ? 'مشاهد فقط' : 'Viewer Only');
+      await expect(page.getByTestId('ops-role')).toHaveText(ar ? 'مشاهد فقط' : 'Viewer Only');
       await expect(page.getByTestId('role-row')).toHaveCount(5);
       await expect(page.getByTestId('add-role')).toHaveCount(0);
       await expect(page.getByTestId('role-menu')).toHaveCount(0);
@@ -349,7 +349,7 @@ for (const language of ['ar', 'en'] as const) {
       await expect(page.getByTestId('role-based-on')).toHaveCount(0);
       // «الفئة» beside the name, as frame 1751:813 draws it.
       await expect(page.getByTestId('role-category')).toContainText(ar ? 'الفئة' : 'Category');
-      await expect(page.getByTestId('role-category').locator('scs-status-mark')).toHaveText(ar ? 'مخصص' : 'Custom');
+      await expect(page.getByTestId('role-category').locator('scs-badge')).toHaveText(ar ? 'مخصص' : 'Custom');
       await expect(page.getByTestId('role-category-hint')).toHaveText(
         ar ? 'الأدوار المخصصة قابلة للتعديل الكامل، بما في ذلك الحذف.' : 'Custom roles are fully editable, including deletion.',
       );

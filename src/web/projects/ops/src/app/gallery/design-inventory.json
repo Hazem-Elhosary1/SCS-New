@@ -1,0 +1,108 @@
+{
+  "file": "SetO9EhDivNcmurAMfcflY",
+  "read": "2026-10-16",
+  "note": "What the operators' design file draws on its component pages (spec 095, data-model 'Design inventory'). Variant values are written as the design writes them, joined by '|' in the order of 'props'; each variant has its English and Arabic node.",
+  "pages": [
+    { "page": "Avatar", "node": "8:35", "sets": [{ "name": "Avatar", "en": "294:131", "ar": "8:111", "props": ["Size"], "variants": [["Small", "294:125", "8:105"], ["Medium", "294:127", "8:107"], ["Large", "294:129", "8:109"]] }] },
+    { "page": "Badge", "node": "8:36", "sets": [{ "name": "Badge", "en": "294:147", "ar": "8:86", "props": ["Intent"], "variants": [["Success", "294:132", "8:71"], ["Warning", "294:135", "8:74"], ["Danger", "294:138", "8:77"], ["Info", "294:141", "8:80"], ["Neutral", "294:144", "8:83"]] }] },
+    { "page": "Button", "node": "8:37", "parts": { "Leading Icon": "32:3", "Trailing Icon": "32:9", "Text Only": "32:14", "Icon Only": "32:19" }, "sets": [{ "name": "Button", "en": "31:302", "ar": "316:470", "props": ["Type", "Size", "State"], "variants": [
+      ["Primary|Small|Default", "30:2", "316:2"], ["Primary|Small|Hover", "30:6", "316:6"], ["Primary|Small|Pressed", "30:10", "316:10"], ["Primary|Small|Focus", "30:14", "316:14"], ["Primary|Small|Disabled", "30:18", "316:19"], ["Primary|Small|Loading", "30:22", "316:23"],
+      ["Primary|Medium|Default", "30:27", "316:28"], ["Primary|Medium|Hover", "30:31", "316:32"], ["Primary|Medium|Pressed", "30:35", "316:36"], ["Primary|Medium|Focus", "30:39", "316:40"], ["Primary|Medium|Disabled", "30:43", "316:45"], ["Primary|Medium|Loading", "30:47", "316:49"],
+      ["Primary|Large|Default", "30:52", "316:54"], ["Primary|Large|Hover", "30:56", "316:58"], ["Primary|Large|Pressed", "30:60", "316:62"], ["Primary|Large|Focus", "30:64", "316:66"], ["Primary|Large|Disabled", "30:68", "316:71"], ["Primary|Large|Loading", "30:72", "316:75"],
+      ["Secondary|Small|Default", "30:77", "316:80"], ["Secondary|Small|Hover", "30:81", "316:84"], ["Secondary|Small|Pressed", "30:85", "316:88"], ["Secondary|Small|Focus", "30:89", "316:92"], ["Secondary|Small|Disabled", "30:93", "316:97"], ["Secondary|Small|Loading", "30:97", "316:101"],
+      ["Secondary|Medium|Default", "30:102", "316:106"], ["Secondary|Medium|Hover", "30:106", "316:110"], ["Secondary|Medium|Pressed", "30:110", "316:114"], ["Secondary|Medium|Focus", "30:114", "316:118"], ["Secondary|Medium|Disabled", "30:118", "316:123"], ["Secondary|Medium|Loading", "30:122", "316:127"],
+      ["Secondary|Large|Default", "30:127", "316:132"], ["Secondary|Large|Hover", "30:131", "316:136"], ["Secondary|Large|Pressed", "30:135", "316:140"], ["Secondary|Large|Focus", "30:139", "316:144"], ["Secondary|Large|Disabled", "30:143", "316:149"], ["Secondary|Large|Loading", "30:147", "316:153"],
+      ["Tertiary|Small|Default", "31:2", "316:158"], ["Tertiary|Small|Hover", "31:6", "316:162"], ["Tertiary|Small|Pressed", "31:10", "316:166"], ["Tertiary|Small|Focus", "31:14", "316:170"], ["Tertiary|Small|Disabled", "31:18", "316:175"], ["Tertiary|Small|Loading", "31:22", "316:179"],
+      ["Tertiary|Medium|Default", "31:27", "316:184"], ["Tertiary|Medium|Hover", "31:31", "316:188"], ["Tertiary|Medium|Pressed", "31:35", "316:192"], ["Tertiary|Medium|Focus", "31:39", "316:196"], ["Tertiary|Medium|Disabled", "31:43", "316:201"], ["Tertiary|Medium|Loading", "31:47", "316:205"],
+      ["Tertiary|Large|Default", "31:52", "316:210"], ["Tertiary|Large|Hover", "31:56", "316:214"], ["Tertiary|Large|Pressed", "31:60", "316:218"], ["Tertiary|Large|Focus", "31:64", "316:222"], ["Tertiary|Large|Disabled", "31:68", "316:227"], ["Tertiary|Large|Loading", "31:72", "316:231"],
+      ["Ghost|Small|Default", "31:77", "316:236"], ["Ghost|Small|Hover", "31:81", "316:240"], ["Ghost|Small|Pressed", "31:85", "316:244"], ["Ghost|Small|Focus", "31:89", "316:248"], ["Ghost|Small|Disabled", "31:93", "316:253"], ["Ghost|Small|Loading", "31:97", "316:257"],
+      ["Ghost|Medium|Default", "31:102", "316:262"], ["Ghost|Medium|Hover", "31:106", "316:266"], ["Ghost|Medium|Pressed", "31:110", "316:270"], ["Ghost|Medium|Focus", "31:114", "316:274"], ["Ghost|Medium|Disabled", "31:118", "316:279"], ["Ghost|Medium|Loading", "31:122", "316:283"],
+      ["Ghost|Large|Default", "31:127", "316:288"], ["Ghost|Large|Hover", "31:131", "316:292"], ["Ghost|Large|Pressed", "31:135", "316:296"], ["Ghost|Large|Focus", "31:139", "316:300"], ["Ghost|Large|Disabled", "31:143", "316:305"], ["Ghost|Large|Loading", "31:147", "316:309"],
+      ["Link|Small|Default", "31:152", "316:314"], ["Link|Small|Hover", "31:156", "316:318"], ["Link|Small|Pressed", "31:160", "316:322"], ["Link|Small|Focus", "31:164", "316:326"], ["Link|Small|Disabled", "31:168", "316:331"], ["Link|Small|Loading", "31:172", "316:335"],
+      ["Link|Medium|Default", "31:177", "316:340"], ["Link|Medium|Hover", "31:181", "316:344"], ["Link|Medium|Pressed", "31:185", "316:348"], ["Link|Medium|Focus", "31:189", "316:352"], ["Link|Medium|Disabled", "31:193", "316:357"], ["Link|Medium|Loading", "31:197", "316:361"],
+      ["Link|Large|Default", "31:202", "316:366"], ["Link|Large|Hover", "31:206", "316:370"], ["Link|Large|Pressed", "31:210", "316:374"], ["Link|Large|Focus", "31:214", "316:378"], ["Link|Large|Disabled", "31:218", "316:383"], ["Link|Large|Loading", "31:222", "316:387"],
+      ["Destructive|Small|Default", "31:227", "316:392"], ["Destructive|Small|Hover", "31:231", "316:396"], ["Destructive|Small|Pressed", "31:235", "316:400"], ["Destructive|Small|Focus", "31:239", "316:404"], ["Destructive|Small|Disabled", "31:243", "316:409"], ["Destructive|Small|Loading", "31:247", "316:413"],
+      ["Destructive|Medium|Default", "31:252", "316:418"], ["Destructive|Medium|Hover", "31:256", "316:422"], ["Destructive|Medium|Pressed", "31:260", "316:426"], ["Destructive|Medium|Focus", "31:264", "316:430"], ["Destructive|Medium|Disabled", "31:268", "316:435"], ["Destructive|Medium|Loading", "31:272", "316:439"],
+      ["Destructive|Large|Default", "31:277", "316:444"], ["Destructive|Large|Hover", "31:281", "316:448"], ["Destructive|Large|Pressed", "31:285", "316:452"], ["Destructive|Large|Focus", "31:289", "316:456"], ["Destructive|Large|Disabled", "31:293", "316:461"], ["Destructive|Large|Loading", "31:297", "316:465"]
+    ] }] },
+    { "page": "KPI Card", "node": "8:39", "sets": [{ "name": "KPI Card", "en": "294:315", "ar": "8:135", "props": ["Trend"], "variants": [["Positive", "294:300", "8:120"], ["Negative", "294:305", "8:125"], ["Neutral", "294:310", "8:130"]] }] },
+    { "page": "Sidebar Nav Item", "node": "8:40", "sets": [{ "name": "Sidebar Nav Item", "en": "294:323", "ar": "8:119", "props": ["State"], "variants": [["Default", "294:316", "8:112"], ["Hover", "294:318", "8:114"], ["Active", "294:320", "8:116"], ["Disabled", "836:4164", "817:786"]] }] },
+    { "page": "Checkbox", "node": "35:2", "sets": [{ "name": "Checkbox", "en": "43:36", "ar": "297:34", "props": ["State"], "variants": [["Unchecked", "43:4", "297:2"], ["Checked", "43:8", "297:6"], ["Indeterminate", "43:13", "297:11"], ["Disabled", "43:18", "297:16"], ["Hover", "43:22", "297:20"], ["Focus", "43:26", "297:24"], ["Error", "43:31", "297:29"]] }] },
+    { "page": "Radio", "node": "35:3", "sets": [{ "name": "Radio", "en": "43:66", "ar": "298:29", "props": ["State"], "variants": [["Unselected", "43:39", "298:2"], ["Selected", "43:43", "298:6"], ["Disabled", "43:48", "298:11"], ["Hover", "43:52", "298:15"], ["Focus", "43:56", "298:19"], ["Error", "43:61", "298:24"]] }] },
+    { "page": "Switch", "node": "35:4", "sets": [{ "name": "Switch", "en": "43:102", "ar": "297:96", "props": ["State"], "variants": [["Off", "43:69", "297:63"], ["On", "43:74", "297:68"], ["Disabled", "43:79", "297:73"], ["Hover", "43:84", "297:78"], ["Focus", "43:89", "297:83"], ["Loading", "43:95", "297:89"]] }] },
+    { "page": "Slider", "node": "35:5", "sets": [{ "name": "Slider", "en": "55:58", "ar": "300:56", "props": ["Type", "State"], "variants": [["Single|Default", "55:4", "300:2"], ["Single|Hover", "55:10", "300:8"], ["Single|Focus", "55:16", "300:14"], ["Single|Disabled", "55:23", "300:21"], ["Range|Default", "55:29", "300:27"], ["Range|Hover", "55:36", "300:34"], ["Range|Focus", "55:43", "300:41"], ["Range|Disabled", "55:51", "300:49"]] }] },
+    { "page": "Input", "node": "41:2", "sets": [{ "name": "Input", "en": "54:257", "ar": "304:257", "props": ["State", "Size"], "variants": [
+      ["Empty|Small", "54:2", "304:2"], ["Empty|Medium", "54:8", "304:8"], ["Empty|Large", "54:14", "304:14"],
+      ["Default|Small", "54:20", "304:20"], ["Default|Medium", "54:26", "304:26"], ["Default|Large", "54:32", "304:32"],
+      ["Hover|Small", "54:38", "304:38"], ["Hover|Medium", "54:44", "304:44"], ["Hover|Large", "54:50", "304:50"],
+      ["Focus|Small", "54:56", "304:56"], ["Focus|Medium", "54:63", "304:63"], ["Focus|Large", "54:70", "304:70"],
+      ["Active|Small", "54:77", "304:77"], ["Active|Medium", "54:83", "304:83"], ["Active|Large", "54:89", "304:89"],
+      ["Filled|Small", "54:95", "304:95"], ["Filled|Medium", "54:101", "304:101"], ["Filled|Large", "54:107", "304:107"],
+      ["Disabled|Small", "54:113", "304:113"], ["Disabled|Medium", "54:119", "304:119"], ["Disabled|Large", "54:125", "304:125"],
+      ["ReadOnly|Small", "54:131", "304:131"], ["ReadOnly|Medium", "54:137", "304:137"], ["ReadOnly|Large", "54:143", "304:143"],
+      ["Error|Small", "54:149", "304:149"], ["Error|Medium", "54:159", "304:159"], ["Error|Large", "54:169", "304:169"],
+      ["Success|Small", "54:179", "304:179"], ["Success|Medium", "54:187", "304:187"], ["Success|Large", "54:195", "304:195"],
+      ["Warning|Small", "54:203", "304:203"], ["Warning|Medium", "54:213", "304:213"], ["Warning|Large", "54:223", "304:223"],
+      ["Loading|Small", "54:233", "304:233"], ["Loading|Medium", "54:241", "304:241"], ["Loading|Large", "54:249", "304:249"]
+    ] }] },
+    { "page": "Textarea", "node": "41:3", "sets": [{ "name": "Textarea", "en": "146:95", "ar": "304:369", "props": ["State", "Size"], "variants": [
+      ["Default|Small", "146:2", "304:258"], ["Default|Medium", "146:7", "304:264"], ["Default|Large", "146:12", "304:270"],
+      ["Hover|Small", "146:17", "304:276"], ["Hover|Medium", "146:22", "304:282"], ["Hover|Large", "146:27", "304:288"],
+      ["Focus|Small", "146:32", "304:294"], ["Focus|Medium", "146:37", "304:300"], ["Focus|Large", "146:42", "304:306"],
+      ["Filled|Small", "146:47", "304:312"], ["Filled|Medium", "146:52", "304:318"], ["Filled|Large", "146:57", "304:324"],
+      ["Disabled|Small", "146:62", "304:330"], ["Disabled|Medium", "146:67", "304:336"], ["Disabled|Large", "146:72", "304:342"],
+      ["Error|Small", "146:77", "304:348"], ["Error|Medium", "146:83", "304:355"], ["Error|Large", "146:89", "304:362"]
+    ] }] },
+    { "page": "File Upload", "node": "41:4", "sets": [{ "name": "File Upload", "en": "157:72", "ar": "304:440", "props": ["State"], "variants": [["Default", "157:2", "304:370"], ["Hover", "157:13", "304:381"], ["Dragover", "157:24", "304:392"], ["Uploading", "157:35", "304:403"], ["Success", "157:48", "304:416"], ["Error", "157:60", "304:428"]] }] },
+    { "page": "Dropdown", "node": "57:2", "parts": { "Default / Hover / Selected": "58:3", "Multi Select": "58:14", "Searchable / Empty": "58:30", "Searchable / Results": "2224:70" }, "sets": [{ "name": "Select Trigger", "en": "57:43", "ar": "303:40", "props": ["State"], "variants": [["Default", "57:5", "303:2"], ["Hover", "57:11", "303:8"], ["Focus", "57:17", "303:14"], ["Filled", "57:24", "303:21"], ["Disabled", "57:30", "303:27"], ["Error", "57:36", "303:33"]] }] },
+    { "page": "Loading", "node": "59:2", "sets": [
+      { "name": "Spinner", "en": "289:27", "ar": "314:54", "props": ["Size"], "variants": [["Small", "289:3", "314:30"], ["Medium", "289:9", "314:36"], ["Large", "289:15", "314:42"], ["XLarge", "289:21", "314:48"]] },
+      { "name": "Progress Bar", "en": "289:38", "ar": "314:65", "props": ["Type"], "variants": [["Determinate", "289:28", "314:55"], ["Indeterminate", "289:33", "314:60"]] },
+      { "name": "Skeleton Line", "en": "289:48", "ar": "314:75", "props": ["Width"], "variants": [["280", "289:39", "314:66"], ["220", "289:42", "314:69"], ["140", "289:45", "314:72"]] }
+    ] },
+    { "page": "Alert", "node": "60:2", "sets": [{ "name": "Alert", "en": "60:46", "ar": "257:71", "props": ["Style", "Intent"], "variants": [["Banner|Info", "60:5", "257:2"], ["Banner|Success", "60:15", "257:13"], ["Banner|Warning", "60:24", "257:23"], ["Banner|Error", "60:35", "257:35"], ["Toast|Info", "249:2", "257:47"], ["Toast|Success", "249:9", "257:53"], ["Toast|Warning", "249:16", "257:59"], ["Toast|Error", "249:23", "257:65"]] }] },
+    { "page": "Modal", "node": "62:2", "sets": [{ "name": "Modal", "en": "62:57", "ar": "309:116", "props": ["Size"], "variants": [["Small", "62:5", "309:64"], ["Medium", "62:18", "309:77"], ["Large", "62:31", "309:90"], ["Full-screen", "62:44", "309:103"]] }] },
+    { "page": "Navigation", "node": "65:2", "standalone": { "Pagination Menu": { "en": "2104:140", "ar": "2104:160" } }, "parts": { "Example — folded pagination": "2111:195", "Example — folded pagination (عربي)": "2111:285" }, "sets": [
+      { "name": "Tab Item", "en": "284:12", "ar": "312:62", "props": ["State"], "variants": [["Default", "284:3", "312:53"], ["Active", "284:7", "312:57"]] },
+      { "name": "Breadcrumb Item", "en": "284:21", "ar": "312:71", "props": ["State"], "variants": [["Default", "284:13", "312:63"], ["Current", "284:17", "312:67"]] },
+      { "name": "Pagination Item", "en": "284:34", "ar": "312:84", "props": ["State"], "variants": [["Default", "284:22", "312:72"], ["Active", "284:26", "312:76"], ["Disabled", "284:30", "312:80"], ["Ellipsis", "2104:121", "2104:141"], ["Ellipsis Open", "2104:125", "2104:145"]] },
+      { "name": "Stepper Step", "en": "284:53", "ar": "312:103", "props": ["State"], "variants": [["Complete", "284:35", "312:85"], ["Active", "284:41", "312:91"], ["Upcoming", "284:47", "312:97"]] }
+    ] },
+    { "page": "Data Display", "node": "68:2", "sets": [
+      { "name": "Card", "en": "281:27", "ar": "313:26", "props": ["State"], "variants": [["Default", "281:3", "313:2"], ["Hover", "281:11", "313:10"], ["Selected", "281:19", "313:18"]] },
+      { "name": "Tag", "en": "281:64", "ar": "313:63", "props": ["Intent", "Dismissible"], "variants": [["Default|true", "281:28", "313:27"], ["Default|false", "281:33", "313:32"], ["Success|true", "281:37", "313:36"], ["Success|false", "281:42", "313:41"], ["Warning|true", "281:46", "313:45"], ["Warning|false", "281:51", "313:50"], ["Neutral|true", "281:55", "313:54"], ["Neutral|false", "281:60", "313:59"]] },
+      { "name": "Accordion Item", "en": "281:77", "ar": "313:76", "props": ["State"], "variants": [["Expanded", "281:65", "313:64"], ["Collapsed", "281:72", "313:71"]] },
+      { "name": "Divider", "en": "281:88", "ar": "313:87", "props": ["Type"], "variants": [["Plain", "281:78", "313:77"], ["With Label", "281:82", "313:81"]] },
+      { "name": "Stat", "en": "281:107", "ar": "313:106", "props": ["Trend"], "variants": [["Positive", "281:89", "313:88"], ["Negative", "281:95", "313:94"], ["Neutral", "281:101", "313:100"]] }
+    ] },
+    { "page": "Date Picker", "node": "74:2", "parts": { "calendar-panel": "75:4", "calendar-panel-range": "76:3" }, "sets": [{ "name": "Date Field Trigger", "en": "74:53", "ar": "308:52", "props": ["State"], "variants": [["Default", "74:3", "308:2"], ["Hover", "74:11", "308:10"], ["Focus", "74:19", "308:18"], ["Filled", "74:28", "308:27"], ["Disabled", "74:36", "308:35"], ["Error", "74:44", "308:43"]] }] },
+    { "page": "Table", "node": "273:2", "parts": { "table-example": "273:55" }, "sets": [{ "name": "Table Row", "en": "273:52", "ar": "309:166", "props": ["State"], "variants": [["Default", "273:3", "309:117"], ["Hover", "273:19", "309:133"], ["Selected", "273:35", "309:149"]] }] },
+    { "page": "Time Picker", "node": "77:2", "parts": { "time-list-panel": "78:4", "time-spinner-panel": "78:16" }, "sets": [{ "name": "Time Field Trigger", "en": "77:53", "ar": "308:103", "props": ["State"], "variants": [["Default", "77:3", "308:53"], ["Hover", "77:11", "308:61"], ["Focus", "77:19", "308:69"], ["Filled", "77:28", "308:78"], ["Disabled", "77:36", "308:86"], ["Error", "77:44", "308:94"]] }] },
+    { "page": "Date & Time Picker", "node": "79:2", "parts": { "composite-popover": "80:4" }, "sets": [{ "name": "Date & Time Field Trigger", "en": "79:71", "ar": "308:172", "props": ["State"], "variants": [["Default", "79:3", "308:104"], ["Hover", "79:14", "308:115"], ["Focus", "79:25", "308:126"], ["Filled", "79:37", "308:138"], ["Disabled", "79:48", "308:149"], ["Error", "79:59", "308:160"]] }] },
+    { "page": "Navbar", "node": "278:2", "standalone": { "Navbar": { "en": "278:3", "ar": "311:16" } }, "parts": { "State / Navbar — Unread count on the bell": "2403:6546", "State / Navbar (عربي) — Unread count on the bell": "2403:6562", "State / Navbar — uploaded logo": "2467:133", "State / Navbar (عربي) — uploaded logo": "2467:161" }, "sets": [] },
+    { "page": "Media", "node": "82:2", "parts": { "avatar-group": "84:3", "video-player": "84:15", "carousel": "84:26", "gallery-tile": "84:39" }, "sets": [{ "name": "Image", "en": "82:20", "ar": "314:19", "props": ["State"], "variants": [["Default", "82:3", "314:2"], ["Loading", "82:9", "314:8"], ["Error", "82:13", "314:12"]] }] },
+    { "page": "Notifications", "node": "362:2", "parts": { "notification-panel": "364:32" }, "sets": [
+      { "name": "Notification Bell", "en": "362:23", "ar": "365:59", "props": ["State"], "variants": [["Default", "362:3", "365:39"], ["Hover", "362:9", "365:45"], ["Unread", "362:15", "365:51"]] },
+      { "name": "Notification Item", "en": "362:43", "ar": "365:77", "props": ["State"], "variants": [["Unread", "362:26", "365:60"], ["Read", "362:35", "365:69"]] }
+    ] },
+    { "page": "Menu", "node": "368:2", "parts": { "menu-panel": "368:26", "Menu Icons — 16px line": "2200:86", "Row Actions Menus — every table (kebab)": "2201:86" }, "sets": [{ "name": "Menu Item", "en": "368:23", "ar": "370:38", "props": ["State"], "variants": [["Default", "368:3", "370:18"], ["Hover", "368:8", "370:23"], ["Danger", "368:13", "370:28"], ["Danger Hover", "368:18", "370:33"]] }] },
+    { "page": "Empty State", "node": "374:2", "sets": [{ "name": "Empty State", "en": "374:35", "ar": "374:68", "props": ["Type"], "variants": [["Empty", "374:11", "374:44"], ["Error", "374:20", "374:53"], ["Loading", "374:26", "374:59"], ["Success", "374:34", "374:67"]] }] },
+    { "page": "Tooltip", "node": "383:2", "sets": [{ "name": "Tooltip", "en": "383:23", "ar": "384:22", "props": ["Placement"], "variants": [["Top", "383:3", "384:2"], ["Bottom", "383:8", "384:7"], ["Left", "383:13", "384:12"], ["Right", "383:18", "384:17"]] }] },
+    { "page": "Segmented Control", "node": "385:2", "parts": { "segmented-track": "385:12", "segmented-track-ar": "386:20" }, "sets": [{ "name": "Segment", "en": "385:11", "ar": "386:19", "props": ["State"], "variants": [["Default", "385:3", "386:11"], ["Selected", "385:7", "386:15"]] }] },
+    { "page": "Usage Meter", "node": "387:2", "sets": [{ "name": "Usage Meter", "en": "387:24", "ar": "388:23", "props": ["Level"], "variants": [["Normal", "387:3", "388:2"], ["Warning", "387:10", "388:9"], ["Critical", "387:17", "388:16"]] }] },
+    { "page": "Date Range Picker", "node": "392:2", "parts": { "calendar-panel-range": "393:2" }, "sets": [{ "name": "Date Range Trigger", "en": "392:53", "ar": "393:112", "props": ["State"], "variants": [["Default", "392:3", "393:62"], ["Hover", "392:11", "393:70"], ["Focus", "392:19", "393:78"], ["Filled", "392:28", "393:87"], ["Disabled", "392:36", "393:95"], ["Error", "392:44", "393:103"]] }] },
+    { "page": "Chart", "node": "394:2", "parts": { "bar-chart": "394:16", "bar-chart-ar": "395:15" }, "sets": [{ "name": "Sparkline", "en": "394:15", "ar": "395:14", "props": ["Trend"], "variants": [["Up", "394:3", "395:2"], ["Down", "394:7", "395:6"], ["Flat", "394:11", "395:10"]] }] },
+    { "page": "AI", "node": "399:2", "parts": { "ask-ai-fab": "402:3", "ask-ai-field": "402:6", "chat-widget-panel": "405:2", "ask-ai-fab-ar": "409:12", "ask-ai-field-ar": "409:15", "chat-widget-panel-ar": "411:11" }, "sets": [
+      { "name": "AI Badge", "en": "399:13", "ar": "408:21", "props": ["Size"], "variants": [["Small", "399:3", "408:11"], ["Medium", "399:8", "408:16"]] },
+      { "name": "AI Insight Card", "en": "401:19", "ar": "408:39", "props": ["Type"], "variants": [["Insight", "401:2", "408:22"], ["Suggestion", "401:9", "408:29"]] },
+      { "name": "Message Bubble", "en": "404:10", "ar": "409:29", "props": ["Sender"], "variants": [["Bot", "404:2", "409:21"], ["User", "404:6", "409:25"]] }
+    ] }
+  ],
+  "patterns": [
+    { "page": "Pattern — Search & Filter", "node": "111:2" },
+    { "page": "Pattern — Page States", "node": "117:2" },
+    { "page": "Pattern — Confirmation", "node": "120:2" },
+    { "page": "Pattern — Multi-step Form", "node": "123:2" },
+    { "page": "Pattern — Onboarding", "node": "253:2" }
+  ]
+}

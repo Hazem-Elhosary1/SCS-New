@@ -10,7 +10,7 @@ import {
   ScsSelectComponent,
   ScsSelectOption,
   ScsSkeletonComponent,
-  ScsStatusMarkComponent,
+  ScsBadgeComponent,
   ScsSwitchComponent,
   ScsTextFieldComponent,
   ScsTextareaComponent,
@@ -42,20 +42,19 @@ type Field = 'fullName' | 'email' | 'roleId' | 'mobile' | 'department' | 'jobTit
     ScsSelectComponent,
     ScsSwitchComponent,
     ScsTextareaComponent,
-    ScsStatusMarkComponent,
+    ScsBadgeComponent,
     ScsButtonDirective,
     ScsBannerComponent,
     ScsSkeletonComponent,
     ScsEmptyStateComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // The frames of this template draw a form's labels small, grey and regular, and an empty drop-down
+  // dark: the owner's choice of 14 Oct 2026, as the named option of spec 095 (research R13).
+  host: { class: 'scs-form--template' },
   styles: `
     :host {
       display: block;
-      /* The frames draw a form's labels small, grey and regular. */
-      --scs-field-label-weight: 400;
-      --scs-field-label-color: var(--scs-color-text-secondary);
-      --scs-select-empty-color: var(--scs-color-text-primary);
     }
     h1 {
       margin: 0;
@@ -274,7 +273,7 @@ type Field = 'fullName' | 'email' | 'roleId' | 'mobile' | 'department' | 'jobTit
                   <h2>{{ 'app.operators.form.permissions' | transloco }}</h2>
                   <ul class="marks">
                     @for (code of heldCodes(); track code) {
-                      <li><scs-status-mark tone="brand" [dot]="false">{{ access.nameOfPermission(code) }}</scs-status-mark></li>
+                      <li><scs-badge intent="brand" [dot]="false">{{ access.nameOfPermission(code) }}</scs-badge></li>
                     }
                   </ul>
                 </div>

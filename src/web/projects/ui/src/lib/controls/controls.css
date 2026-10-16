@@ -2,55 +2,186 @@
  * Looks for the directives in controls.ts. A directive has no stylesheet of its own, so each
  * app's styles.css imports this file. Appearance comes only from the app's token variables.
  */
+/*
+ * The button (design: Button — ops `8:37`, clinic `4252:2227`; spec 095). Six types (`data-variant`),
+ * three sizes (`data-size`) and the states the page draws: hover, pressed, focus, disabled, busy.
+ *
+ * Each look sets what its file draws through the `--scs-button-*` settings; their defaults are the
+ * button the clinic's screens had before spec 095, so a clinic screen does not change (FR-023). A
+ * button with no `size` keeps that earlier geometry; a size gives the design's. A specimen in the
+ * gallery shows hover, pressed and focus through its wrapper's `data-scs-state` (research R5).
+ */
 .scs-button {
+  --scs-button-bg: var(--scs-color-brand-default);
+  --scs-button-fg: var(--scs-color-brand-on-brand);
+  --scs-button-border: var(--scs-color-brand-default);
+  --scs-button-hover: var(--scs-button-primary-hover, var(--scs-color-brand-active));
+  --scs-button-pressed: var(--scs-button-primary-pressed, var(--scs-button-hover));
+  --scs-button-ring: var(--scs-button-focus-color, var(--scs-color-brand-default));
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--scs-spacing-sm);
-  min-block-size: 48px;
-  padding: var(--scs-spacing-10) var(--scs-spacing-md);
-  border: 1px solid var(--scs-color-brand-default);
-  border-radius: var(--scs-radius-md);
-  background: var(--scs-color-brand-default);
-  color: var(--scs-color-brand-on-brand);
+  min-block-size: max(var(--scs-touch, 0px), var(--scs-button-height, 48px));
+  padding: var(--scs-button-pad-block, var(--scs-spacing-10)) var(--scs-button-pad, var(--scs-spacing-md));
+  border: 1px solid var(--scs-button-border);
+  border-radius: var(--scs-button-radius, var(--scs-radius-md));
+  background: var(--scs-button-bg);
+  color: var(--scs-button-fg);
+  box-shadow: var(--scs-button-shadow, none);
   font: inherit;
-  font-size: var(--scs-text-body-lg);
-  font-weight: 600;
+  font-size: var(--scs-button-text, var(--scs-text-body-lg));
+  font-weight: var(--scs-button-weight, 600);
   text-decoration: none;
   cursor: pointer;
 }
 
-.scs-button:hover:not(:disabled) {
-  background: var(--scs-color-brand-active);
-  border-color: var(--scs-color-brand-active);
+/* The design's sizes: 32 · 40 · 48 high, 13 · 14 · 15 text. */
+.scs-button[data-size] {
+  --scs-button-pad-block: 0px;
+}
+.scs-button[data-size='sm'] {
+  --scs-button-height: 32px;
+  --scs-button-pad: 12px;
+  --scs-button-text: 13px;
+  --scs-button-radius: var(--scs-button-radius-sm, var(--scs-radius-sm));
+  --scs-button-spinner: 14px;
+  gap: 6px;
+}
+.scs-button[data-size='md'] {
+  --scs-button-height: 40px;
+  --scs-button-pad: 16px;
+  --scs-button-text: 14px;
+}
+.scs-button[data-size='lg'] {
+  --scs-button-height: 48px;
+  --scs-button-pad: 20px;
+  --scs-button-text: 15px;
+  --scs-button-spinner: 18px;
 }
 
 .scs-button[data-variant='secondary'] {
-  background: var(--scs-color-bg-surface);
-  color: var(--scs-color-text-primary);
-  border-color: var(--scs-color-border-default);
-  box-shadow: var(--scs-shadow-subtle);
-  font-weight: 500;
+  --scs-button-bg: var(--scs-color-bg-surface);
+  --scs-button-fg: var(--scs-color-text-primary);
+  --scs-button-border: var(--scs-color-border-default);
+  --scs-button-hover: var(--scs-button-secondary-hover, var(--scs-color-bg-surface-secondary));
+  --scs-button-pressed: var(--scs-button-secondary-pressed, var(--scs-button-hover));
+  box-shadow: var(--scs-button-secondary-shadow, var(--scs-shadow-subtle));
+  font-weight: var(--scs-button-secondary-weight, 500);
+}
+.scs-button[data-variant='tertiary'] {
+  --scs-button-bg: var(--scs-color-brand-subtle);
+  --scs-button-fg: var(--scs-color-text-link);
+  --scs-button-border: var(--scs-color-brand-subtle);
+  --scs-button-hover: var(--scs-button-tertiary-hover, var(--scs-color-brand-subtle));
+  --scs-button-pressed: var(--scs-button-tertiary-pressed, var(--scs-button-hover));
+}
+.scs-button[data-variant='ghost'] {
+  --scs-button-bg: transparent;
+  --scs-button-fg: var(--scs-color-text-primary);
+  --scs-button-border: transparent;
+  --scs-button-hover: var(--scs-button-ghost-hover, var(--scs-color-bg-surface-secondary));
+  --scs-button-pressed: var(--scs-button-ghost-pressed, var(--scs-button-hover));
+}
+.scs-button[data-variant='destructive'] {
+  --scs-button-bg: var(--scs-color-feedback-danger-icon);
+  --scs-button-fg: var(--scs-color-text-inverse);
+  --scs-button-border: var(--scs-color-feedback-danger-icon);
+  --scs-button-hover: var(--scs-color-danger-hover, var(--scs-color-feedback-danger-icon));
+  --scs-button-pressed: var(--scs-color-danger-active, var(--scs-button-hover));
+  --scs-button-ring: var(--scs-color-feedback-danger-icon);
+}
+/* The link type: words only, underlined, in the link colour (13 · 16 · 19 by size in the design). */
+.scs-button[data-variant='link'] {
+  --scs-button-bg: transparent;
+  --scs-button-fg: var(--scs-color-text-link);
+  --scs-button-border: transparent;
+  --scs-button-hover: transparent;
+  --scs-button-pressed: transparent;
+  min-block-size: 0;
+  padding: 0;
+  text-decoration: underline;
+  font-size: var(--scs-button-text, var(--scs-text-body));
+}
+.scs-button[data-variant='link'][data-size='md'] {
+  --scs-button-text: 16px;
+}
+.scs-button[data-variant='link'][data-size='lg'] {
+  --scs-button-text: 19px;
 }
 
-.scs-button[data-variant='secondary']:hover:not(:disabled) {
-  background: var(--scs-color-bg-surface-secondary);
-  border-color: var(--scs-color-border-default);
+.scs-button:hover:not(:disabled),
+[data-scs-state~='hover'] > .scs-button {
+  background: var(--scs-button-hover);
+  border-color: var(--scs-button-hover);
+}
+.scs-button:active:not(:disabled),
+[data-scs-state~='pressed'] > .scs-button {
+  background: var(--scs-button-pressed);
+  border-color: var(--scs-button-pressed);
+}
+.scs-button[data-variant='secondary']:hover:not(:disabled),
+[data-scs-state~='hover'] > .scs-button[data-variant='secondary'],
+.scs-button[data-variant='secondary']:active:not(:disabled),
+[data-scs-state~='pressed'] > .scs-button[data-variant='secondary'] {
+  border-color: var(--scs-button-border);
+}
+.scs-button[data-variant='link']:hover:not(:disabled),
+[data-scs-state~='hover'] > .scs-button[data-variant='link'] {
+  color: var(--scs-button-link-hover, var(--scs-color-text-link));
+  border-color: transparent;
+}
+.scs-button[data-variant='link']:active:not(:disabled),
+[data-scs-state~='pressed'] > .scs-button[data-variant='link'] {
+  color: var(--scs-button-link-pressed, var(--scs-color-text-link));
+  border-color: transparent;
 }
 
-.scs-button:disabled {
-  opacity: 0.7;
+.scs-button:disabled:not([aria-busy='true']) {
+  opacity: var(--scs-button-disabled-opacity, 0.7);
+  background: var(--scs-button-disabled-bg, var(--scs-button-bg));
+  border-color: var(--scs-button-disabled-bg, var(--scs-button-border));
+  color: var(--scs-button-disabled-fg, var(--scs-button-fg));
   cursor: default;
 }
+.scs-button[data-variant='ghost']:disabled:not([aria-busy='true']),
+.scs-button[data-variant='link']:disabled:not([aria-busy='true']) {
+  background: transparent;
+  border-color: transparent;
+}
+/* A look whose ring sits alone in the middle places it against the button; the clinic's needs no
+   place, and an unplaced button keeps its screens drawn exactly as before (FR-023). */
+.scs-button[aria-busy='true'] {
+  position: var(--scs-button-busy-anchor, static);
+  opacity: var(--scs-button-busy-opacity, 0.7);
+  min-inline-size: calc(2 * var(--scs-button-pad, var(--scs-spacing-md)) + var(--scs-button-spinner, 16px));
+  color: var(--scs-button-busy-words, var(--scs-button-fg));
+  cursor: progress;
+}
 
-/* While the button's work is under way a small ring turns before its words. */
+/*
+ * While the button's work is under way a ring turns: before its words (the clinic's drawing), or
+ * alone in the middle with the words kept but unseen, so the button keeps its width and its name
+ * (the operators' drawing: --scs-button-busy-words: transparent; --scs-button-busy-ring: absolute;
+ * --scs-button-busy-margin: auto).
+ */
 .scs-button[aria-busy='true']::before {
   content: '';
+  position: var(--scs-button-busy-ring, static);
+  inset: 0;
+  margin: var(--scs-button-busy-margin, 0);
   flex: none;
-  inline-size: 16px;
-  block-size: 16px;
-  border: 2px solid currentColor;
-  border-inline-end-color: transparent;
+  box-sizing: border-box;
+  inline-size: var(--scs-button-spinner, 16px);
+  block-size: var(--scs-button-spinner, 16px);
+  /* The track is the type's colour at a share the look sets (100% and an open gap: the clinic's).
+     Every side is set by itself: a shorthand holding a variable would hide the arc's colour. */
+  border-width: 2px;
+  border-style: solid;
+  border-top-color: var(--scs-button-fg);
+  border-bottom-color: color-mix(in srgb, var(--scs-button-fg) var(--scs-button-spinner-track, 100%), transparent);
+  border-inline-start-color: color-mix(in srgb, var(--scs-button-fg) var(--scs-button-spinner-track, 100%), transparent);
+  border-inline-end-color: color-mix(in srgb, var(--scs-button-fg) var(--scs-button-spinner-gap, 0%), transparent);
   border-radius: var(--scs-radius-full);
   animation: scs-turn 0.8s linear infinite;
 }
@@ -67,7 +198,20 @@
   }
 }
 
+/* An icon-only button is as wide as it is high; it takes its name from `label`. */
+.scs-button[data-icon-only] {
+  min-inline-size: max(var(--scs-touch, 0px), var(--scs-button-height, 48px));
+  padding-inline: 0;
+}
+
+/* Words that are pressed keep their line; on a phone the room to press them is made around them. */
 .scs-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: var(--scs-touch, 0px);
+  min-inline-size: var(--scs-touch, 0px);
+  margin-block: min(0px, calc((1lh - var(--scs-touch, 0px)) / 2));
   padding: 0;
   border: 0;
   background: none;
@@ -92,6 +236,19 @@
 }
 
 .scs-button:focus-visible,
+[data-scs-state~='focus'] > .scs-button {
+  outline: 2px solid var(--scs-button-ring);
+  outline-offset: var(--scs-button-focus-offset, 2px);
+}
+.scs-button[data-variant='secondary']:focus-visible,
+[data-scs-state~='focus'] > .scs-button[data-variant='secondary'] {
+  border-color: var(--scs-button-secondary-focus-border, var(--scs-button-border));
+}
+.scs-button[data-variant='link']:focus-visible,
+[data-scs-state~='focus'] > .scs-button[data-variant='link'] {
+  border-color: transparent;
+}
+
 .scs-link:focus-visible {
   outline: 2px solid var(--scs-color-brand-default);
   outline-offset: 2px;
@@ -105,8 +262,8 @@
   display: inline-grid;
   place-items: center;
   flex: none;
-  inline-size: 32px;
-  block-size: 32px;
+  inline-size: max(var(--scs-touch, 0px), 32px);
+  block-size: max(var(--scs-touch, 0px), 32px);
   padding: 0;
   border: 1px solid var(--scs-color-border-default);
   border-radius: var(--scs-radius-sm);
@@ -125,4 +282,72 @@
 .scs-icon-button:focus-visible {
   outline: 2px solid var(--scs-color-brand-default);
   outline-offset: 1px;
+}
+
+/*
+ * One button of a table's paging (design: Navigation — Pagination Item, 284:34 / 312:84; the
+ * clinic's 4252:60984): a page, the current page, a page that cannot be reached, and "…" with its
+ * menu. The defaults are the paging before spec 095; each look sets its own with --scs-pager-*.
+ */
+.scs-page-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  box-sizing: border-box;
+  min-inline-size: var(--scs-pager-size, 32px);
+  block-size: var(--scs-pager-size, 32px);
+  padding-inline: var(--scs-spacing-6);
+  border: 0;
+  border-radius: var(--scs-pager-radius, var(--scs-radius-sm));
+  background: var(--scs-pager-bg, none);
+  color: var(--scs-pager-text, var(--scs-color-text-secondary));
+  font: inherit;
+  font-size: var(--scs-pager-font, inherit);
+  cursor: pointer;
+}
+
+.scs-page-item[aria-current='page'] {
+  background: var(--scs-color-brand-default);
+  color: var(--scs-color-brand-on-brand);
+  font-weight: var(--scs-pager-on-weight, 600);
+}
+
+.scs-page-item:hover:not(:disabled):not([aria-current]),
+[data-scs-state~='hover'] > .scs-page-item {
+  background: var(--scs-pager-hover-bg, var(--scs-color-bg-surface-secondary));
+}
+
+.scs-page-item:disabled {
+  opacity: var(--scs-pager-off-opacity, 0.5);
+  color: var(--scs-pager-off-color, var(--scs-pager-text, var(--scs-color-text-secondary)));
+  cursor: default;
+}
+
+.scs-page-item:focus-visible {
+  outline: 2px solid var(--scs-color-brand-default);
+  outline-offset: 2px;
+}
+
+/* "…": a hairline in the operators' look, purple while its menu is open. */
+.scs-page-item.more {
+  min-inline-size: var(--scs-pager-more-width, var(--scs-pager-size, 32px));
+  border: var(--scs-pager-more-border, 0px) solid var(--scs-color-border-control, var(--scs-color-border-default));
+}
+
+.scs-page-item.more[aria-expanded='true'] {
+  border-color: var(--scs-color-brand-default);
+}
+
+.scs-page-item.more scs-icon {
+  display: var(--scs-pager-more-mark, none);
+  color: var(--scs-color-icon-default);
+}
+
+/* 32 at a desk; 40 where a finger presses them. */
+@media (max-width: 720px) {
+  .scs-page-item {
+    min-inline-size: max(40px, var(--scs-pager-size, 32px));
+    block-size: max(40px, var(--scs-pager-size, 32px));
+  }
 }

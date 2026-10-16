@@ -236,12 +236,3 @@ export class OperatorsService {
   }
 }
 
-/** The first letters of the first two words of a name, for the round mark of a row. */
-export function initials(name: string): string {
-  return name
-    .trim()
-    .split(/\s+/u)
-    .slice(0, 2)
-    .map((word) => [...word][0] ?? '')
-    .join('');
-}

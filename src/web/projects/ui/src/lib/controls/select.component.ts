@@ -6,10 +6,12 @@ import {
   booleanAttribute,
   computed,
   input,
+  linkedSignal,
   model,
   signal,
   viewChild,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { ScsIconComponent } from '../icon/icon.component';
 
 let nextId = 0;
@@ -37,7 +39,7 @@ interface Row extends ScsSelectOption {
  */
 @Component({
   selector: 'scs-select',
-  imports: [ScsIconComponent, CdkOverlayOrigin, CdkConnectedOverlay],
+  imports: [ScsIconComponent, CdkOverlayOrigin, CdkConnectedOverlay, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -51,7 +53,7 @@ interface Row extends ScsSelectOption {
       color: var(--scs-field-label-color, var(--scs-color-text-primary));
     }
     :host(.off) .name {
-      color: var(--scs-color-text-tertiary);
+      color: var(--scs-field-disabled-text, var(--scs-color-text-tertiary));
     }
     .trigger {
       position: relative;
@@ -70,12 +72,14 @@ interface Row extends ScsSelectOption {
       text-align: start;
       cursor: pointer;
     }
-    .trigger:hover:not(:disabled) {
+    .trigger:hover:not(:disabled),
+    :host-context([data-scs-state~='hover']) .trigger {
       border-color: var(--scs-color-icon-default);
     }
     /* Focus and open: a 1.5 purple border, and a 2 purple ring 4 outside it (Select Trigger / Focus). */
     .trigger:focus-visible,
-    .trigger[aria-expanded='true'] {
+    .trigger[aria-expanded='true'],
+    :host-context([data-scs-state~='focus']) .trigger {
       border-color: var(--scs-color-brand-default);
       box-shadow: inset 0 0 0 0.5px var(--scs-color-brand-default);
       outline: 2px solid var(--scs-color-brand-default);
@@ -98,10 +102,10 @@ interface Row extends ScsSelectOption {
       white-space: nowrap;
     }
     .value.empty {
-      color: var(--scs-select-empty-color, var(--scs-color-text-tertiary));
+      color: var(--scs-select-empty-color, var(--scs-color-text-placeholder));
     }
     .trigger:disabled .value {
-      color: var(--scs-color-text-tertiary);
+      color: var(--scs-field-disabled-text, var(--scs-color-text-tertiary));
     }
     .chevron {
       flex: none;
@@ -114,11 +118,11 @@ interface Row extends ScsSelectOption {
     .hint,
     .error {
       margin: var(--scs-spacing-xs) 0 0;
-      font-size: var(--scs-text-label);
+      font-size: var(--scs-field-message-size, var(--scs-text-label));
       color: var(--scs-color-text-secondary);
     }
     .error {
-      color: var(--scs-color-feedback-danger-text);
+      color: var(--scs-field-error-color, var(--scs-color-feedback-danger-text));
     }
     /* The open list (Menu Panel): white, rounded 10, a hairline and a soft shadow, 8 inside. */
     .panel {
@@ -181,6 +185,41 @@ interface Row extends ScsSelectOption {
       color: var(--scs-color-text-tertiary);
       cursor: not-allowed;
     }
+    /* Several may be chosen: a chosen row keeps its colours and its box is ticked (58:14). */
+    [aria-multiselectable='true'] [role='option'][aria-selected='true'] {
+      background: none;
+      color: var(--scs-color-text-primary);
+      font-weight: 400;
+    }
+    [aria-multiselectable='true'] [role='option'][aria-selected='true'][data-active='true'] {
+      background: var(--scs-color-bg-muted, var(--scs-color-bg-surface-secondary));
+    }
+    .box {
+      display: grid;
+      place-items: center;
+      flex: none;
+      box-sizing: border-box;
+      inline-size: 16px;
+      block-size: 16px;
+      border: 1.5px solid var(--scs-check-border, var(--scs-color-border-control, var(--scs-color-border-default)));
+      border-radius: 4px;
+      background: var(--scs-color-bg-surface);
+      color: var(--scs-color-brand-on-brand);
+    }
+    .box svg {
+      visibility: hidden;
+    }
+    [aria-selected='true'] .box {
+      border-color: var(--scs-color-brand-default);
+      background: var(--scs-color-brand-default);
+    }
+    [aria-selected='true'] .box svg {
+      visibility: visible;
+    }
+    /* The open list drawn in place, under the trigger (the gallery's still specimens). */
+    .inline {
+      margin-block-start: 4px;
+    }
     .words {
       flex: 1;
       display: flex;
@@ -224,7 +263,7 @@ interface Row extends ScsSelectOption {
       (click)="toggle()"
       (keydown)="triggerKey($event)"
     >
-      <span class="value" [class.empty]="chosen() === null" [id]="id + '-value'">{{ chosen()?.label ?? placeholder() }}</span>
+      <span class="value" [class.empty]="shownLabel() === ''" [id]="id + '-value'">{{ shownLabel() || placeholder() }}</span>
       <scs-icon class="chevron" name="chevron-down" [size]="18" />
     </button>
 
@@ -233,12 +272,25 @@ interface Row extends ScsSelectOption {
       [cdkConnectedOverlayOrigin]="origin"
       [cdkConnectedOverlayOpen]="open()"
       [cdkConnectedOverlayPositions]="positions"
+      [cdkConnectedOverlayPush]="true"
+      [cdkConnectedOverlayViewportMargin]="8"
       [cdkConnectedOverlayWidth]="width()"
       (overlayOutsideClick)="pressedOutside($event)"
       (detach)="close(false)"
       (attach)="opened()"
     >
-      <div class="panel" [style.inline-size.px]="width()" [attr.data-testid]="(testId() || 'select') + '-panel'">
+      <ng-container [ngTemplateOutlet]="panel" />
+    </ng-template>
+    @if (listInline()) {
+      <div class="inline"><ng-container [ngTemplateOutlet]="panel" /></div>
+    }
+
+    <ng-template #panel>
+      <div
+        class="panel"
+        [style.inline-size.px]="listInline() ? null : width()"
+        [attr.data-testid]="(testId() || 'select') + '-panel'"
+      >
         @if (searchable()) {
           <input
             #search
@@ -257,6 +309,7 @@ interface Row extends ScsSelectOption {
         <ul
           #list
           role="listbox"
+          [attr.aria-multiselectable]="multiple() ? 'true' : null"
           [id]="id + '-list'"
           [attr.aria-labelledby]="id + '-label'"
           [attr.aria-activedescendant]="activeId()"
@@ -268,7 +321,7 @@ interface Row extends ScsSelectOption {
               role="option"
               [id]="row.id"
               [attr.data-value]="row.value"
-              [attr.aria-selected]="row.value === value()"
+              [attr.aria-selected]="isChosen(row.value)"
               [attr.aria-disabled]="row.disabled ? 'true' : null"
               [attr.data-active]="index === active()"
               (pointerenter)="active.set(index)"
@@ -276,13 +329,20 @@ interface Row extends ScsSelectOption {
               (click)="choose(row)"
               (keydown.enter)="choose(row)"
             >
+              @if (multiple()) {
+                <span class="box" aria-hidden="true">
+                  <svg width="10" height="9" viewBox="0 0 10 9" fill="none">
+                    <path d="M1 4.6 3.7 7.2 9 1.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </span>
+              }
               <span class="words">
                 <span>{{ row.label }}</span>
                 @if (row.reason) {
                   <span class="reason">{{ row.reason }}</span>
                 }
               </span>
-              @if (row.value === value() && row.value !== '') {
+              @if (!multiple() && row.value === value() && row.value !== '') {
                 <scs-icon name="check" [size]="16" />
               }
             </li>
@@ -319,9 +379,17 @@ export class ScsSelectComponent {
   readonly searchLabel = input('');
   /** What the list says when the search finds nothing: «لا توجد نتائج» · "No results found". */
   readonly emptyLabel = input('');
+  /** Several may be chosen (the page's "Multi Select"): each row has its box, and the list stays open. */
+  readonly multiple = input(false, { transform: booleanAttribute });
+  /** The chosen values when `multiple`. */
+  readonly values = model<readonly string[]>([]);
+  /** Shows the open list in place under the trigger, still (the gallery's specimens of the list). */
+  readonly listInline = input(false, { transform: booleanAttribute });
+  /** What the search box holds at first (the gallery's still specimen of a search with results). */
+  readonly searchText = input('');
 
   protected readonly open = signal(false);
-  protected readonly query = signal('');
+  protected readonly query = linkedSignal(() => this.searchText());
   protected readonly active = signal(-1);
   protected readonly width = signal(0);
 
@@ -337,10 +405,26 @@ export class ScsSelectComponent {
 
   protected readonly chosen = computed(() => this.options().find((option) => option.value === this.value() && option.value !== '') ?? null);
 
+  /** What the trigger says: the chosen label, or every chosen label when several may be. */
+  protected readonly shownLabel = computed(() =>
+    this.multiple()
+      ? this.options()
+          .filter((option) => this.values().includes(option.value))
+          .map((option) => option.label)
+          .join(globalThis.document?.documentElement.dir === 'rtl' ? '، ' : ', ')
+      : (this.chosen()?.label ?? ''),
+  );
+
+  protected isChosen(value: string): boolean {
+    return this.multiple() ? this.values().includes(value) : value === this.value();
+  }
+
   protected readonly rows = computed<Row[]>(() => {
     const words = this.query().trim().toLocaleLowerCase();
     const all: ScsSelectOption[] =
-      this.placeholder() && !this.required() ? [{ value: '', label: this.placeholder() }, ...this.options()] : [...this.options()];
+      this.placeholder() && !this.required() && !this.multiple()
+        ? [{ value: '', label: this.placeholder() }, ...this.options()]
+        : [...this.options()];
     return all
       .filter((option) => words === '' || option.label.toLocaleLowerCase().includes(words))
       .map((option, index) => ({ ...option, id: `${this.id}-option-${index}` }));
@@ -397,6 +481,11 @@ export class ScsSelectComponent {
 
   protected choose(row: Row): void {
     if (row.disabled) {
+      return;
+    }
+    if (this.multiple()) {
+      const values = this.values();
+      this.values.set(values.includes(row.value) ? values.filter((value) => value !== row.value) : [...values, row.value]);
       return;
     }
     this.value.set(row.value);

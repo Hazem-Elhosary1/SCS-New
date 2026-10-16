@@ -191,6 +191,18 @@ for (const language of ['ar', 'en'] as const) {
       await expect(page.getByTestId('operator-row')).toHaveCount(1);
       await expect(page.getByTestId('operator-name')).toHaveText('منى إبراهيم');
       expect(platform.calls.filter((call) => call === 'GET /v1/ops/operators').length).toBeGreaterThan(2);
+
+      // What is filtered shows twice, as the Search & Filter pattern draws it: the count on the
+      // button (read with it) and a chip for each, which takes that filter away alone.
+      await expect(page.getByTestId('list-filter-count')).toHaveText('1');
+      await expect(page.getByTestId('list-filter')).toHaveAccessibleDescription(ar ? 'فلتر واحد مطبّق' : '1 filter applied');
+      await expect(page.getByTestId('applied-chip')).toHaveText([ar ? 'الحالة: معطل' : 'Status: Suspended']);
+      await expect(page.getByTestId('clear-all')).toHaveText(ar ? 'مسح الكل' : 'Clear all');
+      await look(page, language, 'operators-filtered');
+      await page.getByTestId('applied-chip').getByTestId('tag-remove').click();
+      await expect(page.getByTestId('applied-chip')).toHaveCount(0);
+      await expect(page.getByTestId('list-filter-count')).toHaveCount(0);
+      await expect(page.getByTestId('operator-row')).toHaveCount(8);
     });
 
     test('says so while loading, when it failed, and when there is nobody', async ({ page }) => {

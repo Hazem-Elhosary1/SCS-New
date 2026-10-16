@@ -12,7 +12,7 @@ import {
 import { browserLanguage, startInBrowserLanguage } from './i18n/first-language';
 import { passwordRules } from './password/password.pages';
 import { agoLabel } from './profile/profile.page';
-import { initialsOf } from './shell/ops-shell.component';
+import { initialsOf } from 'ui';
 import { OPS_SECTIONS } from './shell/sections';
 
 const problem = (status: number, code: string, extra: Record<string, unknown> = {}) =>

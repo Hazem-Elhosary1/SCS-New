@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { ScsBannerComponent, ScsButtonDirective } from '../controls/controls';
-import { ScsEmptyStateComponent, ScsSkeletonComponent } from '../list/list';
+import { ScsEmptyStateComponent } from '../list/empty-state.component';
+import { ScsSkeletonComponent } from '../list/skeleton.component';
 
 /** The six non-content states every screen has (SH-097, contracts/frontend-runtime.md §5). */
 export type ScsState = 'loading' | 'empty' | 'error' | 'offline' | 'view-only' | 'not-in-plan';

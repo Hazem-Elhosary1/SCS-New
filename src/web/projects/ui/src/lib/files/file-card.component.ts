@@ -72,12 +72,26 @@ const MARKS: Record<ScsFileCardType, ScsIconName> = {
       min-block-size: 73px;
       padding: var(--scs-spacing-12) var(--scs-spacing-md);
       border: 1px solid var(--scs-color-border-default);
-      border-radius: var(--scs-radius-lg, 12px);
+      border-radius: var(--scs-file-card-radius, var(--scs-radius-lg, 12px));
       background: var(--scs-color-bg-surface);
+    }
+    :host([data-state='uploading']) {
+      border-color: var(--scs-file-card-uploading-border, var(--scs-color-border-default));
+      background: var(--scs-file-card-uploading-bg, var(--scs-color-bg-surface));
+    }
+    :host([data-state='ready']) {
+      border-color: var(--scs-file-card-ready-border, var(--scs-color-border-default));
+      background: var(--scs-file-card-ready-bg, var(--scs-color-bg-surface));
+    }
+    :host([data-state='ready']) .line {
+      color: var(--scs-file-card-ready-border, var(--scs-color-text-tertiary));
     }
     :host([data-state='error']),
     :host([data-state='refused']) {
       border-color: var(--scs-color-feedback-danger-icon);
+    }
+    :host([data-state='error']) {
+      background: var(--scs-file-card-error-bg, var(--scs-color-bg-surface));
     }
     .mark {
       display: grid;

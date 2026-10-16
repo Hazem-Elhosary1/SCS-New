@@ -13,7 +13,7 @@ import {
   ScsMenuDirective,
   ScsMenuItemDirective,
   ScsSkeletonComponent,
-  ScsStatusMarkComponent,
+  ScsBadgeComponent,
   ScsTableDirective,
   ScsTableFooterComponent,
 } from 'ui';
@@ -41,7 +41,7 @@ import { TABLE_NARROW } from './table-narrow';
     ScsTableFooterComponent,
     ScsSkeletonComponent,
     ScsEmptyStateComponent,
-    ScsStatusMarkComponent,
+    ScsBadgeComponent,
     ScsButtonDirective,
     ScsIconComponent,
     ScsMenuDirective,
@@ -198,9 +198,9 @@ import { TABLE_NARROW } from './table-narrow';
                       </td>
                       <td class="quiet" data-testid="role-operators" [attr.data-label]="'app.operators.roles.column.operators' | transloco">{{ count('operators', role.operators) }}</td>
                       <td [attr.data-label]="'app.operators.roles.column.state' | transloco">
-                        <scs-status-mark [tone]="role.inUse ? 'success' : 'neutral'" data-testid="role-state">{{
+                        <scs-badge [intent]="role.inUse ? 'success' : 'neutral'" data-testid="role-state">{{
                           (role.inUse ? 'app.operators.roles.inUse' : 'app.operators.roles.notInUse') | transloco
-                        }}</scs-status-mark>
+                        }}</scs-badge>
                       </td>
                       <td data-testid="role-permissions" [attr.data-label]="'app.operators.roles.column.permissions' | transloco">{{ count('permissions', role.permissions) }}</td>
                       <td data-kind="menu">

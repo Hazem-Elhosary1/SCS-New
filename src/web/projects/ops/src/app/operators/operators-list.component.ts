@@ -4,6 +4,9 @@ import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { LanguageService } from 'core';
 import {
+  ScsAppliedChip,
+  ScsAppliedChipsComponent,
+  ScsAvatarComponent,
   ScsButtonDirective,
   ScsCardComponent,
   ScsEmptyStateComponent,
@@ -16,17 +19,17 @@ import {
   ScsSelectComponent,
   ScsSelectOption,
   ScsSkeletonComponent,
-  ScsStatusMarkComponent,
-  ScsStatusTone,
+  ScsBadgeComponent,
+  ScsBadgeIntent,
   ScsTableDirective,
   ScsTableFooterComponent,
 } from 'ui';
 import { OpsAccess, OpsCan } from '../access/ops-access.service';
 import { opsNumber, opsPercent, opsRelative } from '../i18n/ops-format';
-import { OperatorState, OperatorsPageView, OperatorsService, initials } from './operators.service';
+import { OperatorState, OperatorsPageView, OperatorsService } from './operators.service';
 import { TABLE_NARROW } from './table-narrow';
 
-export const STATE_TONES: Record<OperatorState, ScsStatusTone> = {
+export const STATE_TONES: Record<OperatorState, ScsBadgeIntent> = {
   active: 'success',
   invited: 'warning',
   suspended: 'neutral',
@@ -52,7 +55,9 @@ export const STATE_TONES: Record<OperatorState, ScsStatusTone> = {
     ScsTableFooterComponent,
     ScsSkeletonComponent,
     ScsEmptyStateComponent,
-    ScsStatusMarkComponent,
+    ScsAppliedChipsComponent,
+    ScsAvatarComponent,
+    ScsBadgeComponent,
     ScsButtonDirective,
     ScsIconComponent,
     ScsMenuDirective,
@@ -78,18 +83,6 @@ export const STATE_TONES: Record<OperatorState, ScsStatusTone> = {
       align-items: center;
       gap: var(--scs-spacing-12);
       min-inline-size: 180px;
-    }
-    .initials {
-      display: grid;
-      place-items: center;
-      flex: none;
-      inline-size: 28px;
-      block-size: 28px;
-      border-radius: var(--scs-radius-full);
-      background: var(--scs-color-brand-subtle);
-      color: var(--scs-color-brand-default);
-      font-size: var(--scs-text-caption);
-      font-weight: 600;
     }
     .name {
       color: var(--scs-color-text-primary);
@@ -182,6 +175,8 @@ export const STATE_TONES: Record<OperatorState, ScsStatusTone> = {
         [searchPlaceholder]="'app.operators.list.search' | transloco"
         [clearLabel]="'app.operators.list.clearSearch' | transloco"
         [filterLabel]="'app.operators.list.filter' | transloco"
+        [filterCount]="applied().length"
+        [filterCountLabel]="applied().length === 0 ? '' : ('app.operators.list.applied.' + applied().length | transloco)"
       >
         <scs-filter-popover
           [heading]="'app.operators.list.filterTitle' | transloco"
@@ -211,6 +206,15 @@ export const STATE_TONES: Record<OperatorState, ScsStatusTone> = {
           />
         </scs-filter-popover>
       </scs-list-toolbar>
+      @if (applied().length > 0) {
+        <scs-applied-chips
+          [chips]="applied()"
+          [clearAllLabel]="'app.operators.list.clearAll' | transloco"
+          [removeLabel]="'app.operators.list.removeFilter' | transloco"
+          (remove)="removeFilter($event)"
+          (clearAll)="clearFilters()"
+        />
+      }
     }
 
     <scs-card>
@@ -278,7 +282,7 @@ export const STATE_TONES: Record<OperatorState, ScsStatusTone> = {
                     <tr data-testid="operator-row" [attr.data-marked]="marked() === row.id">
                       <td>
                         <span class="who">
-                          <span class="initials" aria-hidden="true">{{ initialsOf(row.fullName) }}</span>
+                          <scs-avatar size="sm" [name]="row.fullName" aria-hidden="true" />
                           <span>
                             <a class="name" data-testid="operator-name" [routerLink]="['/operators', row.id]"
                               ><bdi>{{ row.fullName }}</bdi></a
@@ -294,9 +298,9 @@ export const STATE_TONES: Record<OperatorState, ScsStatusTone> = {
                         {{ row.lastSignInAtUtc === null ? ('app.operators.never' | transloco) : lastSignIn(row.lastSignInAtUtc) }}
                       </td>
                       <td [attr.data-label]="'app.operators.list.column.state' | transloco">
-                        <scs-status-mark [tone]="tones[row.state]" data-testid="operator-state">{{
+                        <scs-badge [intent]="tones[row.state]" data-testid="operator-state">{{
                           'app.operators.state.' + row.state | transloco
-                        }}</scs-status-mark>
+                        }}</scs-badge>
                       </td>
                       <td data-testid="operator-two-step" [attr.data-label]="'app.operators.list.column.twoStep' | transloco">
                         {{ (row.twoStep ? 'app.operators.twoStep.on' : 'app.operators.twoStep.off') | transloco }}
@@ -390,6 +394,19 @@ export class OperatorsListComponent {
     (this.view()?.filters.roles ?? []).map((role) => ({ value: role.id ?? '', label: this.access.nameOfRole(role) })),
   );
 
+  /** What is filtered, one chip each: «الحالة: نشطة», «الدور: وكيل دعم فني». */
+  protected readonly applied = computed<ScsAppliedChip[]>(() => {
+    const chips: ScsAppliedChip[] = [];
+    const named = (options: ScsSelectOption[], value: string) => options.find((option) => option.value === value)?.label ?? value;
+    if (this.stateFilter()) {
+      chips.push({ key: 'state', label: `${this.words.translate('app.operators.list.filterState')}: ${named(this.stateOptions(), this.stateFilter())}` });
+    }
+    if (this.roleFilter()) {
+      chips.push({ key: 'role', label: `${this.words.translate('app.operators.list.filterRole')}: ${named(this.roleOptions(), this.roleFilter())}` });
+    }
+    return chips;
+  });
+
   /** Nobody at all — not "nobody matching". */
   protected readonly teamIsEmpty = computed(() => this.state() === 'ready' && this.view()?.cards.total === 0);
 
@@ -405,10 +422,6 @@ export class OperatorsListComponent {
 
   protected percent(part: number, whole: number): string {
     return opsPercent(part, whole, this.language.language());
-  }
-
-  protected initialsOf(name: string): string {
-    return initials(name);
   }
 
   protected lastSignIn(at: string): string {
@@ -457,6 +470,13 @@ export class OperatorsListComponent {
     this.page.set(1);
     this.filterOpen.set(false);
     void this.load();
+  }
+
+  /** One chip's ×: that filter goes, the other stays. */
+  protected removeFilter(key: string): void {
+    this.draftState.set(key === 'state' ? '' : this.stateFilter());
+    this.draftRole.set(key === 'role' ? '' : this.roleFilter());
+    this.applyFilters();
   }
 
   protected clearFilters(): void {

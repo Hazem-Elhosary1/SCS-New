@@ -336,6 +336,28 @@ two apps need goes into `core` (not visual) or `ui` (visual), never copied.
 - Loading, empty, error, offline, view-only and not-in-plan are shown with `<scs-state>`.
 - Calls to the platform are written as `/v1/...` and go through the `core` HTTP layer.
 
+### Where a screen's parts come from (spec 095)
+
+A screen is composed; it does not draw its own buttons, fields, badges, menus or dialogs.
+
+- **Take the part from `ui`** when both consoles have it (`scs-badge`, `scs-text-field`,
+  `scs-select`, `scs-checkbox`, `scs-switch`, `scs-avatar`, `scs-tag`, `scs-navbar`,
+  `scs-nav-item`, `scs-calendar`, `scs-date-field`, `scs-time-field`, …), or from the console's own
+  `projects/ops/src/app/components/` when only the operators' file draws it (the date range, the
+  date and time field, the AI parts, the media parts, …).
+- **A part's look is its look's settings**, never a page's CSS: each component reads
+  `--scs-<part>-*` with the clinic's value as its default, and the operators' values live in
+  `projects/ops/src/styles/tokens.css`. A setting only one look declares is cleared for the
+  gallery's clinic look in `ops/src/app/gallery/clinic-reset.css` (`npm run test:tools` keeps that
+  list complete). A clinic screen must not change when a shared part learns a new look.
+- **A part the design draws and `ui` lacks** is added there (or to the console's components),
+  with its unit test, its specimens and working example in the gallery
+  (`ops/src/app/gallery/sections/`), and its kept pictures — never drawn on the screen that first
+  needs it.
+- **Its icons** come from the registry through `node tools/icons.mjs add` (see `docs/setup.md`).
+- **On a phone** every control is at least 40 by 40: a small part honours `--scs-touch` (set by
+  the operators' look below 720 pixels), making its room around its drawing.
+
 ### A page in the clinic console (spec 006)
 
 Every page after sign-in is shown inside the console's frame. The frame, the side bar and the

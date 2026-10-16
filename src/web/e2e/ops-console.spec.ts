@@ -28,14 +28,14 @@ test.describe('the frame of the console', () => {
 
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
     await expect(page.getByTestId('ops-brand')).toContainText('SCS — لوحة التشغيل');
-    await expect(page.getByTestId('ops-operator-name')).toHaveText('أحمد سامي');
-    await expect(page.getByTestId('ops-operator-role')).toHaveText('مسؤول عام');
+    await expect(page.getByTestId('ops-person')).toHaveText('أحمد سامي');
+    await expect(page.getByTestId('ops-role')).toHaveText('مسؤول عام');
     await expect(page.getByTestId('ops-initials')).toHaveText('أس');
 
     const items = page.getByTestId('ops-side-bar').locator('a');
     await expect(items).toHaveCount(1);
     await expect(items.first()).toHaveText('الرئيسية');
-    await expect(items.first()).toHaveClass(/active/);
+    await expect(items.first()).toHaveClass(/\bon\b/);
     // Marked for a screen reader as well as for the eye, and only while it is the page shown.
     await expect(items.first()).toHaveAttribute('aria-current', 'page');
     await page.goto(`${OPS}/profile`);
@@ -58,7 +58,7 @@ test.describe('the frame of the console', () => {
 
     await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
     await expect(page.getByTestId('ops-brand')).toContainText('SCS — Ops Console');
-    await expect(page.getByTestId('ops-operator-role')).toHaveText('Super Admin');
+    await expect(page.getByTestId('ops-role')).toHaveText('Super Admin');
     await expect(page.getByTestId('ops-initials')).toHaveText('AS');
     expect((await page.getByTestId('ops-side-bar').boundingBox())!.x).toBeLessThan(10);
     await opsPicture(page, 'en', 'home');
@@ -149,6 +149,24 @@ test.describe('the frame of the console', () => {
     await expect(page.getByTestId('ops-home-title')).toBeVisible();
   });
 
+  // Found on the real stack (spec 095, T073): the guard asked for the router after waiting, and
+  // the screen failed instead of going home.
+  for (const path of ['/sign-in', '/forgot-password']) {
+    test(`a signed-in operator who opens ${path} is taken home, with no failure`, async ({ page }) => {
+      const failures: string[] = [];
+      page.on('pageerror', (error) => failures.push(error.message));
+      page.on('request', (request) => {
+        if (request.url().includes('client-errors')) failures.push('reported: ' + request.postData());
+      });
+      await inside(page);
+      await page.goto(`${OPS}${path}`);
+
+      await expect(page.getByTestId('ops-home-title')).toBeVisible();
+      await expect(page).toHaveURL(`${OPS}/`);
+      expect(failures).toEqual([]);
+    });
+  }
+
   test('at a narrow width the side bar is behind a control and nothing scrolls sideways', async ({ page }) => {
     await inside(page);
     await page.setViewportSize({ width: 390, height: 800 });
@@ -181,8 +199,9 @@ test.describe('my profile', () => {
     await expect(page.getByTestId('change-password')).toHaveText('تغيير كلمة المرور');
 
     await expect(page.getByTestId('two-factor')).toHaveAttribute('aria-checked', 'true');
-    await expect(page.getByTestId('two-factor')).toHaveAttribute('aria-disabled', 'true');
-    await expect(page.getByTestId('two-factor-locked')).toHaveText(
+    await expect(page.getByTestId('two-factor')).toBeDisabled();
+    await expect(page.getByTestId('two-factor')).toHaveAccessibleDescription(/لا يمكن إيقافه من هنا/);
+    await expect(page.getByTestId('two-factor-reason')).toHaveText(
       'مطلوب لكل المشغلين من الإعدادات ← الأمان، لذا لا يمكن إيقافه من هنا.',
     );
     await expect(page.getByTestId('one-session')).toHaveText(
@@ -219,7 +238,7 @@ test.describe('my profile', () => {
     );
 
     await expect(page.getByTestId('profile-title')).toHaveText('My Profile');
-    await expect(page.getByTestId('two-factor-locked')).toHaveText(
+    await expect(page.getByTestId('two-factor-reason')).toHaveText(
       'Required for every operator in Settings → Security, so it can’t be turned off here.',
     );
     await expect(page.getByTestId('session-row').nth(0)).toContainText('Active now');

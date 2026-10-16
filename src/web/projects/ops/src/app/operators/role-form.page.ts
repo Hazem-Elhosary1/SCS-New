@@ -13,7 +13,7 @@ import {
   ScsSelectComponent,
   ScsSelectOption,
   ScsSkeletonComponent,
-  ScsStatusMarkComponent,
+  ScsBadgeComponent,
   ScsTextFieldComponent,
   ScsTextareaComponent,
   ToastService,
@@ -60,7 +60,7 @@ export function neededBy(code: string, ticked: ReadonlySet<string>): string[] {
     ScsSelectComponent,
     ScsTextareaComponent,
     ScsCheckboxComponent,
-    ScsStatusMarkComponent,
+    ScsBadgeComponent,
     ScsButtonDirective,
     ScsLinkDirective,
     ScsBannerComponent,
@@ -68,13 +68,12 @@ export function neededBy(code: string, ticked: ReadonlySet<string>): string[] {
     ScsEmptyStateComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // The frames of this template draw a form's labels small, grey and regular, and an empty drop-down
+  // dark: the owner's choice of 14 Oct 2026, as the named option of spec 095 (research R13).
+  host: { class: 'scs-form--template' },
   styles: `
     :host {
       display: block;
-      /* The frames draw a form's labels small, grey and regular. */
-      --scs-field-label-weight: 400;
-      --scs-field-label-color: var(--scs-color-text-secondary);
-      --scs-select-empty-color: var(--scs-color-text-primary);
     }
     h1 {
       margin: 0;
@@ -270,9 +269,9 @@ export function neededBy(code: string, ticked: ReadonlySet<string>): string[] {
                   <span class="label" id="role-category-label">{{ 'app.operators.roleForm.category' | transloco }}</span>
                   <div class="row">
                     <span class="box" aria-labelledby="role-category-label">
-                      <scs-status-mark tone="brand">{{
+                      <scs-badge intent="brand">{{
                         (systemKey() ? 'app.operators.roles.system' : 'app.operators.roles.custom') | transloco
-                      }}</scs-status-mark>
+                      }}</scs-badge>
                     </span>
                     <span class="hint" data-testid="role-category-hint">{{
                       (systemKey() ? 'app.operators.roleForm.categorySystem' : 'app.operators.roleForm.categoryCustom') | transloco

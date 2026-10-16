@@ -100,7 +100,7 @@ test.describe('an operator signs in', () => {
     await typeCode(page, '427913');
     await expect(page.getByTestId('ops-top-bar')).toBeVisible();
     await expect(page).toHaveURL(`${OPS}/`);
-    await expect(page.getByTestId('ops-operator-name')).toHaveText('أحمد سامي');
+    await expect(page.getByTestId('ops-person')).toHaveText('أحمد سامي');
   });
 
   test('an address opened with no session returns to it after sign-in', async ({ page }) => {

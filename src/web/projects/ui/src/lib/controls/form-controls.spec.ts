@@ -2,7 +2,8 @@ import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { ScsBreadcrumbComponent, ScsKpiCardComponent } from '../list/page-parts';
-import { ScsCheckboxComponent, ScsStatusMarkComponent, ScsSwitchComponent, ScsTextareaComponent } from './form-controls';
+import { ScsBadgeComponent } from '../badge/badge.component';
+import { ScsCheckboxComponent, ScsSwitchComponent, ScsTextareaComponent } from './form-controls';
 import { ScsSelectComponent } from './select.component';
 
 @Component({
@@ -11,12 +12,20 @@ import { ScsSelectComponent } from './select.component';
     ScsSelectComponent,
     ScsSwitchComponent,
     ScsTextareaComponent,
-    ScsStatusMarkComponent,
+    ScsBadgeComponent,
     ScsKpiCardComponent,
     ScsBreadcrumbComponent,
   ],
   template: `
-    <scs-checkbox label="عرض العيادات" testId="box" [(checked)]="ticked" [disabled]="locked()" [reason]="reason()" />
+    <scs-checkbox
+      label="عرض العيادات"
+      testId="box"
+      [(checked)]="ticked"
+      [(indeterminate)]="partly"
+      [disabled]="locked()"
+      [reason]="reason()"
+      [error]="boxError()"
+    />
     <scs-select
       label="الدور"
       testId="role"
@@ -26,15 +35,18 @@ import { ScsSelectComponent } from './select.component';
       [(value)]="role"
       [error]="error()"
     />
-    <scs-switch label="إرسال دعوة" testId="invite" [(on)]="invite" [disabled]="locked()" [reason]="reason()" />
+    <scs-switch label="إرسال دعوة" testId="invite" [(on)]="invite" [disabled]="locked()" [busy]="saving()" [reason]="reason()" />
     <scs-textarea label="الوصف" testId="words" [(value)]="words" [max]="500" hint="اختياري" />
-    <scs-status-mark tone="success">نشط</scs-status-mark>
+    <scs-badge intent="success">نشط</scs-badge>
     <scs-kpi-card label="إجمالي المشغلين" value="12" note="جميع الأدوار" icon="people" />
     <scs-breadcrumb label="المسار" [crumbs]="[{ label: 'المشغلون', link: '/operators' }, { label: 'تفاصيل المشغل' }]" />
   `,
 })
 class Host {
   readonly ticked = signal(false);
+  readonly partly = signal(false);
+  readonly boxError = signal('');
+  readonly saving = signal(false);
   readonly locked = signal(false);
   readonly reason = signal('');
   readonly role = signal('');
@@ -135,6 +147,36 @@ describe('the form controls of the ui library', () => {
     expect(find('[data-testid="invite-reason"]').textContent).toContain('مطلوب لكل المشغلين');
   });
 
+  it('draws a box partly chosen, clears that when it is chosen, and reads an error in place of the reason (spec 095)', () => {
+    const { fixture, host, find } = draw();
+    host.partly.set(true);
+    fixture.detectChanges();
+    const box = find<HTMLInputElement>('[data-testid="box"]');
+    expect(box.indeterminate).toBe(true);
+    box.click();
+    fixture.detectChanges();
+    expect(host.partly()).toBe(false);
+    expect(host.ticked()).toBe(true);
+
+    host.reason.set('مطلوبة لـتعديل بيانات العيادات');
+    host.boxError.set('هذا الحقل مطلوب');
+    fixture.detectChanges();
+    expect(box.getAttribute('aria-invalid')).toBe('true');
+    expect(find('[data-testid="box-error"]').id).toBe(box.getAttribute('aria-describedby'));
+    expect(fixture.nativeElement.querySelector('[data-testid="box-reason"]')).toBeNull();
+  });
+
+  it('locks a busy switch and says so (spec 095)', () => {
+    const { fixture, host, find } = draw();
+    host.saving.set(true);
+    fixture.detectChanges();
+    const button = find<HTMLButtonElement>('[data-testid="invite"]');
+    expect(button.disabled).toBe(true);
+    expect(button.getAttribute('aria-busy')).toBe('true');
+    button.click();
+    expect(host.invite()).toBe(true);
+  });
+
   it('takes free text up to its limit', () => {
     const { host, find } = draw();
     const area = find<HTMLTextAreaElement>('[data-testid="words"]');
@@ -146,11 +188,36 @@ describe('the form controls of the ui library', () => {
 
   it('draws a state, a number and a trail with their words', () => {
     const { find } = draw();
-    expect(find('scs-status-mark').getAttribute('data-tone')).toBe('success');
+    expect(find('scs-badge').getAttribute('data-intent')).toBe('success');
     expect(find('[data-testid="kpi-value"]').textContent).toBe('12');
     expect(find('[data-testid="kpi-note"]').textContent).toBe('جميع الأدوار');
     const trail = find('[data-testid="breadcrumb"]');
     expect(trail.querySelector('a')?.getAttribute('href')).toBe('/operators');
     expect(trail.querySelector('[aria-current="page"]')?.textContent).toBe('تفاصيل المشغل');
+  });
+
+  it('a searchable list may start with words in its search box, and shows only what they find (spec 095)', () => {
+    const fixture = TestBed.createComponent(ScsSelectComponent);
+    fixture.componentRef.setInput('label', 'العيادة');
+    fixture.componentRef.setInput('testId', 'clinic');
+    fixture.componentRef.setInput('searchable', true);
+    fixture.componentRef.setInput('listInline', true);
+    fixture.componentRef.setInput('searchLabel', 'بحث...');
+    fixture.componentRef.setInput('options', [
+      { value: 'noor', label: 'عيادة النور' },
+      { value: 'new-noor', label: 'عيادة النور الجديدة' },
+      { value: 'shifa', label: 'عيادة الشفاء' },
+    ]);
+    fixture.componentRef.setInput('searchText', 'النور');
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    const search = element.querySelector('[data-testid="clinic-search"]') as HTMLInputElement;
+    expect(search.value).toBe('النور');
+    const rows = [...element.querySelectorAll('[data-testid="clinic-panel"] [role="option"]')].map((row) => row.textContent?.trim());
+    expect(rows).toEqual(['عيادة النور', 'عيادة النور الجديدة']);
+    // Without words, every row is there.
+    fixture.componentRef.setInput('searchText', '');
+    fixture.detectChanges();
+    expect(element.querySelectorAll('[data-testid="clinic-panel"] [role="option"]').length).toBe(3);
   });
 });

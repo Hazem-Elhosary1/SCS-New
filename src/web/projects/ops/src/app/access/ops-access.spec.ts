@@ -8,7 +8,7 @@ import { catchError, throwError } from 'rxjs';
 import { OpsAuthService, opsSessionInterceptor } from '../auth/ops-auth.service';
 import { activitySentence } from '../operators/activity-sentences';
 import { neededBy, withNeeded } from '../operators/role-form.page';
-import { initials } from '../operators/operators.service';
+import { initialsOf as initials } from 'ui';
 import { OPS_PERMISSIONS, OPS_PERMISSION_GROUPS, OpsAccess, inCatalogueOrder } from './ops-access.service';
 import { OpsCanDirective, guarded } from './ops-can';
 
