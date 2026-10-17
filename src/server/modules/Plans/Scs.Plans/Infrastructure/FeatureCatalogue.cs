@@ -12,7 +12,7 @@ using Scs.SharedKernel.Audit;
 
 namespace Scs.Plans.Infrastructure;
 
-/// <param name="Plans">How many plans include it: 0 until spec 013 makes plans.</param>
+/// <param name="Plans">How many plans include it (spec 013).</param>
 internal sealed record FeatureRow(
     string Key, string NameAr, string NameEn, string? DescriptionAr, string? DescriptionEn, string Group, string Kind,
     string? UnitAr, string? UnitEn, int? Baseline, string? Specialty, string Status, bool IsSold, bool IsRetired, int SortOrder,
@@ -27,8 +27,8 @@ internal sealed record FeatureActions(bool Manage);
 
 internal sealed record FeaturesView(IReadOnlyList<FeatureRow> Items, FeatureCards Cards, FeatureActions Can);
 
-/// <param name="State"><c>active</c> or <c>inactive</c>.</param>
-internal sealed record PlanUse(Guid Id, string Name, string State, int Clinics);
+/// <param name="State"><c>active</c> or <c>disabled</c>, as the plans say it (spec 013).</param>
+internal sealed record PlanUse(Guid Id, string NameAr, string NameEn, string State, int Clinics);
 
 internal sealed record WhereUsed(IReadOnlyList<PlanUse> Items, int Total);
 
@@ -47,7 +47,7 @@ internal sealed record FeatureInput(
 /// trail with what changed, in the same transaction (FR-017). Nothing here touches a plan or a
 /// clinic: retiring a feature changes the feature alone (FR-021).
 /// </summary>
-internal sealed class FeatureCatalogue(PlansDbContext db) : IFeatureCatalogue
+internal sealed class FeatureCatalogue(PlansDbContext db, IPlanSubscribers subscribers) : IFeatureCatalogue
 {
     // ---------------------------------------------------------------- reads
 
@@ -55,7 +55,10 @@ internal sealed class FeatureCatalogue(PlansDbContext db) : IFeatureCatalogue
     public async Task<FeaturesView> ListAsync(bool canManage, CancellationToken cancellation)
     {
         var features = await OrderedAsync(cancellation).ConfigureAwait(false);
-        var rows = features.Select(Row).ToList();
+        var uses = await db.PlanFeatures.AsNoTracking().Select(p => new { p.FeatureKey, p.PlanId }).ToListAsync(cancellation)
+            .ConfigureAwait(false);
+        var counts = uses.GroupBy(u => u.FeatureKey, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal);
+        var rows = features.Select(f => Row(f, counts.GetValueOrDefault(f.Key))).ToList();
 
         return new FeaturesView(
             rows,
@@ -65,21 +68,42 @@ internal sealed class FeatureCatalogue(PlansDbContext db) : IFeatureCatalogue
                 rows.Count(r => r.Status == FeatureStatuses.Built),
                 rows.Count(r => r.Status == FeatureStatuses.Upcoming),
                 rows.Count(r => r.Plans > 0),
-                Plans: 0),
+                Plans: uses.Select(u => u.PlanId).Distinct().Count()),
             new FeatureActions(canManage));
     }
 
     public async Task<FeatureRow?> ReadAsync(string key, CancellationToken cancellation)
     {
         var feature = await db.Features.AsNoTracking().SingleOrDefaultAsync(f => f.Key == key, cancellation).ConfigureAwait(false);
-        return feature is null ? null : Row(feature);
+        if (feature is null)
+        {
+            return null;
+        }
+
+        var plans = await db.PlanFeatures.AsNoTracking().CountAsync(p => p.FeatureKey == key, cancellation).ConfigureAwait(false);
+        return Row(feature, plans);
     }
 
-    /// <summary>The plans that include the feature. Until spec 013 makes plans there are none, through the same answer.</summary>
-    public async Task<WhereUsed?> PlansOfAsync(string key, CancellationToken cancellation) =>
-        await db.Features.AsNoTracking().AnyAsync(f => f.Key == key, cancellation).ConfigureAwait(false)
-            ? new WhereUsed([], 0)
-            : null;
+    /// <summary>The plans that include the feature, with their state and clinics, active ones first by price (FR-027).</summary>
+    public async Task<WhereUsed?> PlansOfAsync(string key, CancellationToken cancellation)
+    {
+        if (!await db.Features.AsNoTracking().AnyAsync(f => f.Key == key, cancellation).ConfigureAwait(false))
+        {
+            return null;
+        }
+
+        var plans = await db.Plans.AsNoTracking()
+            .Where(p => p.Features.Any(f => f.FeatureKey == key))
+            .ToListAsync(cancellation)
+            .ConfigureAwait(false);
+        var counts = await subscribers.CountsAsync([.. plans.Select(p => p.Id)], cancellation).ConfigureAwait(false);
+        var items = plans
+            .OrderBy(p => p.IsActive ? 0 : 1)
+            .ThenBy(p => p.MonthlyEgp)
+            .Select(p => new PlanUse(p.Id, p.NameAr, p.NameEn, p.State, counts.TryGetValue(p.Id, out var c) ? c.Clinics : 0))
+            .ToList();
+        return new WhereUsed(items, items.Sum(p => p.Clinics));
+    }
 
     public async Task<CatalogueFeature?> FindAsync(string key, CancellationToken cancellation)
     {
@@ -309,9 +333,9 @@ internal sealed class FeatureCatalogue(PlansDbContext db) : IFeatureCatalogue
 
     private static AuditTarget Target(Feature feature) => new(AuditTarget.Feature, null, feature.NameAr);
 
-    private static FeatureRow Row(Feature f) => new(
+    private static FeatureRow Row(Feature f, int plans) => new(
         f.Key, f.NameAr, f.NameEn, f.DescriptionAr, f.DescriptionEn, f.Group, f.Kind, f.UnitAr, f.UnitEn, f.Baseline, f.Specialty,
-        f.Status, f.IsSold, f.IsRetired, f.SortOrder, f.IsMonthly, Plans: 0, f.Version);
+        f.Status, f.IsSold, f.IsRetired, f.SortOrder, f.IsMonthly, plans, f.Version);
 
     private static CatalogueFeature Published(Feature f) => new(
         f.Key, f.NameAr, f.NameEn, f.Kind, f.UnitAr, f.UnitEn, f.Baseline, f.Specialty, f.Status, f.IsSold, f.IsRetired, f.IsMonthly);

@@ -151,7 +151,7 @@ type Field =
     <scs-breadcrumb
       [label]="'app.plans.form.crumbs' | transloco"
       [crumbs]="[
-        { label: 'app.plans.section' | transloco, link: '/plans/features' },
+        { label: 'app.plans.section' | transloco, link: '/plans' },
         { label: title() | transloco },
       ]"
     />

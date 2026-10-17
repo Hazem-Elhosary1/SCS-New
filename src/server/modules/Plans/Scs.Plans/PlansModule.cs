@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Scs.BuildingBlocks.Configuration;
 using Scs.BuildingBlocks.Modules;
@@ -29,9 +30,19 @@ public sealed class PlansModule : IModule, IMigratableModule
 
         services.AddScoped<FeatureCatalogue>();
         services.AddScoped<IFeatureCatalogue>(provider => provider.GetRequiredService<FeatureCatalogue>());
+
+        // "No clinics" until spec 015: the module that gives clinics their plans registers its own,
+        // which wins whether it is registered before this (TryAdd) or after it (research R7).
+        services.TryAddScoped<IPlanSubscribers, NoSubscribers>();
+        services.AddScoped<PlanBook>();
+        services.AddScoped<IPlanBook>(provider => provider.GetRequiredService<PlanBook>());
     }
 
-    public void MapEndpoints(IEndpointRouteBuilder v1) => v1.MapFeatures();
+    public void MapEndpoints(IEndpointRouteBuilder v1)
+    {
+        v1.MapFeatures();
+        v1.MapPlans();
+    }
 
     public IReadOnlyList<string> GetMigrations(string migrationConnection)
     {

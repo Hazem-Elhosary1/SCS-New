@@ -96,8 +96,10 @@ public sealed class FeaturesReadTests(SqlServerFixture sql)
         Assert.Equal(items.Select(i => i.GetProperty("group").GetString()).Distinct().Count(), cards.GetProperty("groups").GetInt32());
         Assert.Equal(items.Count(i => i.GetProperty("status").GetString() == "built"), cards.GetProperty("built").GetInt32());
         Assert.Equal(items.Count(i => i.GetProperty("status").GetString() == "upcoming"), cards.GetProperty("upcoming").GetInt32());
-        Assert.Equal(0, cards.GetProperty("soldInPlans").GetInt32());
-        Assert.Equal(0, cards.GetProperty("plans").GetInt32());
+        // Counted from the plans since spec 013 (which made them): the features in a plan, and those plans.
+        Assert.Equal(items.Count(i => i.GetProperty("plans").GetInt32() > 0), cards.GetProperty("soldInPlans").GetInt32());
+        var plans = await TestDatabase.ReadColumnAsync(sql.Main.Admin, "SELECT CAST(COUNT(DISTINCT [PlanId]) AS nvarchar(10)) FROM [plans].[PlanFeature]");
+        Assert.Equal(int.Parse(plans.Single(), System.Globalization.CultureInfo.InvariantCulture), cards.GetProperty("plans").GetInt32());
 
         Assert.False(page.GetProperty("can").GetProperty("manage").GetBoolean());
         Assert.True((await manager.JsonAsync(Features)).GetProperty("can").GetProperty("manage").GetBoolean());

@@ -909,6 +909,31 @@ export const SCS_ICONS = {
       { tag: 'path', d: 'M9.92 4.75L5.92 9.75L3.92 8.25' },
     ],
   },
+  'trophy': {
+    from: 'Interface-Essential/trophy',
+    viewBox: '0 0 14 14',
+    paint: 'stroke',
+    shapes: [
+      { tag: 'path', d: 'M7 9.5V13.5' },
+      { tag: 'path', d: 'M3.5 13.5H10.5' },
+      { tag: 'path', d: 'M3.5 0.5H0.5V3.5C0.5 5.16 1.84 6.5 3.5 6.5V0.5Z' },
+      { tag: 'path', d: 'M10.5 0.5H13.5V3.5C13.5 5.16 12.16 6.5 10.5 6.5V0.5Z' },
+      { tag: 'path', d: 'M3.5 0.5V6C3.5 7.93 5.07 9.5 7 9.5C8.93 9.5 10.5 7.93 10.5 6V0.5H3.5Z' },
+    ],
+  },
+  'coins': {
+    from: 'Money-Shopping/coins-stack',
+    viewBox: '0 0 14 14',
+    paint: 'stroke',
+    shapes: [
+      { tag: 'path', d: 'M9 7.5C11.49 7.5 13.5 6.6 13.5 5.5C13.5 4.4 11.49 3.5 9 3.5C6.51 3.5 4.5 4.4 4.5 5.5C4.5 6.6 6.51 7.5 9 7.5Z' },
+      { tag: 'path', d: 'M4.5 5.5V11.5C4.5 12.6 6.5 13.5 9 13.5C11.5 13.5 13.5 12.6 13.5 11.5V5.5' },
+      { tag: 'path', d: 'M13.5 8.5C13.5 9.6 11.5 10.5 9 10.5C6.5 10.5 4.5 9.6 4.5 8.5' },
+      { tag: 'path', d: 'M8.9 1.51C7.73 0.79 6.37 0.44 5 0.51C2.51 0.51 0.5 1.41 0.5 2.51C0.5 3.1 1.08 3.63 2 4.01' },
+      { tag: 'path', d: 'M2 10.01C1.08 9.63 0.5 9.1 0.5 8.51V2.51' },
+      { tag: 'path', d: 'M2 7.01C1.08 6.63 0.5 6.1 0.5 5.51' },
+    ],
+  },
   // ── End of added icons ──
 } as const satisfies Record<string, ScsIconDrawing>;
 

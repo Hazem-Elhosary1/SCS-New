@@ -45,6 +45,10 @@ public class AuditActionsTests
         ("feature.updated", "changes"),
         ("feature.retired", "changes"),
         ("feature.resumed", "changes"),
+        ("plan.created", "changes"),
+        ("plan.updated", "changes"),
+        ("plan.disabled", "changes"),
+        ("plan.enabled", "changes"),
     ];
 
     [Fact]
@@ -127,8 +131,8 @@ public class AuditActionsTests
         Assert.Equal(
             [
                 "account.role-changed", "feature.created", "feature.resumed", "feature.retired", "feature.updated", "operator.edited",
-                "operator.role-changed", "opsrole.created", "opsrole.edited", "role.created", "role.deleted", "role.updated",
-                "settings.notification-email-changed",
+                "operator.role-changed", "opsrole.created", "opsrole.edited", "plan.created", "plan.disabled", "plan.enabled",
+                "plan.updated", "role.created", "role.deleted", "role.updated", "settings.notification-email-changed",
             ],
             AuditActions.All.Where(a => a.NeedsBeforeAfter).Select(a => a.Code).Order(StringComparer.Ordinal));
     }

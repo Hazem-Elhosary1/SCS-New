@@ -395,8 +395,8 @@ describe('the catalogue’s dialogs', () => {
     const fake = new FakeFeatures();
     fake.whereUsed = async () => ({
       items: [
-        { id: 'p-1', name: 'الباقة الاحترافية', state: 'active' as const, clinics: 64 },
-        { id: 'p-2', name: 'الباقة المؤسسية', state: 'active' as const, clinics: 12 },
+        { id: 'p-1', nameAr: 'الباقة الاحترافية', nameEn: 'Professional Plan', state: 'active' as const, clinics: 64 },
+        { id: 'p-2', nameAr: 'الباقة المؤسسية', nameEn: 'Enterprise Plan', state: 'active' as const, clinics: 12 },
       ],
       total: 76,
     });

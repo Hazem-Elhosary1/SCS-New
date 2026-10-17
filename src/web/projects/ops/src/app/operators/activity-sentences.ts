@@ -18,6 +18,11 @@ export const ACTIVITY_KINDS = [
   'feature.updated',
   'feature.retired',
   'feature.resumed',
+  // Spec 013: the plans.
+  'plan.created',
+  'plan.updated',
+  'plan.disabled',
+  'plan.enabled',
 ] as const;
 
 /**

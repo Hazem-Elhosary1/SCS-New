@@ -16,6 +16,7 @@ import {
   ScsAppliedChip,
   ScsAppliedChipsComponent,
   ScsBadgeComponent,
+  ScsBreadcrumbComponent,
   ScsButtonDirective,
   ScsCardComponent,
   ScsEmptyStateComponent,
@@ -60,6 +61,7 @@ type StatusFacet = 'built' | 'upcoming' | 'retired';
     TranslocoPipe,
     CdkMenuTrigger,
     OpsCanDirective,
+    ScsBreadcrumbComponent,
     ScsPageHeaderComponent,
     ScsCardComponent,
     ScsKpiCardComponent,
@@ -153,6 +155,15 @@ type StatusFacet = 'built' | 'upcoming' | 'retired';
     }
   `,
   template: `
+    <!-- The way back to the plans, as the rest of the section has it (owner, 17 Oct 2026; spec 013). -->
+    <scs-breadcrumb
+      data-testid="catalogue-crumbs"
+      [label]="'app.plans.form.crumbs' | transloco"
+      [crumbs]="[
+        { label: 'app.plans.section' | transloco, link: '/plans' },
+        { label: 'app.plans.title' | transloco },
+      ]"
+    />
     <scs-page-header [title]="'app.plans.title' | transloco" [note]="'app.plans.note' | transloco">
       <button
         *appCan="can.billingManagePlans"

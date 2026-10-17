@@ -73,6 +73,11 @@ export type ScsKpiTrend = 'positive' | 'negative' | 'neutral' | 'none';
       font-weight: 700;
       line-height: 1.3;
       color: var(--scs-color-text-primary);
+      /* A name rather than a number may be kept to one line and cut with … (spec 013). */
+      max-inline-size: 100%;
+      overflow: var(--scs-kpi-value-overflow, visible);
+      white-space: var(--scs-kpi-value-space, normal);
+      text-overflow: ellipsis;
     }
     .delta {
       display: flex;

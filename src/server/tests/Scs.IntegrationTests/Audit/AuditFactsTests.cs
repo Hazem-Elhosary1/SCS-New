@@ -323,13 +323,15 @@ public sealed class AuditFactsTests(SqlServerFixture sql)
         // of files, which pass nothing of sign-in and have their own secrets test (spec 009), and
         // those of the operators' team, which are written to the platform's own trail and never
         // to a clinic's (spec 011: PlatformEntryTests, NobodyGainsTests), and those of the feature
-        // catalogue, which are the platform's as well (spec 012: FeaturesAddTests and its kin) …
+        // catalogue and of the plans, which are the platform's as well (spec 012: FeaturesAddTests
+        // and its kin; spec 013: PlansAddTests and its kin) …
         Assert.Equal(
             AuditActions.All.Select(a => a.Code)
                 .Where(code => !code.StartsWith("file.", StringComparison.Ordinal)
                                && !code.StartsWith("operator.", StringComparison.Ordinal)
                                && !code.StartsWith("opsrole.", StringComparison.Ordinal)
-                               && !code.StartsWith("feature.", StringComparison.Ordinal))
+                               && !code.StartsWith("feature.", StringComparison.Ordinal)
+                               && !code.StartsWith("plan.", StringComparison.Ordinal))
                 .Order(StringComparer.Ordinal),
             entries.Select(e => e.ActionCode).Distinct().Order(StringComparer.Ordinal));
 

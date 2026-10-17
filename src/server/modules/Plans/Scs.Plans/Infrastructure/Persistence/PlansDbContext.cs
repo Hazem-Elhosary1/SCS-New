@@ -16,6 +16,10 @@ public sealed class PlansDbContext(DbContextOptions<PlansDbContext> options) : D
 
     internal DbSet<Feature> Features => Set<Feature>();
 
+    internal DbSet<Plan> Plans => Set<Plan>();
+
+    internal DbSet<PlanFeature> PlanFeatures => Set<PlanFeature>();
+
     public static DbContextOptionsBuilder Configure(DbContextOptionsBuilder builder, string connection) =>
         builder.UseSqlServer(connection, sql => sql.MigrationsHistoryTable(HistoryTable, Schema));
 
@@ -60,6 +64,60 @@ public sealed class PlansDbContext(DbContextOptions<PlansDbContext> options) : D
             builder.Property(f => f.Version).IsConcurrencyToken();
             builder.Ignore(f => f.IsMonthly);
             builder.HasIndex(f => new { f.Group, f.SortOrder }).HasDatabaseName("IX_Feature_Order");
+        });
+
+        // Spec 013: the plans and what each includes (data-model.md).
+        modelBuilder.Entity<Plan>(builder =>
+        {
+            builder.ToTable("Plan", table =>
+            {
+                table.HasCheckConstraint(
+                    "CK_Plan_Code",
+                    "LEN([Code]) BETWEEN 1 AND 110 AND [Code] NOT LIKE '%[^a-z0-9-]%' COLLATE Latin1_General_BIN2 AND LEFT([Code], 1) <> '-' AND RIGHT([Code], 1) <> '-'");
+                table.HasCheckConstraint(
+                    "CK_Plan_Prices", "[MonthlyEgp] >= 0 AND [AnnualEgp] >= 0 AND [MonthlyUsd] >= 0 AND [AnnualUsd] >= 0");
+                table.HasCheckConstraint("CK_Plan_State", "[State] IN ('active', 'disabled')");
+                table.HasCheckConstraint(
+                    "CK_Plan_Badge",
+                    "[Badge] IS NULL OR ([Badge] IN ('best', 'most_popular', 'best_selling') AND [State] = 'active')");
+                table.HasCheckConstraint(
+                    "CK_Plan_Disabled", "[State] = 'disabled' OR ([DisabledReason] IS NULL AND [DisabledAtUtc] IS NULL)");
+            });
+
+            builder.HasKey(p => p.Id);
+            builder.Property(p => p.Id).ValueGeneratedNever();
+            builder.Property(p => p.Code).HasMaxLength(PlanRules.CodeMaxLength).IsUnicode(false).IsRequired();
+            builder.Property(p => p.NameAr).HasMaxLength(PlanRules.NameMaxLength).IsRequired();
+            builder.Property(p => p.NameEn).HasMaxLength(PlanRules.NameMaxLength).IsRequired();
+            builder.Property(p => p.Description).HasMaxLength(PlanRules.DescriptionMaxLength).IsRequired();
+            builder.Property(p => p.MonthlyEgp).HasPrecision(12, 2);
+            builder.Property(p => p.AnnualEgp).HasPrecision(12, 2);
+            builder.Property(p => p.MonthlyUsd).HasPrecision(12, 2);
+            builder.Property(p => p.AnnualUsd).HasPrecision(12, 2);
+            builder.Property(p => p.Badge).HasMaxLength(16).IsUnicode(false);
+            builder.Property(p => p.State).HasMaxLength(10).IsUnicode(false).IsRequired();
+            builder.Property(p => p.DisabledReason).HasMaxLength(PlanRules.ReasonMaxLength);
+            builder.Property(p => p.Version).IsConcurrencyToken();
+            builder.Ignore(p => p.IsActive);
+
+            // One plan on the platform holds a badge (ق-٤٥): every holder is active (CK_Plan_Badge), so
+            // the state is unique among the plans that hold one. (A filter cannot name a computed column.)
+            builder.HasIndex(p => p.State).IsUnique().HasFilter("[Badge] IS NOT NULL").HasDatabaseName("UX_Plan_Badge");
+            builder.HasIndex(p => p.Code).IsUnique().HasDatabaseName("UX_Plan_Code");
+
+            builder.HasMany(p => p.Features).WithOne().HasForeignKey(f => f.PlanId).OnDelete(DeleteBehavior.Cascade);
+            builder.Navigation(p => p.Features).HasField("features").UsePropertyAccessMode(PropertyAccessMode.Field);
+        });
+
+        modelBuilder.Entity<PlanFeature>(builder =>
+        {
+            builder.ToTable("PlanFeature", table =>
+                table.HasCheckConstraint("CK_PlanFeature_Limit", "[Limit] IS NULL OR [Limit] BETWEEN 1 AND 1000000"));
+
+            builder.HasKey(f => new { f.PlanId, f.FeatureKey });
+            builder.Property(f => f.FeatureKey).HasMaxLength(FeatureRules.KeyMaxLength).IsUnicode(false);
+            builder.HasOne<Feature>().WithMany().HasForeignKey(f => f.FeatureKey).OnDelete(DeleteBehavior.NoAction);
+            builder.HasIndex(f => f.FeatureKey).HasDatabaseName("IX_PlanFeature_Feature");
         });
     }
 }

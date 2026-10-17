@@ -63,6 +63,19 @@ and plans may hold it. The list a migration applies is frozen with it (`FeatureS
   by key, and says so in its tasks (FR-024). If an operator has already changed the status, the
   operator's value stands: update only where the status is still `upcoming`.
 
+**Plans ship empty** (spec 013): no migration writes a plan, a price or a limit — the BRD fixes
+none (SH-020). Operators make them in the console.
+
+## Data another module counts for this one (spec 013)
+
+The plans' screens show the clinics on each plan, but clinics are given plans by spec 015 and
+subscribe by 016, which depend on the plans — never the other way. So `Scs.Plans.Contracts`
+publishes `IPlanSubscribers`, and the `Plans` module registers a default that answers "no
+clinics". The module that gives clinics their plans registers its own implementation; it wins
+whether it is registered before the `Plans` module (`TryAdd` there) or after it. Its counts follow
+OP-A-189: a clinic billed monthly counts its monthly price, one billed annually its annual price
+÷ 12, a clinic in trial, expired or suspended nothing.
+
 ## Creating a migration
 
 ```bash

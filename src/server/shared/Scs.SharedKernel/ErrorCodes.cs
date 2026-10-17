@@ -187,6 +187,24 @@ public static class ErrorCodes
     /// <summary>Someone edited the feature after this form read it.</summary>
     public const string FeatureChangedElsewhere = "FEATURE_CHANGED_ELSEWHERE";
 
+    /// <summary>A plan's grid names a key the catalogue does not hold (spec 013, ق-٤٢).</summary>
+    public const string PlanFeatureUnknown = "PLAN_FEATURE_UNKNOWN";
+
+    /// <summary>A plan's grid gives a number to a feature that is a switch (spec 013, ق-٤٢).</summary>
+    public const string PlanSwitchHasLimit = "PLAN_SWITCH_HAS_LIMIT";
+
+    /// <summary>A plan takes a feature that is not sold or is retired, which it did not already have (spec 013, ق-٤٨).</summary>
+    public const string PlanFeatureNotSold = "PLAN_FEATURE_NOT_SOLD";
+
+    /// <summary>A disabled plan holds no badge (spec 013, ق-٤٥).</summary>
+    public const string PlanBadgeOnDisabled = "PLAN_BADGE_ON_DISABLED";
+
+    /// <summary>Someone changed the plan after this form read it — a save, or its badge taken (spec 013).</summary>
+    public const string PlanChangedElsewhere = "PLAN_CHANGED_ELSEWHERE";
+
+    /// <summary>Two plans added at once with one English name, and the retry lost again (spec 013, research R3).</summary>
+    public const string PlanCodeTaken = "PLAN_CODE_TAKEN";
+
     public static IReadOnlyList<string> All { get; } =
     [
         ValidationFailed, MalformedRequest, Unauthenticated, Forbidden, NotFound,
@@ -203,5 +221,6 @@ public static class ErrorCodes
         OpsEmailTaken, OpsRoleNotGrantable, OpsOwnRole, OpsLastSuperAdmin, OpsOwnAccount, OpsStateChanged, OpsLinkTooSoon,
         OpsChangedElsewhere, OpsLinkNotSent, OpsRoleNameTaken, OpsPermissionsNotHeld, OpsOwnRoleEdit, OpsSystemRole, OpsRoleInUse,
         FeatureUnitsRequired, FeatureSwitchHasLimit, FeatureKeyTaken, FeatureRetiredMustBeSold, FeatureStateChanged, FeatureChangedElsewhere,
+        PlanFeatureUnknown, PlanSwitchHasLimit, PlanFeatureNotSold, PlanBadgeOnDisabled, PlanChangedElsewhere, PlanCodeTaken,
     ];
 }

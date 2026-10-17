@@ -31,3 +31,7 @@ feature.created changes
 feature.updated changes
 feature.retired changes
 feature.resumed changes
+plan.created changes
+plan.updated changes
+plan.disabled changes
+plan.enabled changes

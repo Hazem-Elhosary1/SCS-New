@@ -29,14 +29,15 @@ export interface FakeFeature {
 
 export interface FakePlanUse {
   id: string;
-  name: string;
-  state: 'active' | 'inactive';
+  nameAr: string;
+  nameEn: string;
+  state: 'active' | 'disabled';
   clinics: number;
 }
 
 export interface OpsCatalogue {
   features: FakeFeature[];
-  /** The plans that include a feature, by key: none until spec 013, unless a test says so. */
+  /** The plans that include a feature, by key: set by `opsPlans` from its plans, or by a test. */
   plans: Record<string, FakePlanUse[]>;
   /** Makes an address fail: `GET /v1/ops/features` → a status. */
   failing: Record<string, number>;
