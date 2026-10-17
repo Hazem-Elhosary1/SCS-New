@@ -17,6 +17,7 @@ internal static class ModuleRegistration
         new Scs.Identity.IdentityModule(),
         new Scs.Operators.OperatorsModule(),
         new Scs.Plans.PlansModule(),
+        new Scs.Subscriptions.SubscriptionsModule(),
         new Scs.Platform.PlatformModule(),
     ];
 }

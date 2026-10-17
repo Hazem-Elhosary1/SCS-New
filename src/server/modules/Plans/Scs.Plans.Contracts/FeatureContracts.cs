@@ -32,4 +32,10 @@ public interface IFeatureCatalogue
 
     /// <summary>What a plan may take: the sold features that are not retired, in the catalogue's order (FR-021).</summary>
     Task<IReadOnlyList<CatalogueFeature>> SellableAsync(CancellationToken cancellation);
+
+    /// <summary>
+    /// Every feature, retired and unsold ones included, in the catalogue's order: what plan
+    /// enforcement works a clinic's answer from (spec 014, research R3).
+    /// </summary>
+    Task<IReadOnlyList<CatalogueFeature>> AllAsync(CancellationToken cancellation);
 }

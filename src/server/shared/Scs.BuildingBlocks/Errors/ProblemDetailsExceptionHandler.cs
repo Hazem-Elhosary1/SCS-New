@@ -18,7 +18,8 @@ public sealed partial class ProblemDetailsExceptionHandler(ILogger<ProblemDetail
         switch (exception)
         {
             case ScsProblemException known:
-                await ProblemWriter.WriteAsync(httpContext, known.Status, known.Code, known.Errors, known.Extensions);
+                await ProblemWriter.WriteAsync(
+                    httpContext, known.Status, known.Code, known.Errors, known.Extensions, known.TitleValues);
                 break;
 
             case BadHttpRequestException bad:

@@ -69,6 +69,7 @@ internal static class TenancyModel
             builder.Property(c => c.NameEn).HasMaxLength(Clinic.NameMaxLength).IsRequired();
             builder.Property(c => c.State).HasMaxLength(Clinic.StateMaxLength).IsRequired().HasDefaultValue("active");
             builder.Property(c => c.CreatedAtUtc).HasColumnType("datetimeoffset").IsRequired();
+            builder.Property(c => c.Specialty).HasMaxLength(Clinic.SpecialtyMaxLength).IsUnicode(false);
         });
 
         modelBuilder.Entity<ClinicDirectoryEntry>(builder =>

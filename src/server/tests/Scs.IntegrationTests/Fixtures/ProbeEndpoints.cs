@@ -5,11 +5,13 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
 using Scs.BuildingBlocks.Errors;
 using Scs.BuildingBlocks.Modules;
+using Scs.BuildingBlocks.Plans;
 using Scs.BuildingBlocks.Security;
 using Scs.BuildingBlocks.Tenancy;
 using Scs.IntegrationTests.Fixtures.Domain;
 using Scs.SharedKernel;
 using Scs.SharedKernel.Access;
+using Scs.SharedKernel.Plans;
 
 namespace Scs.IntegrationTests.Fixtures;
 
@@ -25,6 +27,9 @@ public sealed class ProbeEndpoints : IEndpointContributor
 
     /// <summary>The same, for the routes of the operators console.</summary>
     public static System.Collections.Concurrent.ConcurrentDictionary<string, int> OpsRuns { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>How many times the plan probes of spec 014 ran.</summary>
+    public static ConcurrentDictionary<string, int> PlanRuns { get; } = new(StringComparer.Ordinal);
 
     public static SemaphoreSlim SlowEntered { get; } = new(0);
 
@@ -118,6 +123,19 @@ public sealed class ProbeEndpoints : IEndpointContributor
 
         root.MapGet("/probe/ops/needs-record/{id}", (string id) => id == "1" ? Results.Ok(new { id }) : Results.NotFound())
             .RequiresOperator(OperatorPermissions.OperatorsManage);
+
+        // Spec 014: a route that belongs to a feature, and one that belongs to any of two; each
+        // counts its runs, so a plan's refusal can be seen to leave the handler unrun.
+        root.MapGet("/probe/plan/analytics", () =>
+            {
+                PlanRuns.AddOrUpdate("analytics", 1, (_, ran) => ran + 1);
+                return Results.Ok(new { ok = true });
+            })
+            .Requires(Permissions.PatientsManage)
+            .RequiresFeature(FeatureKeys.AllowAnalytics);
+        root.MapGet("/probe/plan/channels", () => Results.Ok(new { ok = true }))
+            .Requires(Permissions.PatientsManage)
+            .RequiresAnyFeature(FeatureKeys.AllowWhatsapp, FeatureKeys.AllowTelegram);
 
         root.MapGet("/probe/needs-record/{id}", (string id) => id == "1" ? Results.Ok(new { id }) : Results.NotFound())
             .Requires(Permissions.PatientsManage);

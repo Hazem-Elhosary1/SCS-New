@@ -7,7 +7,6 @@
       "allBranches": "All branches",
       "offlineReason": "Disabled until the connection returns",
       "notYetText": "It will appear here when it is ready.",
-      "notInPlanText": "The clinic's current plan does not include this page. The plan and its upgrade are under “Profile & subscription”.",
       "notFoundTitle": "Page not found",
       "notFoundText": "This address does not lead to a page of the clinic console.",
       "noAccessNote": "a role that does not carry “{{ permission }}”",
@@ -279,6 +278,26 @@
       "cards": "File card — every state",
       "remove": "Remove",
       "restore": "Restore"
+    },
+    "plan": {
+      "notIn": {
+        "title": "The current plan does not include {{feature}}",
+        "text": "{{feature}} are not in the clinic’s current plan. This is a limit of the plan, not a missing permission, and the plan is changed in Profile & subscription.",
+        "textNoLink": "{{feature}} are not in the clinic’s current plan. This is a limit of the plan, not a missing permission, and the plan is changed in Profile & subscription by the clinic’s owner.",
+        "textNamed": "“{{feature}}” is not a feature of the clinic’s current plan. This is a limit of the plan, not a missing permission, and the plan is changed in Profile & subscription.",
+        "textNamedNoLink": "“{{feature}}” is not a feature of the clinic’s current plan. This is a limit of the plan, not a missing permission, and the plan is changed in Profile & subscription by the clinic’s owner.",
+        "link": "Open Profile & subscription"
+      },
+      "places": {
+        "inbox": {
+          "title": "messaging channels",
+          "subject": "Messaging channels"
+        },
+        "reports": {
+          "title": "reports",
+          "subject": "Financial and clinical reports"
+        }
+      }
     }
   }
 }

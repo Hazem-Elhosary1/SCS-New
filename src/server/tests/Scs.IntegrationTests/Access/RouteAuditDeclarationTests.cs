@@ -34,6 +34,8 @@ public sealed class RouteAuditDeclarationTests(SqlServerFixture sql)
         ["PUT /v1/account/preferences"] = AuditDeclarationKind.RecordsNothing,
         ["POST /v1/client-errors"] = AuditDeclarationKind.RecordsNothing,
         ["POST /v1/dev/staff-invitations"] = AuditDeclarationKind.RecordsNothing,
+        // Spec 014: setting a seeded clinic's plan on a developer's machine; the plan's own operation records it.
+        ["POST /v1/dev/clinic-plan"] = AuditDeclarationKind.RecordsNothing,
         ["POST /v1/notifications/{id:guid}/read"] = AuditDeclarationKind.RecordsNothing,
         ["POST /v1/notifications/read-all"] = AuditDeclarationKind.RecordsNothing,
 

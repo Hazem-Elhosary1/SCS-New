@@ -16,7 +16,7 @@ namespace Scs.Identity.Infrastructure;
 /// another clinic is invisible here, so every operation answers "not found" for it.
 /// </summary>
 internal sealed class StaffAccounts(
-    IdentityDbContext db, IClinicContext clinic, SessionService sessions, TimeProvider clock) : IStaffAccounts
+    IdentityDbContext db, IClinicContext clinic, SessionService sessions, Seats seats, TimeProvider clock) : IStaffAccounts
 {
     public async Task<Guid> CreateAsync(string email, string state, string? password, CancellationToken cancellation)
     {
@@ -53,22 +53,49 @@ internal sealed class StaffAccounts(
             throw ScsProblemException.Validation(errors);
         }
 
-        var account = StaffAccount.Create(address!, state, hash, clock.GetUtcNow());
-        db.Accounts.Add(account);
+        // An invited or active account takes a seat of the plan's «المستخدمون»: checked under the
+        // seat's lock, held until this account is written (spec 014, FR-016, ق-أ-١٩).
+        var takesASeat = state != AccountStates.Disabled;
+        var own = takesASeat && db.Database.CurrentTransaction is null
+            ? await db.Database.BeginTransactionAsync(cancellation).ConfigureAwait(false)
+            : null;
 
         try
         {
-            await db.SaveChangesAsync(cancellation).ConfigureAwait(false);
-        }
-        catch (DbUpdateException failure) when (failure.IsUniqueViolation())
-        {
-            // The same answer whether this clinic or another one holds the email (FR-003).
-            db.Entry(account).State = EntityState.Detached;
-            throw ScsProblemException.Validation(
-                new Dictionary<string, string[]>(StringComparer.Ordinal) { ["email"] = ["TAKEN"] });
-        }
+            if (takesASeat)
+            {
+                await seats.EnsureSeatAsync(null, cancellation).ConfigureAwait(false);
+            }
 
-        return account.Id;
+            var account = StaffAccount.Create(address!, state, hash, clock.GetUtcNow());
+            db.Accounts.Add(account);
+
+            try
+            {
+                await db.SaveChangesAsync(cancellation).ConfigureAwait(false);
+            }
+            catch (DbUpdateException failure) when (failure.IsUniqueViolation())
+            {
+                // The same answer whether this clinic or another one holds the email (FR-003).
+                db.Entry(account).State = EntityState.Detached;
+                throw ScsProblemException.Validation(
+                    new Dictionary<string, string[]>(StringComparer.Ordinal) { ["email"] = ["TAKEN"] });
+            }
+
+            if (own is not null)
+            {
+                await own.CommitAsync(cancellation).ConfigureAwait(false);
+            }
+
+            return account.Id;
+        }
+        finally
+        {
+            if (own is not null)
+            {
+                await own.DisposeAsync().ConfigureAwait(false);
+            }
+        }
     }
 
     public async Task SetStateAsync(Guid accountId, string state, CancellationToken cancellation)
@@ -87,6 +114,12 @@ internal sealed class StaffAccounts(
         var transaction = await db.Database.BeginTransactionAsync(cancellation).ConfigureAwait(false);
         await using (transaction.ConfigureAwait(false))
         {
+            // Re-enabling gives the account a seat again: checked against the plan (spec 014, FR-016).
+            if (state == AccountStates.Active)
+            {
+                await seats.EnsureSeatAsync(accountId, cancellation).ConfigureAwait(false);
+            }
+
             account.SetState(state);
             await db.SaveChangesAsync(cancellation).ConfigureAwait(false);
 

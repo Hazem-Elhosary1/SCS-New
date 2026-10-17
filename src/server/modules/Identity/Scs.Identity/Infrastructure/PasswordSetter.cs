@@ -69,6 +69,9 @@ internal sealed record SetPassword(Guid AccountId, string? Password, string Even
 
     public Guid? ActorAccountId { get; init; }
 
+    /// <summary>The password makes an account that takes no seat active: check the plan's «المستخدمون» first (spec 014).</summary>
+    public bool CheckSeat { get; init; }
+
     /// <summary>The type only: this carries a password.</summary>
     public override string ToString() => nameof(SetPassword);
 }
@@ -98,6 +101,7 @@ internal sealed class PasswordSetter(
     IClinicContext clinic,
     PasswordLinks links,
     SessionService sessions,
+    Seats seats,
     TimeProvider clock,
     IOptions<ScsOptions> options)
 {
@@ -138,6 +142,11 @@ internal sealed class PasswordSetter(
             if (account.State == AccountStates.Disabled)
             {
                 return SetPasswordResult.Disabled;
+            }
+
+            if (command.CheckSeat && account.State == AccountStates.Invited)
+            {
+                await seats.EnsureSeatAsync(account.Id, cancellation).ConfigureAwait(false);
             }
 
             if (command.Link is { } token && account.State != PasswordLinks.StateNeededBy(token.Kind))

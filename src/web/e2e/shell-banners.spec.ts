@@ -304,8 +304,10 @@ test.describe('not in your plan', () => {
 
     await expect(page.getByTestId('page-title')).toHaveText('التذاكر');
     const card = page.getByTestId('page-not-in-plan');
-    await expect(card).toContainText('غير مشمولة في باقتك');
-    await expect(card).toContainText('باقة العيادة الحالية لا تشمل هذه الصفحة');
+    // The card as spec 014 draws it: the plan named as the reason, and the way to the subscription.
+    await expect(card).toContainText('الباقة الحاليّة لا تشمل «التذاكر»');
+    await expect(card).toContainText('«التذاكر» ليست ميزة في باقة العيادة الحاليّة. هذا حدّ الباقة لا نقصٌ في صلاحياتك');
+    await expect(page.getByTestId('plan-link')).toHaveText('فتح الملف والاشتراك');
 
     await page.getByTestId('plan-link').click();
     await expect(page).toHaveURL(`${CLINIC}/account/subscription`);

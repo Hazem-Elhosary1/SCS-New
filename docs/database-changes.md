@@ -76,6 +76,14 @@ whether it is registered before the `Plans` module (`TryAdd` there) or after it.
 OP-A-189: a clinic billed monthly counts its monthly price, one billed annually its annual price
 ÷ 12, a clinic in trial, expired or suspended nothing.
 
+## A clinic's plan and its meter (spec 014)
+
+The `subscriptions` schema holds two clinic-owned tables, under isolation from the migration that
+makes them: `ClinicPlan` (one row per clinic, keyed by it; no row is no plan) and `MeterEntry`
+(the four monthly limits, one row per use or give-back, never changed or removed).
+`tenancy.Clinic` has a nullable `Specialty`, set by clinic creation (015). Spec 014 marked
+`max_users` built (`MaxUsersBuilt`, only where it was still upcoming).
+
 ## Creating a migration
 
 ```bash

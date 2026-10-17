@@ -83,6 +83,13 @@ public static class ErrorMessages
         [ErrorCodes.PlanBadgeOnDisabled] = ("الباقة المعطلة لا تحمل شارة", "A disabled plan holds no badge"),
         [ErrorCodes.PlanChangedElsewhere] = ("تغيّرت هذه الباقة بعد فتحها", "This plan changed after you opened it"),
         [ErrorCodes.PlanCodeTaken] = ("رمز الباقة مستعمل، أعد المحاولة", "The plan code is in use; try again"),
+        [ErrorCodes.PlanFeatureNotIncluded] = ("غير مشمولة في باقتك", "Not included in your plan"),
+        // {feature} and {limit} are filled by the refusal itself (spec 014, FR-011; the owner's words of 17 Oct 2026).
+        [ErrorCodes.PlanLimitReached] = (
+            "بلغت العيادة حدّ باقتها من «{feature}»: {limit}. تُرفع الباقة من «الملف والاشتراك».",
+            "The clinic has reached its plan's limit of {feature}: {limit}. The plan is raised in Profile & subscription."),
+        [ErrorCodes.LimitBusy] = ("العدد مشغول بتغيير آخر الآن، تُرجى المحاولة بعد قليل", "The count is busy with another change; try again shortly"),
+        [ErrorCodes.MeterGiveBackTooMuch] = ("لا يُعاد أكثر مما بقي من الاستعمال", "No more can be given back than is left of the use"),
     };
 
     public static string Title(string code, string language)

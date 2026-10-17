@@ -113,12 +113,27 @@ export class SubscriptionSource {
   readonly notice: Signal<SubscriptionNotice | null> = signal(null);
 }
 
-/** Which destinations the clinic's plan leaves out. Filled by the plans spec (012). */
+/**
+ * Which destinations the clinic's plan leaves out. Each console gives its own (the clinic's
+ * reads the session's plan, spec 014); this one leaves nothing out.
+ */
 @Injectable({ providedIn: 'root' })
 export class PlanSource {
   excludes(destinationKey: string): boolean {
     void destinationKey;
     return false;
+  }
+
+  /** The name of what the plan leaves out on that destination, when no words are drawn for it. */
+  featureName(destinationKey: string, language: string): string | null {
+    void destinationKey;
+    void language;
+    return null;
+  }
+
+  /** Reads the plan again before a destination decides (spec 014, FR-029). */
+  refresh(): Promise<void> {
+    return Promise.resolve();
   }
 }
 
