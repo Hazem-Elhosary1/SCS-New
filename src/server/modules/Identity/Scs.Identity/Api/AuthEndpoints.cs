@@ -16,6 +16,7 @@ using Scs.Identity.Infrastructure;
 using Scs.Identity.Infrastructure.Persistence;
 using Scs.SharedKernel;
 using Scs.SharedKernel.Access;
+using Scs.Subscriptions.Contracts;
 using Scs.Tenancy.Contracts;
 
 namespace Scs.Identity.Api;
@@ -28,6 +29,16 @@ internal sealed record CodeSentResponse(int ExpiresInSeconds, int ResendAvailabl
 
 internal sealed record SessionClinic(string NameAr, string NameEn, string State);
 
+/// <summary>A feature's name in both languages.</summary>
+internal sealed record SessionName(string Ar, string En);
+
+/// <summary>
+/// The clinic's plan as the console needs it to say what is not in it (spec 014, FR-025): its name,
+/// the built features it does not include, and those features' names. Nothing about other plans.
+/// </summary>
+/// <param name="NameAr">Null when the clinic has no plan.</param>
+internal sealed record SessionPlan(string? NameAr, string? NameEn, IReadOnlyList<string> Withheld, IReadOnlyDictionary<string, SessionName> Names);
+
 /// <param name="ReadyKey">Set for a ready role that still has the name it was created with.</param>
 internal sealed record SessionRole(Guid Id, string Name, string? ReadyKey);
 
@@ -39,9 +50,10 @@ internal sealed record SessionRole(Guid Id, string Name, string? ReadyKey);
 /// uses them to leave out what the person may not use; the server decides again on every request.
 /// </param>
 /// <param name="Preferences">What the person keeps between sessions (spec 006).</param>
+/// <param name="Plan">What the clinic's plan leaves out, for the console's not-in-plan state (spec 014).</param>
 internal sealed record SessionResponse(
     Guid AccountId, [property: PersonalData] string Email, SessionClinic Clinic, DateTimeOffset ExpiresAt,
-    bool MustChangePassword, SessionRole? Role, IReadOnlyList<string> Permissions, PreferencesView Preferences)
+    bool MustChangePassword, SessionRole? Role, IReadOnlyList<string> Permissions, PreferencesView Preferences, SessionPlan Plan)
 {
     public override string ToString() => nameof(SessionResponse);
 }
@@ -244,9 +256,9 @@ internal static class AuthEndpoints
 
     private static async Task<IResult> GetSessionAsync(
         ICurrentStaff staff, IdentityDbContext db, IClinicProfile profile, StaffAccessSource access,
-        Preferences preferences, CancellationToken cancellation)
+        Preferences preferences, IClinicEntitlements entitlements, CancellationToken cancellation)
     {
-        var response = await DescribeAsync(staff.AccountId, staff.SessionId, db, profile, access, preferences, cancellation);
+        var response = await DescribeAsync(staff.AccountId, staff.SessionId, db, profile, access, preferences, entitlements, cancellation);
         return response is null
             ? throw new ScsProblemException(StatusCodes.Status401Unauthorized, ErrorCodes.SessionEnded)
             : TypedResults.Ok(response);
@@ -271,7 +283,8 @@ internal static class AuthEndpoints
                 cookies.ClearChallenge(context.Response);
                 WriteSessionCookies(signedIn.Session, context, cookies, clock, auth);
                 var described = await DescribeAsync(
-                    signedIn.Session.AccountId, signedIn.Session.SessionId, db, profile, access, preferences, cancellation);
+                    signedIn.Session.AccountId, signedIn.Session.SessionId, db, profile, access, preferences,
+                    context.RequestServices.GetRequiredService<IClinicEntitlements>(), cancellation);
                 await context.Response.WriteAsJsonAsync(described, cancellation);
                 break;
 
@@ -324,7 +337,7 @@ internal static class AuthEndpoints
 
     private static async Task<SessionResponse?> DescribeAsync(
         Guid accountId, Guid sessionId, IdentityDbContext db, IClinicProfile profile, StaffAccessSource access,
-        Preferences preferences, CancellationToken cancellation)
+        Preferences preferences, IClinicEntitlements entitlements, CancellationToken cancellation)
     {
         var found = await (
             from session in db.Sessions.AsNoTracking()
@@ -339,6 +352,8 @@ internal static class AuthEndpoints
 
         var clinic = await profile.GetOwnAsync(cancellation);
         var grant = await access.LoadAsync(accountId, cancellation);
+        var plan = await entitlements.CurrentAsync(cancellation);
+        var withheld = plan.Withheld;
 
         // A temporary password opens nothing but its own replacement, so nothing is listed.
         return new SessionResponse(
@@ -346,7 +361,12 @@ internal static class AuthEndpoints
             found.MustChangePassword,
             grant.RoleId is { } roleId ? new SessionRole(roleId, grant.RoleName!, grant.ReadyKey) : null,
             found.MustChangePassword ? [] : PermissionCatalogue.InOrder(grant.Codes),
-            await preferences.ReadAsync(accountId, cancellation));
+            await preferences.ReadAsync(accountId, cancellation),
+            new SessionPlan(
+                plan.PlanNameAr,
+                plan.PlanNameEn,
+                withheld,
+                withheld.ToDictionary(key => key, key => new SessionName(plan.Of(key).NameAr, plan.Of(key).NameEn), StringComparer.Ordinal)));
     }
 
     /// <summary>The pending sign-in of this browser, unless its ten minutes are over.</summary>

@@ -12,6 +12,7 @@ import {
   SubscriptionNotice,
   SubscriptionSource,
 } from 'core';
+import { ClinicPlanSource } from '../shell/plan-source';
 
 /**
  * What a browser test, or a person building the product, puts on `window.__scsSample` before
@@ -108,15 +109,30 @@ function sampledBell(): Provider {
   };
 }
 
+/** The plan's source is the session's (spec 014) unless a sample was given. */
+function sampledPlan(): Provider {
+  return {
+    provide: PlanSource,
+    useFactory: () => {
+      const given = sample();
+      if (given === null) {
+        return inject(ClinicPlanSource);
+      }
+
+      const source = new PlanSource();
+      source.excludes = (key: string) => (given.outsidePlan ?? []).includes(key);
+      return source;
+    },
+  };
+}
+
 /** The frame's sources, answering from `window.__scsSample` when it is there. */
 export function provideSampleSources(): Provider[] {
   return [
     sampledBell(),
     sampled(BranchesSource, sampleBranches),
     sampled(SubscriptionSource, (given) => ({ notice: signal(given.subscription ?? null) })),
-    sampled(PlanSource, (given) => ({
-      excludes: (key: string) => (given.outsidePlan ?? []).includes(key),
-    })),
+    sampledPlan(),
     sampled(InboxCountSource, (given) => ({ unread: signal(given.unread ?? null) })),
     sampled(ClinicTraitsSource, (given) => ({
       dental: signal(given.dental ?? false),

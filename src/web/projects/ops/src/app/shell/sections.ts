@@ -18,5 +18,6 @@ export interface OpsSection {
 export const OPS_SECTIONS: readonly OpsSection[] = [
   // Open to every operator until the dashboard is built (spec 022), which puts it behind its own permission.
   { key: 'home', path: '/', icon: 'home' },
+  { key: 'plans', path: '/plans', icon: 'gem', permission: 'billing.view' },
   { key: 'operators', path: '/operators', icon: 'people', permission: 'operators.view' },
 ];

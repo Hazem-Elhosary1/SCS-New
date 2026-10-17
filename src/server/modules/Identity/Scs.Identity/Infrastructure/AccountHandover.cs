@@ -29,6 +29,7 @@ internal sealed class AccountHandover(
     IEmailSender mail,
     EmailRenderer renderer,
     IClinicProfile profile,
+    Seats seats,
     TimeProvider clock,
     IOptions<ScsOptions> options) : IAccountHandover
 {
@@ -64,7 +65,7 @@ internal sealed class AccountHandover(
             throw new ScsProblemException(StatusCodes.Status404NotFound, ErrorCodes.NotFound);
         }
 
-        var sent = await SendInvitationAsync(accountId, account.Email, cancellation).ConfigureAwait(false);
+        var sent = await InviteAgainAsync(accountId, account.Email, cancellation).ConfigureAwait(false);
         return new AccountHandoverResult(accountId, sent, GeneratedPassword: null);
     }
 
@@ -90,7 +91,7 @@ internal sealed class AccountHandover(
             // The password, if there is one, keeps working until the link is used. The link is
             // not held back by the caps on what a person may ask for, but it counts toward them.
             var sent = account.State == AccountStates.Invited
-                ? await SendInvitationAsync(accountId, account.Email, cancellation).ConfigureAwait(false)
+                ? await InviteAgainAsync(accountId, account.Email, cancellation).ConfigureAwait(false)
                 : await links.SendAsync(
                     accountId,
                     PasswordLinkKinds.Reset,
@@ -117,6 +118,8 @@ internal sealed class AccountHandover(
                 Temporary = true,
                 EventDetail = method,
                 ActorAccountId = actor,
+                // A password makes an invited account active: it takes a seat (spec 014, FR-016).
+                CheckSeat = account.State == AccountStates.Invited,
             },
             cancellation).ConfigureAwait(false);
 
@@ -159,6 +162,28 @@ internal sealed class AccountHandover(
             cancellation).ConfigureAwait(false);
 
         return (id, sent);
+    }
+
+    /// <summary>
+    /// A new invitation for an account that was never activated. One whose invitation lapsed
+    /// takes no seat until it is invited again, so that is checked against the plan, under the
+    /// seat's lock, until the new link is written (spec 014, FR-016, ق-١٠٣).
+    /// </summary>
+    private async Task<bool> InviteAgainAsync(Guid accountId, string email, CancellationToken cancellation)
+    {
+        if (await seats.TakesASeatAsync(accountId, cancellation).ConfigureAwait(false))
+        {
+            return await SendInvitationAsync(accountId, email, cancellation).ConfigureAwait(false);
+        }
+
+        var transaction = await db.Database.BeginTransactionAsync(cancellation).ConfigureAwait(false);
+        await using (transaction.ConfigureAwait(false))
+        {
+            await seats.EnsureSeatAsync(accountId, cancellation).ConfigureAwait(false);
+            var sent = await SendInvitationAsync(accountId, email, cancellation).ConfigureAwait(false);
+            await transaction.CommitAsync(cancellation).ConfigureAwait(false);
+            return sent;
+        }
     }
 
     private async Task<bool> SendInvitationAsync(Guid accountId, string email, CancellationToken cancellation)

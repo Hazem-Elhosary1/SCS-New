@@ -228,6 +228,18 @@ These are owner decisions of 9 Oct 2026 and are constraints, not preferences.
 - Branching: `main` holds production-ready code only and `develop` is the integration branch.
   Each spec branch is cut from `develop` and returns to it by pull request; `develop` reaches
   `main` by pull request at release. Nobody commits directly to `main` or `develop`.
+- **A built spec is frozen.** A spec is built once its branch is merged into `develop`. From then
+  on, its folder `specs/NNN-name/` — spec, plan, research, data model, contracts, quickstart,
+  tasks, checklists, validation and pictures — MUST NOT be edited for any reason, not even for a
+  typo, and no command (`/speckit-clarify`, `/speckit-plan`, `/speckit-tasks`,
+  `/speckit-analyze`, `/speckit-implement`, `/speckit-converge`) is run on it again.
+- **Every change is a new spec.** Any change to what a built spec delivers — a new behaviour, a
+  correction, a fix, a change of wording or look — is made by a new spec: the later row of the
+  phases list that already covers it, or a new spec taking the next free number and placed in
+  its phase. The new spec's own documents name the built spec and say what they change. The new
+  spec MAY change the code, tests and screens the built spec produced; it never edits the built
+  spec's documents. Until its branch is merged, a spec is still open and is changed in its own
+  folder as usual.
 - Language: the constitution, specs, plans, tasks, code, comments and commit messages are written
   in English. User-facing wording is quoted in Arabic exactly as the BRD and its glossary give it.
 - Every plan produced by `/speckit-plan` MUST include a Constitution Check that states, for each
@@ -259,7 +271,8 @@ These are owner decisions of 9 Oct 2026 and are constraints, not preferences.
 - **Compliance review**: compliance is checked at `/speckit-plan` (Constitution Check), at
   `/speckit-analyze` before implementation, and in code review before merge. A reviewer MUST
   block a change that violates a principle without a recorded justification. Violations of
-  Principle II are never justifiable.
+  Principle II are never justifiable. A change that edits the folder of a built spec is blocked
+  without exception: its content goes into a new spec.
 - **Decisions outside the BRD**: the server architecture, repository layout, branching, testing
   discipline, artifact language and the stack choices marked "Project decision" in this document
   are project decisions rather than BRD requirements. They change by amendment here, without a BRD change.
@@ -267,4 +280,4 @@ These are owner decisions of 9 Oct 2026 and are constraints, not preferences.
   system being built (`SCS-BRD-Clinic` or `SCS-BRD-Ops`), the design file for the look of its
   screens, and `docs/brd/SCS-SpecKit-Phases.md` for the order of work.
 
-**Version**: 1.2.0 | **Ratified**: 2026-10-10 | **Last Amended**: 2026-10-11
+**Version**: 1.3.0 | **Ratified**: 2026-10-10 | **Last Amended**: 2026-10-16

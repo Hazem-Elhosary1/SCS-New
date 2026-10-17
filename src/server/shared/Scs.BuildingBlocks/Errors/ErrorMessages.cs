@@ -71,6 +71,25 @@ public static class ErrorMessages
         [ErrorCodes.OpsOwnRoleEdit] = ("لا يمكنك تعديل الدور الذي تحمله", "You can't edit the role you hold"),
         [ErrorCodes.OpsSystemRole] = ("أدوار النظام لا تُعدَّل ولا تُحذف", "System roles are not edited or deleted"),
         [ErrorCodes.OpsRoleInUse] = ("لا يمكن حذف دور مُسند إلى مشغلين", "A role that operators hold can't be deleted"),
+        [ErrorCodes.FeatureUnitsRequired] = ("الحدّ يحتاج وحدة بالعربية والإنجليزية", "A limit needs its unit in Arabic and English"),
+        [ErrorCodes.FeatureSwitchHasLimit] = ("المفتاح لا يحمل وحدة ولا حدًّا أساسيًّا", "A switch has no unit and no baseline"),
+        [ErrorCodes.FeatureKeyTaken] = ("هذا المفتاح لميزة أخرى", "This key belongs to another feature"),
+        [ErrorCodes.FeatureRetiredMustBeSold] = ("الميزة الموقوفة تبقى مُباعة حتى يُعاد بيعها أو تبقى موقوفة", "A retired feature stays sold"),
+        [ErrorCodes.FeatureStateChanged] = ("تغيّرت حالة الميزة", "The feature's state has changed"),
+        [ErrorCodes.FeatureChangedElsewhere] = ("عدّل غيرك هذه الميزة بعد فتحها", "Someone else edited this feature after you opened it"),
+        [ErrorCodes.PlanFeatureUnknown] = ("الباقة تسمّي ميزة ليست في الكتالوج", "The plan names a feature the catalogue doesn't hold"),
+        [ErrorCodes.PlanSwitchHasLimit] = ("ميزة من نوع مفتاح لا تحمل حدًّا", "A switch feature takes no limit"),
+        [ErrorCodes.PlanFeatureNotSold] = ("هذه الميزة لا تُباع في الباقات الآن", "This feature isn't sold in plans now"),
+        [ErrorCodes.PlanBadgeOnDisabled] = ("الباقة المعطلة لا تحمل شارة", "A disabled plan holds no badge"),
+        [ErrorCodes.PlanChangedElsewhere] = ("تغيّرت هذه الباقة بعد فتحها", "This plan changed after you opened it"),
+        [ErrorCodes.PlanCodeTaken] = ("رمز الباقة مستعمل، أعد المحاولة", "The plan code is in use; try again"),
+        [ErrorCodes.PlanFeatureNotIncluded] = ("غير مشمولة في باقتك", "Not included in your plan"),
+        // {feature} and {limit} are filled by the refusal itself (spec 014, FR-011; the owner's words of 17 Oct 2026).
+        [ErrorCodes.PlanLimitReached] = (
+            "بلغت العيادة حدّ باقتها من «{feature}»: {limit}. تُرفع الباقة من «الملف والاشتراك».",
+            "The clinic has reached its plan's limit of {feature}: {limit}. The plan is raised in Profile & subscription."),
+        [ErrorCodes.LimitBusy] = ("العدد مشغول بتغيير آخر الآن، تُرجى المحاولة بعد قليل", "The count is busy with another change; try again shortly"),
+        [ErrorCodes.MeterGiveBackTooMuch] = ("لا يُعاد أكثر مما بقي من الاستعمال", "No more can be given back than is left of the use"),
     };
 
     public static string Title(string code, string language)

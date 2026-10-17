@@ -75,6 +75,29 @@ export const routes: Routes = [
       ...guarded('operators/:id/edit', OpsCan.operatorsManage, () =>
         import('./operators/operator-form.page').then((file) => file.OperatorFormPage),
       ),
+      // The feature catalogue (spec 012): read with «عرض الباقات والفواتير», written with «إدارة الباقات والاشتراكات».
+      ...guarded('plans/features', OpsCan.billingView, () =>
+        import('./plans/feature-catalogue.page').then((file) => file.FeatureCataloguePage),
+      ),
+      ...guarded('plans/features/new', OpsCan.billingManagePlans, () =>
+        import('./plans/feature-form.page').then((file) => file.FeatureFormPage),
+      ),
+      ...guarded('plans/features/:key/edit', OpsCan.billingManagePlans, () =>
+        import('./plans/feature-form.page').then((file) => file.FeatureFormPage),
+      ),
+      // The plans (spec 013), after the catalogue's addresses so that `plans/:id` never takes them.
+      ...guarded('plans', OpsCan.billingView, () =>
+        import('./plans/plans-list.page').then((file) => file.PlansListPage),
+      ),
+      ...guarded('plans/new', OpsCan.billingManagePlans, () =>
+        import('./plans/plan-form.page').then((file) => file.PlanFormPage),
+      ),
+      ...guarded('plans/:id', OpsCan.billingView, () =>
+        import('./plans/plan-detail.page').then((file) => file.PlanDetailPage),
+      ),
+      ...guarded('plans/:id/edit', OpsCan.billingManagePlans, () =>
+        import('./plans/plan-form.page').then((file) => file.PlanFormPage),
+      ),
       {
         path: '**',
         loadComponent: () => import('./home/home.pages').then((file) => file.NotFoundPage),

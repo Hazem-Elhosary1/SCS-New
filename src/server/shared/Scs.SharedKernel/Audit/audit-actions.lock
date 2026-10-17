@@ -27,3 +27,12 @@ operator.unlocked security
 opsrole.created users
 opsrole.edited users
 opsrole.deleted users
+feature.created changes
+feature.updated changes
+feature.retired changes
+feature.resumed changes
+plan.created changes
+plan.updated changes
+plan.disabled changes
+plan.enabled changes
+subscription.plan-set changes

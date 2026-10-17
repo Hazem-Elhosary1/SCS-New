@@ -169,6 +169,54 @@ public static class ErrorCodes
     /// <summary>A role that operators hold is not deleted; carries <c>operators</c>.</summary>
     public const string OpsRoleInUse = "OPS_ROLE_IN_USE";
 
+    /// <summary>A limit without its unit in both languages (spec 012, FR-010).</summary>
+    public const string FeatureUnitsRequired = "FEATURE_UNITS_REQUIRED";
+
+    /// <summary>A switch given a unit or a baseline: only a limit counts something (spec 012, FR-010).</summary>
+    public const string FeatureSwitchHasLimit = "FEATURE_SWITCH_HAS_LIMIT";
+
+    /// <summary>The key is a feature's already, a retired one included (spec 012, FR-009).</summary>
+    public const string FeatureKeyTaken = "FEATURE_KEY_TAKEN";
+
+    /// <summary>A retired feature stays sold: it is sold again or left retired (spec 012).</summary>
+    public const string FeatureRetiredMustBeSold = "FEATURE_RETIRED_MUST_BE_SOLD";
+
+    /// <summary>The feature is not in the state the action needs: retire a sold one, sell again a retired one.</summary>
+    public const string FeatureStateChanged = "FEATURE_STATE_CHANGED";
+
+    /// <summary>Someone edited the feature after this form read it.</summary>
+    public const string FeatureChangedElsewhere = "FEATURE_CHANGED_ELSEWHERE";
+
+    /// <summary>A plan's grid names a key the catalogue does not hold (spec 013, ق-٤٢).</summary>
+    public const string PlanFeatureUnknown = "PLAN_FEATURE_UNKNOWN";
+
+    /// <summary>A plan's grid gives a number to a feature that is a switch (spec 013, ق-٤٢).</summary>
+    public const string PlanSwitchHasLimit = "PLAN_SWITCH_HAS_LIMIT";
+
+    /// <summary>A plan takes a feature that is not sold or is retired, which it did not already have (spec 013, ق-٤٨).</summary>
+    public const string PlanFeatureNotSold = "PLAN_FEATURE_NOT_SOLD";
+
+    /// <summary>A disabled plan holds no badge (spec 013, ق-٤٥).</summary>
+    public const string PlanBadgeOnDisabled = "PLAN_BADGE_ON_DISABLED";
+
+    /// <summary>Someone changed the plan after this form read it — a save, or its badge taken (spec 013).</summary>
+    public const string PlanChangedElsewhere = "PLAN_CHANGED_ELSEWHERE";
+
+    /// <summary>Two plans added at once with one English name, and the retry lost again (spec 013, research R3).</summary>
+    public const string PlanCodeTaken = "PLAN_CODE_TAKEN";
+
+    /// <summary>The clinic's plan does not include the feature the action belongs to (spec 014, SH-014, ق-٤٠).</summary>
+    public const string PlanFeatureNotIncluded = "PLAN_FEATURE_NOT_INCLUDED";
+
+    /// <summary>The action would raise a counted limit past the clinic's plan (spec 014, SH-017, ق-٤٠).</summary>
+    public const string PlanLimitReached = "PLAN_LIMIT_REACHED";
+
+    /// <summary>The count of a limit is busy with another change for too long; try again (spec 014).</summary>
+    public const string LimitBusy = "LIMIT_BUSY";
+
+    /// <summary>A give-back returns more than is left of the use it names (spec 014).</summary>
+    public const string MeterGiveBackTooMuch = "METER_GIVE_BACK_TOO_MUCH";
+
     public static IReadOnlyList<string> All { get; } =
     [
         ValidationFailed, MalformedRequest, Unauthenticated, Forbidden, NotFound,
@@ -184,5 +232,8 @@ public static class ErrorCodes
         StepExpired,
         OpsEmailTaken, OpsRoleNotGrantable, OpsOwnRole, OpsLastSuperAdmin, OpsOwnAccount, OpsStateChanged, OpsLinkTooSoon,
         OpsChangedElsewhere, OpsLinkNotSent, OpsRoleNameTaken, OpsPermissionsNotHeld, OpsOwnRoleEdit, OpsSystemRole, OpsRoleInUse,
+        FeatureUnitsRequired, FeatureSwitchHasLimit, FeatureKeyTaken, FeatureRetiredMustBeSold, FeatureStateChanged, FeatureChangedElsewhere,
+        PlanFeatureUnknown, PlanSwitchHasLimit, PlanFeatureNotSold, PlanBadgeOnDisabled, PlanChangedElsewhere, PlanCodeTaken,
+        PlanFeatureNotIncluded, PlanLimitReached, LimitBusy, MeterGiveBackTooMuch,
     ];
 }

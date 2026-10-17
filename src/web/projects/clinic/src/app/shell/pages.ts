@@ -1,14 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { TranslocoPipe } from '@jsverse/transloco';
-import { AccessService } from 'core';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { AccessService, PlanSource } from 'core';
 import {
   ScsCardComponent,
   ScsEmptyStateComponent,
   ScsLinkDirective,
   ScsNoAccessComponent,
   ScsPageHeaderComponent,
-  ScsStateComponent,
 } from 'ui';
 import { Destination, PARENTS, destination } from './destinations';
 
@@ -82,34 +82,80 @@ export class NoAccessPage {
   protected readonly roleName = computed(() => this.access.role()?.name ?? '');
 }
 
-/** A destination the clinic's plan leaves out (spec 006, FR-008): the plan is named as the reason. */
+/** Destinations whose card the design file draws with words of its own (spec 014, research R14). */
+const DRAWN_WORDS: Readonly<Record<string, string>> = {
+  inbox: 'inbox',
+  'reports.financial': 'reports',
+  'reports.clinical': 'reports',
+};
+
+/**
+ * A destination the clinic's plan leaves out (spec 006, FR-008; spec 014, FR-027): the page keeps
+ * its header, and the card the design draws — «Inbox / Not In Plan», «Financial / Not In Plan» —
+ * names the plan as the reason, not a permission. The way to the subscription is offered only to
+ * whoever may open it (SH-055); anyone else is told who changes the plan.
+ */
 @Component({
   selector: 'app-not-in-plan-page',
-  imports: [
-    TranslocoPipe,
-    RouterLink,
-    ScsPageHeaderComponent,
-    ScsCardComponent,
-    ScsStateComponent,
-    ScsLinkDirective,
-  ],
+  imports: [TranslocoPipe, RouterLink, ScsPageHeaderComponent, ScsCardComponent, ScsEmptyStateComponent, ScsLinkDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // The frames draw the card's title at 16 SemiBold (`6701:1002017`, `6614:945146`).
+  styles: `
+    scs-card {
+      --scs-empty-title-weight: 600;
+    }
+  `,
   template: `
     <scs-page-header
       [title]="at.place.labelKey | transloco"
       [parent]="at.parentKey ? (at.parentKey | transloco) : ''"
     />
     <scs-card data-testid="page-not-in-plan">
-      <scs-state state="not-in-plan" [message]="'app.shell.notInPlanText' | transloco">
-        <a scsUpgrade scsLink routerLink="/account/subscription" data-testid="plan-link">{{
-          'app.nav.subscription' | transloco
-        }}</a>
-      </scs-state>
+      <scs-empty-state
+        context="not-in-plan"
+        [title]="'app.plan.notIn.title' | transloco: { feature: noun() }"
+        [text]="lineKey() | transloco: { feature: subject() }"
+      >
+        @if (canOpenSubscription()) {
+          <a scsLink routerLink="/account/subscription" data-testid="plan-link">{{
+            'app.plan.notIn.link' | transloco
+          }}</a>
+        }
+      </scs-empty-state>
     </scs-card>
   `,
 })
 export class NotInPlanPage {
+  private readonly access = inject(AccessService);
+  private readonly plan = inject(PlanSource);
+  private readonly transloco = inject(TranslocoService);
+  private readonly language = toSignal(this.transloco.langChanges$, { initialValue: this.transloco.getActiveLang() });
+
   protected readonly at = routeDestination();
+  protected readonly canOpenSubscription = computed(() => this.access.holds('subscription.view'));
+
+  private readonly drawn = DRAWN_WORDS[this.at.place.key] ?? null;
+
+  /** The catalogue's name, or the destination's own when the session names nothing. */
+  private readonly named = computed(
+    () =>
+      this.plan.featureName(this.at.place.key, this.language()) ??
+      this.transloco.translate(this.at.place.labelKey, {}, this.language()),
+  );
+
+  protected readonly noun = computed(() =>
+    this.drawn ? this.transloco.translate(`app.plan.places.${this.drawn}.title`, {}, this.language()) : `«${this.named()}»`,
+  );
+
+  protected readonly subject = computed(() =>
+    this.drawn ? this.transloco.translate(`app.plan.places.${this.drawn}.subject`, {}, this.language()) : this.named(),
+  );
+
+  /** The drawn line names a plural subject; an undrawn one says «… ليست ميزة …», whatever the name. */
+  protected readonly lineKey = computed(() => {
+    const kind = this.drawn ? 'text' : 'textNamed';
+    return `app.plan.notIn.${kind}${this.canOpenSubscription() ? '' : 'NoLink'}`;
+  });
 }
 
 /** An address that is no destination of the console (spec 006, FR-007). */

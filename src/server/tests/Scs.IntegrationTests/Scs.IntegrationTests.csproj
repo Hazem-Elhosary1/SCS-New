@@ -18,6 +18,8 @@
     <ProjectReference Include="..\..\tools\Scs.Migrator\Scs.Migrator.csproj" />
     <ProjectReference Include="..\..\modules\Files\Scs.Files\Scs.Files.csproj" />
     <ProjectReference Include="..\..\modules\Operators\Scs.Operators\Scs.Operators.csproj" />
+    <ProjectReference Include="..\..\modules\Plans\Scs.Plans\Scs.Plans.csproj" />
+    <ProjectReference Include="..\..\modules\Subscriptions\Scs.Subscriptions\Scs.Subscriptions.csproj" />
   </ItemGroup>
 
 </Project>

@@ -19,6 +19,15 @@ public sealed record AuditTarget(string Kind, Guid? Id, string? Name = null, str
 
     public const string OperatorRole = "operator-role";
 
+    /// <summary>A feature of the catalogue (spec 012): named, with its key as the fact <c>feature</c>.</summary>
+    public const string Feature = "feature";
+
+    /// <summary>A plan (spec 013): named, with its code as the fact <c>plan</c>.</summary>
+    public const string Plan = "plan";
+
+    /// <summary>The clinic itself: what it subscribes to (spec 014).</summary>
+    public const string Clinic = "clinic";
+
     public static AuditTarget ForAccount(Guid accountId) => new(Account, accountId);
 }
 

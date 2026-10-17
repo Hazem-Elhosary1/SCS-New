@@ -34,6 +34,8 @@ public sealed class RouteAuditDeclarationTests(SqlServerFixture sql)
         ["PUT /v1/account/preferences"] = AuditDeclarationKind.RecordsNothing,
         ["POST /v1/client-errors"] = AuditDeclarationKind.RecordsNothing,
         ["POST /v1/dev/staff-invitations"] = AuditDeclarationKind.RecordsNothing,
+        // Spec 014: setting a seeded clinic's plan on a developer's machine; the plan's own operation records it.
+        ["POST /v1/dev/clinic-plan"] = AuditDeclarationKind.RecordsNothing,
         ["POST /v1/notifications/{id:guid}/read"] = AuditDeclarationKind.RecordsNothing,
         ["POST /v1/notifications/read-all"] = AuditDeclarationKind.RecordsNothing,
 
@@ -63,6 +65,16 @@ public sealed class RouteAuditDeclarationTests(SqlServerFixture sql)
         ["POST /v1/ops/roles"] = AuditDeclarationKind.Records,
         ["PUT /v1/ops/roles/{id:guid}"] = AuditDeclarationKind.Records,
         ["POST /v1/ops/roles/{id:guid}/delete"] = AuditDeclarationKind.Records,
+        // Spec 012: the feature catalogue, written to the platform's own trail.
+        ["POST /v1/ops/features"] = AuditDeclarationKind.Records,
+        ["PUT /v1/ops/features/{key}"] = AuditDeclarationKind.Records,
+        ["POST /v1/ops/features/{key}/retire"] = AuditDeclarationKind.Records,
+        ["POST /v1/ops/features/{key}/resume"] = AuditDeclarationKind.Records,
+        // Spec 013: the plans, written to the platform's own trail.
+        ["POST /v1/ops/plans"] = AuditDeclarationKind.Records,
+        ["PUT /v1/ops/plans/{id:guid}"] = AuditDeclarationKind.Records,
+        ["POST /v1/ops/plans/{id:guid}/disable"] = AuditDeclarationKind.Records,
+        ["POST /v1/ops/plans/{id:guid}/enable"] = AuditDeclarationKind.Records,
         ["PUT /v1/settings/notification-emails/{eventKey}"] = AuditDeclarationKind.Records,
         ["POST /v1/files"] = AuditDeclarationKind.RecordsNothing,
         ["DELETE /v1/files/{id:guid}"] = AuditDeclarationKind.RecordsNothing,

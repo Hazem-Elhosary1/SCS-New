@@ -7,6 +7,7 @@ using Scs.BuildingBlocks.Health;
 using Scs.BuildingBlocks.Jobs;
 using Scs.BuildingBlocks.Logging;
 using Scs.BuildingBlocks.Modules;
+using Scs.BuildingBlocks.Plans;
 using Scs.BuildingBlocks.Security;
 using Scs.BuildingBlocks.Telemetry;
 using Scs.BuildingBlocks.Tenancy;
@@ -125,6 +126,10 @@ app.UseScsTemporaryPasswordGate();
 app.UseScsStaffLogScope();
 app.UseAuthorization();
 app.UseScsAccessGate();
+
+// Then the clinic's plan: a route that belongs to a feature its plan leaves out is refused, after
+// the person has been found allowed to call it (spec 014, FR-008, FR-009).
+app.UseScsPlanGate();
 app.UseScsBlockedNetworks();
 app.UseRateLimiter();
 app.UseScsPatientSurface();

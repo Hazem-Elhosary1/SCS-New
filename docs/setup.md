@@ -296,6 +296,55 @@ while the file is out of date).
 - **Digits.** The operators console writes Western digits in Arabic too (the clinic's console
   keeps its own rule).
 
+#### The feature catalogue (spec 012)
+
+What plans are made of: one table, `plans.Feature`, that starts with the 35 features of the
+design, every one «قادمة» (upcoming), and grows from the console — no release adds a feature.
+
+- **«كتالوج الميزات»** on the plans list (with `billing.view`) opens the catalogue: cards, search
+  over both names and the key, a filter by group, type and status, and «أين تُستعمل» on each row,
+  which lists the plans that include the feature (spec 013).
+- **With `billing.managePlans`** too: «إضافة ميزة», «تعديل الميزة» (the key never changes),
+  «إيقاف الميزة…» for a sold feature and «إعادة بيع الميزة» for a retired one. Each is written to
+  the platform's trail (`audit.PlatformEntry`, actions `feature.*`).
+- **To look at it as each kind of operator**, invite walk accounts with the command and give them,
+  from the first account, «مسؤول الفوترة» (both billing codes), «مشاهد فقط» (`billing.view`
+  alone) or a custom role without either.
+
+#### The plans (spec 013)
+
+What clinics subscribe to: `plans.Plan` and what each includes, `plans.PlanFeature`. **No plan
+ships with the product**: the list starts empty, and operators add the plans.
+
+- **«الباقات»** in the side bar (with `billing.view`) opens the plans list: four cards, search
+  over both names, a filter by state, 8 a page, a plan's detail from its row.
+- **With `billing.managePlans`** too: «إضافة باقة +» and «تعديل الباقة» — the names, the prices
+  before tax in EGP and USD, an optional badge (one plan holds it at most), the catalogue's grid,
+  a change note — and «تعطيل الباقة…» / «تفعيل الباقة». The code is derived once from the English
+  name and never changes. Each change is written to the platform's trail (actions `plan.*`).
+- **Clinics on plans** come with spec 015: until then every clinic figure reads 0 or «لا توجد
+  بيانات». The walk accounts of the catalogue serve for the plans too.
+
+#### A clinic's plan (spec 014)
+
+What a clinic has comes from its plan: `subscriptions.ClinicPlan` says which plan each clinic is on.
+**No clinic has a plan** until clinic creation (spec 015), so every clinic has the catalogue's
+baseline: users with no limit, one doctor, one branch, no message credits.
+
+- **To put a seeded clinic on a plan**, on this machine only (the route does not exist elsewhere):
+
+  ```bash
+  curl -s -X POST http://localhost:5080/v1/dev/clinic-plan -H "Content-Type: application/json" -H "X-Scs-Request: 1" -d "{\"clinic\":\"noor\",\"planCode\":\"<the plan's code>\"}"
+  ```
+
+  `"planCode": null` takes the plan away. Only an active plan can be given. Each change is in the
+  clinic's trail and the platform's (`subscription.plan-set`).
+- **The users limit is live**: with a plan whose «المستخدمون» is n, an account past n is refused
+  (`PLAN_LIMIT_REACHED`), however it is added, re-enabled or invited again.
+- **The clinic console's «غير مشمولة» card** shows only for a feature that is built: today none of
+  the features with a page is, so no page shows it. The browser tests show it with the platform
+  stood in for.
+
 ### The emails (spec 094)
 
 Every email is laid out by one template, in the recipient's language only, with a text-only

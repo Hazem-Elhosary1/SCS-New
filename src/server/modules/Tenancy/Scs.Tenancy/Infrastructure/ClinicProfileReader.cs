@@ -16,7 +16,7 @@ internal sealed class ClinicProfileReader(TenancyDbContext db, IClinicContext cl
         var id = clinic.Require();
         return await db.Clinics.AsNoTracking()
                    .Where(c => c.Id == id)
-                   .Select(c => new ClinicProfile(c.Id, c.NameAr, c.NameEn, c.State))
+                   .Select(c => new ClinicProfile(c.Id, c.NameAr, c.NameEn, c.State, c.Specialty))
                    .SingleOrDefaultAsync(cancellation)
                    .ConfigureAwait(false)
                ?? throw new ScsProblemException(

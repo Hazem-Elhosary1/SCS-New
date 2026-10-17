@@ -74,6 +74,21 @@ export const newAccountLink = {
   clinicNameEn: 'Al Shifa Clinic',
 };
 
+/** The clinic's plan as the session describes it (spec 014, contracts/enforcement-api.md §6). */
+export interface PlatformPlan {
+  nameAr: string | null;
+  nameEn: string | null;
+  withheld: string[];
+  names: Record<string, { ar: string; en: string }>;
+}
+
+export const NO_PLAN: PlatformPlan = { nameAr: null, nameEn: null, withheld: [], names: {} };
+
+/** A plan that leaves out the given features, named as the catalogue names them. */
+export function planWithout(names: Record<string, { ar: string; en: string }>): PlatformPlan {
+  return { nameAr: 'الباقة الأساسية', nameEn: 'Basic Plan', withheld: Object.keys(names), names };
+}
+
 /** How the platform refuses a password: one field code per reason. */
 export function passwordRefused(...codes: string[]): Answer {
   return problem(400, 'VALIDATION_FAILED', { errors: { password: codes } });
@@ -163,6 +178,8 @@ export interface StaffPlatform {
   preferencesSent: Record<string, unknown>[];
   /** Overrides the answer of `GET /v1/auth/session` while set. */
   sessionAnswer: Answer | null;
+  /** What the clinic's plan leaves out (spec 014): nothing by default, as while every feature is upcoming. */
+  plan: PlatformPlan;
   /** The signed-in person's notifications, newest first (spec 008). None by default. */
   notifications: PlatformNotification[];
   /** Overrides the answer of `GET /v1/notifications` while set. */
@@ -238,6 +255,7 @@ export async function staffPlatform(
     preferencesAnswer: { status: 204 },
     preferencesSent: [],
     sessionAnswer: null,
+    plan: NO_PLAN,
     notifications: [],
     notificationsAnswer: null,
     notificationCalls: [],
@@ -263,6 +281,7 @@ export async function staffPlatform(
     role: state.role,
     permissions: state.mustChange ? [] : state.permissions,
     preferences: state.preferences,
+    plan: state.plan,
   });
 
   const on = async (pattern: string, handler: (route: Route) => Promise<void>) => {

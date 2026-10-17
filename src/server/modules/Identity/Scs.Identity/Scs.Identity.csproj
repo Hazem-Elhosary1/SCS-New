@@ -13,6 +13,7 @@
     <ProjectReference Include="..\..\..\shared\Scs.BuildingBlocks\Scs.BuildingBlocks.csproj" />
     <ProjectReference Include="..\Scs.Identity.Contracts\Scs.Identity.Contracts.csproj" />
     <ProjectReference Include="..\..\Tenancy\Scs.Tenancy.Contracts\Scs.Tenancy.Contracts.csproj" />
+    <ProjectReference Include="..\..\Subscriptions\Scs.Subscriptions.Contracts\Scs.Subscriptions.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>
