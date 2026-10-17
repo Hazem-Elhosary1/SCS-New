@@ -313,6 +313,14 @@ export class ScsCheckboxComponent {
       font-size: var(--scs-text-body-sm);
       color: var(--scs-color-text-primary);
     }
+    .words.unseen {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
     .off {
       color: var(--scs-color-text-tertiary);
     }
@@ -354,7 +362,12 @@ export class ScsCheckboxComponent {
           </span></span
         >
       </button>
-      <span class="words" [class.off]="disabled()" [class.locked]="disabled() && on()">
+      <span
+        class="words"
+        [class.unseen]="labelHidden()"
+        [class.off]="disabled()"
+        [class.locked]="disabled() && on()"
+      >
         <span [id]="id + '-label'">{{ label() }}</span>
         @if (reason()) {
           <span class="reason" [id]="id + '-reason'" [attr.data-testid]="(testId() || 'switch') + '-reason'">{{
@@ -368,6 +381,8 @@ export class ScsCheckboxComponent {
 export class ScsSwitchComponent {
   protected readonly id = `scs-switch-${nextId++}`;
   readonly label = input.required<string>();
+  /** The name is read out but not shown: a row that draws its own name elsewhere (spec 013's plan grid). */
+  readonly labelHidden = input(false, { transform: booleanAttribute });
   readonly on = model(false);
   readonly disabled = input(false, { transform: booleanAttribute });
   /** The change is being saved: it cannot be pressed again, and says so. */

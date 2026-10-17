@@ -301,15 +301,29 @@ while the file is out of date).
 What plans are made of: one table, `plans.Feature`, that starts with the 35 features of the
 design, every one «قادمة» (upcoming), and grows from the console — no release adds a feature.
 
-- **«الباقات»** in the side bar (with `billing.view`) opens «كتالوج الميزات» until the plans page
-  exists (spec 013): cards, search over both names and the key, a filter by group, type and
-  status, and «أين تُستعمل» on each row.
+- **«كتالوج الميزات»** on the plans list (with `billing.view`) opens the catalogue: cards, search
+  over both names and the key, a filter by group, type and status, and «أين تُستعمل» on each row,
+  which lists the plans that include the feature (spec 013).
 - **With `billing.managePlans`** too: «إضافة ميزة», «تعديل الميزة» (the key never changes),
   «إيقاف الميزة…» for a sold feature and «إعادة بيع الميزة» for a retired one. Each is written to
   the platform's trail (`audit.PlatformEntry`, actions `feature.*`).
 - **To look at it as each kind of operator**, invite walk accounts with the command and give them,
   from the first account, «مسؤول الفوترة» (both billing codes), «مشاهد فقط» (`billing.view`
   alone) or a custom role without either.
+
+#### The plans (spec 013)
+
+What clinics subscribe to: `plans.Plan` and what each includes, `plans.PlanFeature`. **No plan
+ships with the product**: the list starts empty, and operators add the plans.
+
+- **«الباقات»** in the side bar (with `billing.view`) opens the plans list: four cards, search
+  over both names, a filter by state, 8 a page, a plan's detail from its row.
+- **With `billing.managePlans`** too: «إضافة باقة +» and «تعديل الباقة» — the names, the prices
+  before tax in EGP and USD, an optional badge (one plan holds it at most), the catalogue's grid,
+  a change note — and «تعطيل الباقة…» / «تفعيل الباقة». The code is derived once from the English
+  name and never changes. Each change is written to the platform's trail (actions `plan.*`).
+- **Clinics on plans** come with spec 015: until then every clinic figure reads 0 or «لا توجد
+  بيانات». The walk accounts of the catalogue serve for the plans too.
 
 ### The emails (spec 094)
 

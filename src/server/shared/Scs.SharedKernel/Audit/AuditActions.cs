@@ -71,6 +71,12 @@ public static class AuditActions
     public const string FeatureRetired = "feature.retired";
     public const string FeatureResumed = "feature.resumed";
 
+    // Spec 013: the plans, written to the platform's own trail.
+    public const string PlanCreated = "plan.created";
+    public const string PlanUpdated = "plan.updated";
+    public const string PlanDisabled = "plan.disabled";
+    public const string PlanEnabled = "plan.enabled";
+
     /// <summary>Fact keys no action may allow: nothing secret and no email address is ever a fact (FR-016, FR-018).</summary>
     public static IReadOnlyList<string> NeverKeys { get; } =
         ["password", "code", "token", "link", "secret", "key", "email", "proof", "cookie"];
@@ -143,6 +149,14 @@ public static class AuditActions
             "أُوقف بيع الميزة «{target}»", "Feature “{target}” was retired", ["feature"], NeedsBeforeAfter: true),
         new(FeatureResumed, AuditCategories.Changes, "إعادة بيع ميزة", "Feature sold again",
             "أُعيدت الميزة «{target}» إلى البيع", "Feature “{target}” was put back on sale", ["feature"], NeedsBeforeAfter: true),
+        new(PlanCreated, AuditCategories.Changes, "إضافة باقة", "Plan added",
+            "أُضيفت الباقة «{target}»", "Plan “{target}” was added", ["plan", "note"], NeedsBeforeAfter: true),
+        new(PlanUpdated, AuditCategories.Changes, "تعديل باقة", "Plan edited",
+            "عُدِّلت الباقة «{target}»{changes}", "Plan “{target}” was edited{changes}", ["plan", "note"], NeedsBeforeAfter: true),
+        new(PlanDisabled, AuditCategories.Changes, "تعطيل باقة", "Plan disabled",
+            "عُطِّلت الباقة «{target}»", "Plan “{target}” was disabled", ["plan"], NeedsBeforeAfter: true),
+        new(PlanEnabled, AuditCategories.Changes, "تفعيل باقة", "Plan enabled",
+            "فُعِّلت الباقة «{target}»", "Plan “{target}” was enabled", ["plan"], NeedsBeforeAfter: true),
     ];
 
     private static readonly Dictionary<string, AuditAction> ByCode = All.ToDictionary(a => a.Code, StringComparer.Ordinal);

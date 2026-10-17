@@ -77,6 +77,12 @@ public static class ErrorMessages
         [ErrorCodes.FeatureRetiredMustBeSold] = ("الميزة الموقوفة تبقى مُباعة حتى يُعاد بيعها أو تبقى موقوفة", "A retired feature stays sold"),
         [ErrorCodes.FeatureStateChanged] = ("تغيّرت حالة الميزة", "The feature's state has changed"),
         [ErrorCodes.FeatureChangedElsewhere] = ("عدّل غيرك هذه الميزة بعد فتحها", "Someone else edited this feature after you opened it"),
+        [ErrorCodes.PlanFeatureUnknown] = ("الباقة تسمّي ميزة ليست في الكتالوج", "The plan names a feature the catalogue doesn't hold"),
+        [ErrorCodes.PlanSwitchHasLimit] = ("ميزة من نوع مفتاح لا تحمل حدًّا", "A switch feature takes no limit"),
+        [ErrorCodes.PlanFeatureNotSold] = ("هذه الميزة لا تُباع في الباقات الآن", "This feature isn't sold in plans now"),
+        [ErrorCodes.PlanBadgeOnDisabled] = ("الباقة المعطلة لا تحمل شارة", "A disabled plan holds no badge"),
+        [ErrorCodes.PlanChangedElsewhere] = ("تغيّرت هذه الباقة بعد فتحها", "This plan changed after you opened it"),
+        [ErrorCodes.PlanCodeTaken] = ("رمز الباقة مستعمل، أعد المحاولة", "The plan code is in use; try again"),
     };
 
     public static string Title(string code, string language)

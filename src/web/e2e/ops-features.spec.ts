@@ -1,5 +1,6 @@
 import { Page, expect, test } from '@playwright/test';
 import { OpsCatalogue, opsFeatures, seededFeatures } from './ops-features-platform';
+import { opsPlans } from './ops-plans-platform';
 import {
   OPS,
   OpsPlatform,
@@ -108,6 +109,8 @@ async function open(
   });
   const team = await opsTeam(page, platform, { myRoleId: role, ...team_ });
   const catalogue = await opsFeatures(page, platform, with_);
+  // The plans of spec 013: none, unless a test gives the catalogue its own plans.
+  await opsPlans(page, platform, catalogue, {}, { keepCataloguePlans: true });
   await page.goto(`${OPS}${path}`);
   return { platform, team, catalogue };
 }
@@ -121,8 +124,8 @@ async function menuOf(page: Page, key: string): Promise<void> {
 }
 
 const KEEPERS = [
-  { id: 'p-1', name: 'الباقة الاحترافية', state: 'active' as const, clinics: 64 },
-  { id: 'p-2', name: 'الباقة المؤسسية', state: 'inactive' as const, clinics: 12 },
+  { id: 'p-1', nameAr: 'الباقة الاحترافية', nameEn: 'Professional Plan', state: 'active' as const, clinics: 64 },
+  { id: 'p-2', nameAr: 'الباقة المؤسسية', nameEn: 'Enterprise Plan', state: 'disabled' as const, clinics: 12 },
 ];
 
 for (const language of ['ar', 'en'] as const) {
@@ -198,7 +201,10 @@ for (const language of ['ar', 'en'] as const) {
 
       await page.unrouteAll({ behavior: 'ignoreErrors' });
       await open(page, language, '/', VIEWER);
+      // Since spec 013 «الباقات» opens the plans list, whose «كتالوج الميزات» opens the catalogue.
       await page.getByTestId('ops-nav-plans').click();
+      await expect(page).toHaveURL(/\/plans$/u);
+      await page.getByTestId('open-catalogue').click();
       await expect(page).toHaveURL(/\/plans\/features$/u);
       await expect(page.getByTestId('ops-nav-plans')).toContainText(ar ? 'الباقات' : 'Plans');
     });
@@ -512,7 +518,7 @@ for (const language of ['ar', 'en'] as const) {
       await page.getByTestId('row-where').click();
       await expect(page.getByTestId('where-used-row')).toHaveCount(2);
       await expect(page.getByTestId('where-used-row').nth(1)).toContainText(
-        ar ? 'معطلة' : 'Inactive',
+        ar ? 'معطلة' : 'Disabled',
       );
       await expect(page.getByTestId('where-used-row').nth(1)).toContainText(
         ar ? '12 عيادة' : '12 clinics',
@@ -547,7 +553,7 @@ for (const language of ['ar', 'en'] as const) {
         ar ? 'إيقاف ميزة المستخدمون؟' : 'Retire Users?',
       );
       await expect(page.getByTestId('retire-warning')).toContainText(
-        ar ? 'الباقة الاحترافية والباقة المؤسسية' : 'الباقة الاحترافية and الباقة المؤسسية',
+        ar ? 'الباقة الاحترافية والباقة المؤسسية' : 'Professional Plan and Enterprise Plan',
       );
       await expect(page.getByTestId('retire-warning')).toContainText(
         ar ? '76 عيادة' : '76 clinics',

@@ -112,7 +112,7 @@ import { FeatureRow, FeaturesService, WhereUsed } from './features.service';
                     @for (plan of answer.items; track plan.id) {
                       <tr data-testid="where-used-row">
                         <td>
-                          <bdi>{{ plan.name }}</bdi>
+                          <bdi>{{ planName(plan) }}</bdi>
                         </td>
                         <td>
                           <scs-badge [intent]="plan.state === 'active' ? 'success' : 'neutral'">{{
@@ -193,6 +193,11 @@ export class WhereUsedDialog {
 
   protected clinics(count: number): string {
     return clinicsWords(this.words, count, this.language.language());
+  }
+
+  /** The plan's name in the page's language (spec 013). */
+  protected planName(plan: { nameAr: string; nameEn: string }): string {
+    return this.language.language() === 'ar' ? plan.nameAr : plan.nameEn;
   }
 
   protected async load(): Promise<void> {

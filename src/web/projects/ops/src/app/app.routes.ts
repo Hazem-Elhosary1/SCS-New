@@ -85,6 +85,19 @@ export const routes: Routes = [
       ...guarded('plans/features/:key/edit', OpsCan.billingManagePlans, () =>
         import('./plans/feature-form.page').then((file) => file.FeatureFormPage),
       ),
+      // The plans (spec 013), after the catalogue's addresses so that `plans/:id` never takes them.
+      ...guarded('plans', OpsCan.billingView, () =>
+        import('./plans/plans-list.page').then((file) => file.PlansListPage),
+      ),
+      ...guarded('plans/new', OpsCan.billingManagePlans, () =>
+        import('./plans/plan-form.page').then((file) => file.PlanFormPage),
+      ),
+      ...guarded('plans/:id', OpsCan.billingView, () =>
+        import('./plans/plan-detail.page').then((file) => file.PlanDetailPage),
+      ),
+      ...guarded('plans/:id/edit', OpsCan.billingManagePlans, () =>
+        import('./plans/plan-form.page').then((file) => file.PlanFormPage),
+      ),
       {
         path: '**',
         loadComponent: () => import('./home/home.pages').then((file) => file.NotFoundPage),

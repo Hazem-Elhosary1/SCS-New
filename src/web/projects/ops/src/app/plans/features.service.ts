@@ -76,8 +76,10 @@ export interface FeaturesView {
 
 export interface PlanUse {
   readonly id: string;
-  readonly name: string;
-  readonly state: 'active' | 'inactive';
+  readonly nameAr: string;
+  readonly nameEn: string;
+  /** As the plans say it (spec 013). */
+  readonly state: 'active' | 'disabled';
   readonly clinics: number;
 }
 

@@ -146,7 +146,7 @@ export class RetireFeatureDialog {
   protected readonly warning = computed(() =>
     this.words.translate('app.plans.retire.keep', {
       plans: this.keepers()
-        .map((plan) => plan.name)
+        .map((plan) => (this.language.language() === 'ar' ? plan.nameAr : plan.nameEn))
         .join(this.words.translate('app.plans.retire.and')),
       clinics: clinicsWords(this.words, this.clinics(), this.language.language()),
     }),
