@@ -250,6 +250,29 @@ for what everyone may see, never anything about a patient; whether a file may be
 is your rule; a private file is a download — a page that previews one does so from the
 downloaded bytes. The contract is `specs/009-file-storage/contracts/files-engine.md`.
 
+## Plan features and limits (spec 014)
+
+A clinic's plan is checked at one place, and every module uses it the same way:
+
+1. **A route that belongs to a feature** says so:
+   `.Requires(Permissions.X).RequiresFeature(FeatureKeys.Y)` (or `.RequiresAnyFeature(a, b)`). The
+   shared gate refuses it with `PLAN_FEATURE_NOT_INCLUDED` for a clinic whose plan leaves the
+   feature out — after the permission, and never while the feature is still «قادمة». The key is a
+   constant of `FeatureKeys` and a key of the catalogue.
+2. **A standing limit whose records you own** (doctors, branches): count them yourself, on your own
+   context, inside the transaction that writes, and call
+   `db.EnsureRoomAsync(planAnswers, clinicId, FeatureKeys.Y, count, adding: 1, cancellation)` before
+   you write. It locks the limit for the clinic until you commit and refuses with
+   `PLAN_LIMIT_REACHED`. Register an `ILimitCounter` so the eight-limit read shows your count. See
+   `Identity/Infrastructure/Seats.cs`.
+3. **A monthly limit** (messages, minutes, analyses): take from `IMonthlyMeter.UseAsync`, and give an
+   unused part back with `GiveBackAsync`. A use that completes what was promised passes
+   `CompletesPromise: true` and is taken past the allowance.
+4. **What the clinic has**, for anything else: `IClinicEntitlements.CurrentAsync()`. Never work it
+   out yourself.
+5. **When you build a feature**, mark it built in a migration of your own, by key, only where it is
+   still `upcoming` (see database-changes.md). Until then nothing enforces it.
+
 ## A route of the operators console (spec 010)
 
 The operators console is a room of its own. A route for operators:

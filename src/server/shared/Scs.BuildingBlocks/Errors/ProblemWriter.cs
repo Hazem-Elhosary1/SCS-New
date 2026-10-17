@@ -33,14 +33,15 @@ public static class ProblemWriter
         int status,
         string code,
         IReadOnlyDictionary<string, string[]>? errors = null,
-        IReadOnlyDictionary<string, object?>? extensions = null)
+        IReadOnlyDictionary<string, object?>? extensions = null,
+        IReadOnlyDictionary<string, TitleValue>? titleValues = null)
     {
         var language = ErrorMessages.ResolveLanguage(context.Request);
         context.Response.Headers.ContentLanguage = language;
 
         return new ScsProblem(
             Type: $"urn:scs:error:{code.ToLowerInvariant().Replace('_', '-')}",
-            Title: ErrorMessages.Title(code, language),
+            Title: Fill(ErrorMessages.Title(code, language), language, titleValues),
             Status: status,
             Code: code,
             TraceId: TraceIdMiddleware.Get(context),
@@ -55,12 +56,28 @@ public static class ProblemWriter
         int status,
         string code,
         IReadOnlyDictionary<string, string[]>? errors = null,
-        IReadOnlyDictionary<string, object?>? extensions = null)
+        IReadOnlyDictionary<string, object?>? extensions = null,
+        IReadOnlyDictionary<string, TitleValue>? titleValues = null)
     {
-        var problem = Create(context, status, code, errors, extensions);
+        var problem = Create(context, status, code, errors, extensions, titleValues);
         context.Response.StatusCode = status;
         context.Response.ContentType = ContentType;
         await JsonSerializer.SerializeAsync(context.Response.Body, problem, Json, context.RequestAborted);
+    }
+
+    private static string Fill(string title, string language, IReadOnlyDictionary<string, TitleValue>? values)
+    {
+        if (values is null)
+        {
+            return title;
+        }
+
+        foreach (var (name, value) in values)
+        {
+            title = title.Replace("{" + name + "}", language == ErrorMessages.English ? value.En : value.Ar, StringComparison.Ordinal);
+        }
+
+        return title;
     }
 
     /// <summary>The code for a status that reached the client with no body of its own.</summary>

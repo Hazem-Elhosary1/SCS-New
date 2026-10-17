@@ -14,8 +14,12 @@ public sealed class FeatureSeedApplyTests(SqlServerFixture sql)
     private const string Rows =
         "SELECT CONCAT([Key], '|', [Group], '|', [Kind], '|', [NameAr], '|', [NameEn], '|', [UnitAr], '|', [UnitEn], '|', [Baseline], '|', [Specialty], '|', [Status], '|', [IsSold], '|', [IsRetired], '|', [SortOrder]) FROM [plans].[Feature] ORDER BY [Key]";
 
+    // A spec that builds a feature marks it in a migration of its own after the seed's: spec 014
+    // built «المستخدمون» (MaxUsersBuilt).
+    private static readonly string[] BuiltSince = ["max_users"];
+
     private static string Of(Scs.Plans.Domain.Feature f) =>
-        string.Join('|', f.Key, f.Group, f.Kind, f.NameAr, f.NameEn, f.UnitAr, f.UnitEn, f.Baseline, f.Specialty, f.Status, f.IsSold ? 1 : 0, 0, f.SortOrder);
+        string.Join('|', f.Key, f.Group, f.Kind, f.NameAr, f.NameEn, f.UnitAr, f.UnitEn, f.Baseline, f.Specialty, BuiltSince.Contains(f.Key) ? "built" : f.Status, f.IsSold ? 1 : 0, 0, f.SortOrder);
 
     private static async Task ApplySeedAgainAsync(TestDatabase db)
     {

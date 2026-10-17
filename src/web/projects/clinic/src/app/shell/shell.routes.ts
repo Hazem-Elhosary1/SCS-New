@@ -23,8 +23,19 @@ const notProduction: CanMatchFn = () => inject(RuntimeConfigService).value.envir
 const dentalClinic: CanMatchFn = () => inject(ClinicTraitsSource).dental();
 const linkedToDoctor: CanMatchFn = () => inject(ClinicTraitsSource).linkedToDoctor();
 
-function outsidePlan(key: string): CanMatchFn {
-  return () => inject(PlanSource).excludes(key);
+/**
+ * Not in the plan: the plan is read again first for a destination of a feature, so a plan
+ * changed meanwhile shows by the next page opened (spec 014, FR-029).
+ */
+function outsidePlan(place: Destination): CanMatchFn {
+  return async () => {
+    const plan = inject(PlanSource);
+    if (place.features?.length) {
+      await plan.refresh();
+    }
+
+    return plan.excludes(place.key);
+  };
 }
 
 /** Sends the person on to the first child of a parent they may open; stays when there is none. */
@@ -67,7 +78,7 @@ function destinationRoutes(place: Destination): Routes {
       path: place.path,
       pathMatch: 'full',
       component: NotInPlanPage,
-      canMatch: [...allowed, outsidePlan(place.key)],
+      canMatch: [...allowed, outsidePlan(place)],
       data,
     },
     page,

@@ -325,6 +325,26 @@ ships with the product**: the list starts empty, and operators add the plans.
 - **Clinics on plans** come with spec 015: until then every clinic figure reads 0 or «لا توجد
   بيانات». The walk accounts of the catalogue serve for the plans too.
 
+#### A clinic's plan (spec 014)
+
+What a clinic has comes from its plan: `subscriptions.ClinicPlan` says which plan each clinic is on.
+**No clinic has a plan** until clinic creation (spec 015), so every clinic has the catalogue's
+baseline: users with no limit, one doctor, one branch, no message credits.
+
+- **To put a seeded clinic on a plan**, on this machine only (the route does not exist elsewhere):
+
+  ```bash
+  curl -s -X POST http://localhost:5080/v1/dev/clinic-plan -H "Content-Type: application/json" -H "X-Scs-Request: 1" -d "{\"clinic\":\"noor\",\"planCode\":\"<the plan's code>\"}"
+  ```
+
+  `"planCode": null` takes the plan away. Only an active plan can be given. Each change is in the
+  clinic's trail and the platform's (`subscription.plan-set`).
+- **The users limit is live**: with a plan whose «المستخدمون» is n, an account past n is refused
+  (`PLAN_LIMIT_REACHED`), however it is added, re-enabled or invited again.
+- **The clinic console's «غير مشمولة» card** shows only for a feature that is built: today none of
+  the features with a page is, so no page shows it. The browser tests show it with the platform
+  stood in for.
+
 ### The emails (spec 094)
 
 Every email is laid out by one template, in the recipient's language only, with a text-only

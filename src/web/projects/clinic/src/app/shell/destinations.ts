@@ -23,6 +23,11 @@ export interface Destination {
   readonly needs?: 'dental';
   /** Where it is reached from. */
   readonly place: 'side-bar' | 'account-menu';
+  /**
+   * The plan features it belongs to (spec 014, research R13): not in the plan when the plan
+   * withholds every one of them. None for what every plan has.
+   */
+  readonly features?: readonly string[];
 }
 
 export interface NavParent {
@@ -45,22 +50,22 @@ export const DESTINATIONS: readonly Destination[] = [
   { key: 'bookings', path: 'bookings', labelKey: 'app.nav.bookings', permission: 'bookings.view', icon: 'calendar', place: 'side-bar' },
   { key: 'patients', path: 'patients', labelKey: 'app.nav.patients', permission: 'patients.view', icon: 'people', place: 'side-bar' },
   { key: 'invoices', path: 'invoices', labelKey: 'app.nav.invoices', permission: 'money.view', icon: 'receipt', place: 'side-bar' },
-  { key: 'inbox', path: 'inbox', labelKey: 'app.nav.inbox', permission: 'inbox.view', icon: 'inbox', place: 'side-bar' },
+  { key: 'inbox', path: 'inbox', labelKey: 'app.nav.inbox', permission: 'inbox.view', icon: 'inbox', place: 'side-bar', features: ['allow_whatsapp', 'allow_telegram'] },
   { key: 'tickets', path: 'tickets', labelKey: 'app.nav.tickets', permission: 'tickets.view', icon: 'ticket', place: 'side-bar' },
-  { key: 'reports.financial', path: 'reports/financial', labelKey: 'app.nav.reportsFinancial', permission: 'reports.financial', parent: 'reports', icon: 'card', place: 'side-bar' },
-  { key: 'reports.clinical', path: 'reports/clinical', labelKey: 'app.nav.reportsClinical', permission: 'reports.clinical', parent: 'reports', icon: 'stethoscope', place: 'side-bar' },
+  { key: 'reports.financial', path: 'reports/financial', labelKey: 'app.nav.reportsFinancial', permission: 'reports.financial', parent: 'reports', icon: 'card', place: 'side-bar', features: ['allow_analytics'] },
+  { key: 'reports.clinical', path: 'reports/clinical', labelKey: 'app.nav.reportsClinical', permission: 'reports.clinical', parent: 'reports', icon: 'stethoscope', place: 'side-bar', features: ['allow_analytics'] },
   { key: 'reports.activity', path: 'reports/activity', labelKey: 'app.nav.reportsActivity', permission: 'reports.activity', parent: 'reports', icon: 'shield-check', place: 'side-bar' },
-  { key: 'reports.weekly', path: 'reports/weekly', labelKey: 'app.nav.reportsWeekly', permission: 'reports.weekly', parent: 'reports', icon: 'list', place: 'side-bar' },
-  { key: 'reports.feedback', path: 'reports/feedback', labelKey: 'app.nav.reportsFeedback', permission: 'reports.feedback', parent: 'reports', icon: 'star', place: 'side-bar' },
+  { key: 'reports.weekly', path: 'reports/weekly', labelKey: 'app.nav.reportsWeekly', permission: 'reports.weekly', parent: 'reports', icon: 'list', place: 'side-bar', features: ['weekly_summary'] },
+  { key: 'reports.feedback', path: 'reports/feedback', labelKey: 'app.nav.reportsFeedback', permission: 'reports.feedback', parent: 'reports', icon: 'star', place: 'side-bar', features: ['patient_feedback'] },
   { key: 'administration.users', path: 'administration/users', labelKey: 'app.nav.users', permission: 'admin.users.view', parent: 'administration', icon: 'people', place: 'side-bar' },
   { key: 'administration.roles', path: 'administration/roles', labelKey: 'app.nav.roles', permission: 'admin.roles.view', parent: 'administration', icon: 'key', place: 'side-bar' },
-  { key: 'administration.licences', path: 'administration/licences', labelKey: 'app.nav.licences', permission: 'admin.licences.view', parent: 'administration', icon: 'shield-check', place: 'side-bar' },
+  { key: 'administration.licences', path: 'administration/licences', labelKey: 'app.nav.licences', permission: 'admin.licences.view', parent: 'administration', icon: 'shield-check', place: 'side-bar', features: ['licences_registry'] },
   { key: 'data.doctors', path: 'data/doctors', labelKey: 'app.nav.doctors', permission: 'data.doctors.view', parent: 'data', icon: 'stethoscope', place: 'side-bar' },
   { key: 'data.branches', path: 'data/branches', labelKey: 'app.nav.branches', permission: 'data.branches.view', parent: 'data', icon: 'building', place: 'side-bar' },
   { key: 'data.services', path: 'data/services', labelKey: 'app.nav.services', permission: 'data.services.view', parent: 'data', icon: 'clipboard', place: 'side-bar' },
-  { key: 'data.consents', path: 'data/consents', labelKey: 'app.nav.consents', permission: 'data.consents.view', parent: 'data', icon: 'file', place: 'side-bar' },
+  { key: 'data.consents', path: 'data/consents', labelKey: 'app.nav.consents', permission: 'data.consents.view', parent: 'data', icon: 'file', place: 'side-bar', features: ['informed_consent'] },
   { key: 'settings', path: 'settings', labelKey: 'app.nav.settings', permission: 'settings.view', icon: 'settings', place: 'side-bar' },
-  { key: 'dental-lab', path: 'dental-lab', labelKey: 'app.nav.dentalLab', permission: 'patients.lab.view', icon: 'layers', needs: 'dental', place: 'side-bar' },
+  { key: 'dental-lab', path: 'dental-lab', labelKey: 'app.nav.dentalLab', permission: 'patients.lab.view', icon: 'layers', needs: 'dental', place: 'side-bar', features: ['dental_lab'] },
   { key: 'account.subscription', path: 'account/subscription', labelKey: 'app.nav.subscription', permission: null, icon: 'user', place: 'account-menu' },
   { key: 'account.doctor-profile', path: 'account/doctor-profile', labelKey: 'app.nav.doctorProfile', permission: null, icon: 'stethoscope', place: 'account-menu' },
 ];

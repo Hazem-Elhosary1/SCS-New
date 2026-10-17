@@ -19,6 +19,19 @@ export interface StaffSession {
   readonly permissions?: readonly string[];
   /** What the person keeps between sessions (spec 006). */
   readonly preferences?: StaffPreferences;
+  /** What the clinic's plan leaves out, for the not-in-plan state (spec 014). */
+  readonly plan?: StaffPlan;
+}
+
+/** The clinic's plan as the console needs it (spec 014, contracts/enforcement-api.md §6). */
+export interface StaffPlan {
+  /** Null when the clinic has no plan. */
+  readonly nameAr: string | null;
+  readonly nameEn: string | null;
+  /** The built features the plan does not include. */
+  readonly withheld: readonly string[];
+  /** Those features' names, by key. */
+  readonly names: Readonly<Record<string, { readonly ar: string; readonly en: string }>>;
 }
 
 export interface StaffPreferences {

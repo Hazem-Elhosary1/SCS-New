@@ -13,6 +13,7 @@ public sealed class Clinic : IClinicOwned
 {
     public const int NameMaxLength = 200;
     public const int StateMaxLength = 20;
+    public const int SpecialtyMaxLength = 40;
 
     private Clinic()
     {
@@ -32,6 +33,12 @@ public sealed class Clinic : IClinicOwned
     public string State { get; private set; } = "active";
 
     public DateTimeOffset CreatedAtUtc { get; private set; }
+
+    /// <summary>
+    /// The clinic's specialty, one of the fifteen of SH-013; null until clinic creation (015) sets it.
+    /// A feature that follows a specialty is off for a clinic without that one (spec 014, ق-٣٧).
+    /// </summary>
+    public string? Specialty { get; private set; }
 
     /// <summary>
     /// Builds a clinic to be registered. Returns the field codes of what is wrong

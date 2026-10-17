@@ -49,6 +49,7 @@ public class AuditActionsTests
         ("plan.updated", "changes"),
         ("plan.disabled", "changes"),
         ("plan.enabled", "changes"),
+        ("subscription.plan-set", "changes"),
     ];
 
     [Fact]
@@ -133,6 +134,7 @@ public class AuditActionsTests
                 "account.role-changed", "feature.created", "feature.resumed", "feature.retired", "feature.updated", "operator.edited",
                 "operator.role-changed", "opsrole.created", "opsrole.edited", "plan.created", "plan.disabled", "plan.enabled",
                 "plan.updated", "role.created", "role.deleted", "role.updated", "settings.notification-email-changed",
+                "subscription.plan-set",
             ],
             AuditActions.All.Where(a => a.NeedsBeforeAfter).Select(a => a.Code).Order(StringComparer.Ordinal));
     }

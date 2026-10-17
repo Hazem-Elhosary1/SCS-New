@@ -114,6 +114,9 @@ internal sealed class FeatureCatalogue(PlansDbContext db, IPlanSubscribers subsc
     public async Task<IReadOnlyList<CatalogueFeature>> SellableAsync(CancellationToken cancellation) =>
         [.. (await OrderedAsync(cancellation).ConfigureAwait(false)).Where(f => f.IsSold && !f.IsRetired).Select(Published)];
 
+    public async Task<IReadOnlyList<CatalogueFeature>> AllAsync(CancellationToken cancellation) =>
+        [.. (await OrderedAsync(cancellation).ConfigureAwait(false)).Select(Published)];
+
     // ---------------------------------------------------------------- writes
 
     /// <summary>Adds a feature at the end of its group (FR-011). The key is the caller's, once.</summary>

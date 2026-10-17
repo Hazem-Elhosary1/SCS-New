@@ -20,6 +20,7 @@ using Scs.Identity.Domain;
 using Scs.Identity.Infrastructure;
 using Scs.Identity.Infrastructure.Persistence;
 using Scs.SharedKernel.Access;
+using Scs.Subscriptions.Contracts;
 using Scs.Tenancy.Contracts;
 
 namespace Scs.Identity;
@@ -57,6 +58,9 @@ public sealed class IdentityModule : IModule, IMigratableModule
         services.AddScoped<IStaffSessions>(provider => provider.GetRequiredService<SessionService>());
         services.AddScoped<IStaffSessionCheck>(provider => provider.GetRequiredService<SessionService>());
         services.AddScoped<IStaffAccounts, StaffAccounts>();
+        // The plan's «المستخدمون», checked wherever an account comes to take a seat (spec 014).
+        services.AddScoped<Seats>();
+        services.AddScoped<ILimitCounter>(provider => provider.GetRequiredService<Seats>());
         services.AddScoped<ICurrentStaff, CurrentStaff>();
         services.AddScoped<ReadyRoles>();
         services.AddScoped<Preferences>();

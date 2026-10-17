@@ -205,6 +205,18 @@ public static class ErrorCodes
     /// <summary>Two plans added at once with one English name, and the retry lost again (spec 013, research R3).</summary>
     public const string PlanCodeTaken = "PLAN_CODE_TAKEN";
 
+    /// <summary>The clinic's plan does not include the feature the action belongs to (spec 014, SH-014, ق-٤٠).</summary>
+    public const string PlanFeatureNotIncluded = "PLAN_FEATURE_NOT_INCLUDED";
+
+    /// <summary>The action would raise a counted limit past the clinic's plan (spec 014, SH-017, ق-٤٠).</summary>
+    public const string PlanLimitReached = "PLAN_LIMIT_REACHED";
+
+    /// <summary>The count of a limit is busy with another change for too long; try again (spec 014).</summary>
+    public const string LimitBusy = "LIMIT_BUSY";
+
+    /// <summary>A give-back returns more than is left of the use it names (spec 014).</summary>
+    public const string MeterGiveBackTooMuch = "METER_GIVE_BACK_TOO_MUCH";
+
     public static IReadOnlyList<string> All { get; } =
     [
         ValidationFailed, MalformedRequest, Unauthenticated, Forbidden, NotFound,
@@ -222,5 +234,6 @@ public static class ErrorCodes
         OpsChangedElsewhere, OpsLinkNotSent, OpsRoleNameTaken, OpsPermissionsNotHeld, OpsOwnRoleEdit, OpsSystemRole, OpsRoleInUse,
         FeatureUnitsRequired, FeatureSwitchHasLimit, FeatureKeyTaken, FeatureRetiredMustBeSold, FeatureStateChanged, FeatureChangedElsewhere,
         PlanFeatureUnknown, PlanSwitchHasLimit, PlanFeatureNotSold, PlanBadgeOnDisabled, PlanChangedElsewhere, PlanCodeTaken,
+        PlanFeatureNotIncluded, PlanLimitReached, LimitBusy, MeterGiveBackTooMuch,
     ];
 }

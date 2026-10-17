@@ -25,6 +25,7 @@ public static class Migrator
         new Scs.Identity.IdentityModule(),
         new Scs.Operators.OperatorsModule(),
         new Scs.Plans.PlansModule(),
+        new Scs.Subscriptions.SubscriptionsModule(),
         new PlatformModule(),
     ];
 

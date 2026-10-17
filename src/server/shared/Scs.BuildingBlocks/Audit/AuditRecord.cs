@@ -25,6 +25,9 @@ public sealed record AuditTarget(string Kind, Guid? Id, string? Name = null, str
     /// <summary>A plan (spec 013): named, with its code as the fact <c>plan</c>.</summary>
     public const string Plan = "plan";
 
+    /// <summary>The clinic itself: what it subscribes to (spec 014).</summary>
+    public const string Clinic = "clinic";
+
     public static AuditTarget ForAccount(Guid accountId) => new(Account, accountId);
 }
 
