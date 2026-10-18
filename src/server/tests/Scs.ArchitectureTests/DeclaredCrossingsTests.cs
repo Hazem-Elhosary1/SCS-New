@@ -48,10 +48,12 @@ public class DeclaredCrossingsTests
     }
 
     [Fact]
-    public void There_are_nine_crossings_each_with_a_reason_and_distinct_names()
+    public void There_are_twelve_crossings_each_with_a_reason_and_distinct_names()
     {
-        Assert.Equal(9, DeclaredCrossings.All.Count);
-        Assert.Equal(9, DeclaredCrossings.All.Select(c => c.Operation).Distinct().Count());
+        // Spec 015 added three: the operators' reads of every clinic's plan and owner, and the
+        // writes to a clinic's own record (research R13).
+        Assert.Equal(12, DeclaredCrossings.All.Count);
+        Assert.Equal(12, DeclaredCrossings.All.Select(c => c.Operation).Distinct().Count());
         Assert.All(DeclaredCrossings.All, c => Assert.False(string.IsNullOrWhiteSpace(c.Reason)));
         Assert.All(DeclaredCrossings.All, c => Assert.Matches("^[a-z]+(-[a-z]+)*$", c.Operation));
     }
@@ -61,7 +63,7 @@ public class DeclaredCrossingsTests
     {
         var recorded = DeclaredCrossings.All.Where(c => c.Recorded).Select(c => c.Operation).Order();
 
-        Assert.Equal(["list-clinics", "register-clinic", "rename-clinic"], recorded);
+        Assert.Equal(["list-clinics", "register-clinic", "rename-clinic", "update-clinic"], recorded);
     }
 
     // Compiler-generated helpers (lambdas, async state machines) are nested in the type that wrote them.

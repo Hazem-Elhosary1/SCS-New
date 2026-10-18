@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ScsIconComponent, ScsIconName } from '../icon/icon.component';
 
-export type ScsKpiTone = 'brand' | 'success' | 'warning' | 'info';
+export type ScsKpiTone = 'brand' | 'success' | 'warning' | 'info' | 'danger';
 
 /** Which way the number went: up, down, the same, or no change line at all (the clinic's "None"). */
 export type ScsKpiTrend = 'positive' | 'negative' | 'neutral' | 'none';
@@ -66,6 +66,11 @@ export type ScsKpiTrend = 'positive' | 'negative' | 'neutral' | 'none';
     :host([data-tone='info']) .icon {
       background: var(--scs-color-feedback-info-bg);
       color: var(--scs-color-feedback-info-icon);
+    }
+    /* Spec 015: the clinics list's «تحتاج متابعة» draws its icon red (frames 606:776, 599:680). */
+    :host([data-tone='danger']) .icon {
+      background: var(--scs-color-feedback-danger-bg);
+      color: var(--scs-color-feedback-danger-icon);
     }
     .value {
       margin: 0;

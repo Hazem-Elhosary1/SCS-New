@@ -15,6 +15,9 @@
     <ProjectReference Include="..\Scs.Subscriptions.Contracts\Scs.Subscriptions.Contracts.csproj" />
     <ProjectReference Include="..\..\Plans\Scs.Plans.Contracts\Scs.Plans.Contracts.csproj" />
     <ProjectReference Include="..\..\Tenancy\Scs.Tenancy.Contracts\Scs.Tenancy.Contracts.csproj" />
+    <ProjectReference Include="..\..\Identity\Scs.Identity.Contracts\Scs.Identity.Contracts.csproj" />
+    <ProjectReference Include="..\..\ClinicData\Scs.ClinicData.Contracts\Scs.ClinicData.Contracts.csproj" />
+    <ProjectReference Include="..\..\Operators\Scs.Operators.Contracts\Scs.Operators.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

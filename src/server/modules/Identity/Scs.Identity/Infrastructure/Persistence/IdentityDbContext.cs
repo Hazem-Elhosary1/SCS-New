@@ -62,6 +62,11 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
                 table.HasCheckConstraint(
                     "CK_StaffAccount_ExpiryOnlyIfTemporary",
                     "[MustChangePassword] = 1 OR [TemporaryPasswordExpiresAtUtc] IS NULL");
+
+                // Spec 015: an optional +, then 8 to 15 digits (SQL Server has no regular expressions).
+                table.HasCheckConstraint(
+                    "CK_StaffAccount_Mobile",
+                    "[Mobile] IS NULL OR (LEN([Mobile]) BETWEEN 8 AND 16 AND [Mobile] NOT LIKE '%[^0-9+]%' AND CHARINDEX('+', [Mobile], 2) = 0)");
             });
 
             builder.HasKey(a => a.Id);
@@ -77,6 +82,9 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
             builder.Property(a => a.TemporaryPasswordExpiresAtUtc).HasColumnType("datetimeoffset");
             builder.Property(a => a.CreatedAtUtc).HasColumnType("datetimeoffset").IsRequired();
             builder.Property(a => a.RowVersion).IsRowVersion();
+            builder.Property(a => a.FullName).HasMaxLength(StaffAccount.FullNameMaxLength);
+            builder.Property(a => a.Mobile).HasMaxLength(StaffAccount.MobileMaxLength).IsUnicode(false);
+            builder.Property(a => a.LastSignInAtUtc).HasColumnType("datetimeoffset");
 
             // One email, one account, on the whole platform: a unique index is enforced across
             // clinics whatever row isolation says (FR-003).

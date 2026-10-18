@@ -345,6 +345,35 @@ baseline: users with no limit, one doctor, one branch, no message credits.
   the features with a page is, so no page shows it. The browser tests show it with the platform
   stood in for.
 
+#### The clinics (spec 015)
+
+Operators add clinics and look after their details. **«العيادات»** in the side bar (with
+`clinics.view`) opens the list: four cards, a search over the names, the owner's email and mobile,
+four filters, «ينتهي في» to sort by, 8 a page. A row opens the clinic's page, with its
+«نظرة عامة» and «الإعدادات» tabs.
+
+- **With `clinics.edit`** too: «إضافة عيادة +», «تعديل العيادة», «تعيين» for the account manager and
+  «إعادة إرسال الدعوة». Each change is in the platform's trail and the clinic's, with the operator
+  as the one who did it (actions `clinic.*`).
+- **An add is whole or nothing**: the clinic, its owner, its main branch and its plan with its
+  trial are made together, then the owner's invitation is sent. A refusal or a fault leaves
+  nothing anyone can see.
+- **The invitation** arrives in Mailpit (<http://localhost:8025>) at the owner's address. It is
+  good for 72 hours; it can be sent again once a minute. Changing the owner's email from
+  «تعديل العيادة» ends the owner's sessions and tells the old address.
+- **The trial** lasts 14 days. To change it for this machine, set it in `deploy/compose/.env`
+  and restart the API:
+
+  ```bash
+  SCS_SUBSCRIPTIONS__TRIAL_DAYS=14
+  ```
+
+  It is read once at start, from 1 to 90 days, and applies only to clinics added afterwards.
+- **To walk it**, invite two operators of your own with the operators' invite command, one with
+  «تعديل بيانات العيادات» and one with «عرض العيادات» alone, and use them. Never use or reset the
+  seeded operator. Use an email of your own for each owner; the seeded clinics' owners have no
+  name or mobile, and their pages show «—».
+
 ### The emails (spec 094)
 
 Every email is laid out by one template, in the recipient's language only, with a text-only

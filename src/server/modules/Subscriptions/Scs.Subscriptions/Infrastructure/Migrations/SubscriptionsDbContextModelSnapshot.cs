@@ -34,6 +34,9 @@ namespace Scs.Subscriptions.Infrastructure.Migrations
                     b.Property<DateTimeOffset>("SetAtUtc")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<DateTimeOffset?>("TrialEndsAtUtc")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<byte[]>("Version")
                         .IsConcurrencyToken()
                         .IsRequired()

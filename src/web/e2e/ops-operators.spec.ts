@@ -348,6 +348,8 @@ for (const language of ['ar', 'en'] as const) {
       await expect(page.getByTestId('operator-permissions').locator('li').first()).toHaveText(ar ? 'عرض لوحة التحكم' : 'View Dashboard');
 
       await expect(page.getByTestId('performance-activeSessions')).toContainText(ar ? 'الجلسات النشطة' : 'Active Sessions');
+      await expect(page.getByTestId('performance-clinicsManaged')).toContainText(ar ? 'عيادات تم إدارتها' : 'Clinics managed');
+      await expect(page.getByTestId('performance-clinicsManaged').locator('strong')).toHaveText('3');
       await expect(page.getByTestId('activity-line')).toHaveCount(4);
       await expect(page.getByTestId('activity-line').nth(0)).toContainText(
         ar ? 'سجّل الدخول من Chrome على Windows' : 'Logged in from Chrome على Windows',
@@ -490,8 +492,8 @@ for (const language of ['ar', 'en'] as const) {
       );
       await expect(page.locator('form .name, form scs-text-field label')).toHaveText(
         ar
-          ? ['الاسم الكامل', 'البريد الإلكتروني', 'الدور', 'رقم الموبايل (اختياري)', 'القسم', 'المسمى الوظيفي', 'لغة الواجهة الافتراضية']
-          : ['Full Name', 'Email Address', 'Role', 'Mobile Number (optional)', 'Department', 'Job Title', 'Default Interface Language'],
+          ? ['الاسم الكامل', 'البريد الإلكتروني', 'الدور *', 'رقم الموبايل (اختياري)', 'القسم', 'المسمى الوظيفي', 'لغة الواجهة الافتراضية']
+          : ['Full Name', 'Email Address', 'Role *', 'Mobile Number (optional)', 'Department', 'Job Title', 'Default Interface Language'],
       );
       await expect(page.getByTestId('field-name')).toHaveAttribute('placeholder', ar ? 'مثال: نور خالد' : 'e.g. Nour Khaled');
       await expect(page.getByTestId('field-email')).toHaveAttribute('placeholder', 'name@smartclinicos.com');

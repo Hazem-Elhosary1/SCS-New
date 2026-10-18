@@ -79,10 +79,13 @@ public static class SessionEndReasons
     public const string PasswordReset = "password-reset";
     public const string RoleChanged = "role-changed";
 
+    /// <summary>An operator changed the clinic owner's sign-in email (spec 015, FR-021a).</summary>
+    public const string EmailChanged = "email-changed";
+
     public static IReadOnlyList<string> All { get; } =
     [
         SignedOut, Expired, Locked, Disabled, EndedForAccount, EndedForClinic,
-        ClinicSuspended, RenewalReused, PasswordReset, RoleChanged,
+        ClinicSuspended, RenewalReused, PasswordReset, RoleChanged, EmailChanged,
     ];
 }
 

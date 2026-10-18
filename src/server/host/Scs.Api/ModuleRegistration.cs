@@ -15,6 +15,7 @@ internal static class ModuleRegistration
         new Scs.Notifications.NotificationsModule(),
         new Scs.Files.FilesModule(),
         new Scs.Identity.IdentityModule(),
+        new Scs.ClinicData.ClinicDataModule(),
         new Scs.Operators.OperatorsModule(),
         new Scs.Plans.PlansModule(),
         new Scs.Subscriptions.SubscriptionsModule(),

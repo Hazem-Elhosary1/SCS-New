@@ -46,8 +46,13 @@ public sealed record PlanSubscriberCounts(int Clinics, int NewThisMonth, int OnT
 /// <summary>The platform's monthly plan revenue now and at the end of last month (null when there was no last month).</summary>
 public sealed record PlanRevenue(decimal Now, decimal? LastMonthEnd);
 
-/// <summary>A clinic on a plan, with the line the plan's detail shows for it («نشطة · تتجدد <التاريخ>» …).</summary>
-public sealed record PlanClinic(Guid ClinicId, string NameAr, string NameEn, string StateAr, string StateEn, DateTimeOffset JoinedAtUtc);
+/// <summary>
+/// A clinic on a plan, with the line the plan's detail shows for it («نشطة · تتجدد <التاريخ>» …):
+/// its state, and while in trial when the trial ends (spec 015), newest to join first.
+/// </summary>
+public sealed record PlanClinic(
+    Guid ClinicId, string NameAr, string NameEn, string StateAr, string StateEn, DateTimeOffset JoinedAtUtc,
+    DateTimeOffset? TrialEndsAtUtc = null);
 
 /// <summary>
 /// The clinics on plans, as the plans' screens count them (spec 013, research R7). Clinics are

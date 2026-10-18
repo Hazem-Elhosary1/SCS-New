@@ -195,7 +195,7 @@ internal sealed class AccountHandover(
             PasswordLinkKinds.NewAccount,
             enforceResetCaps: false,
             address => renderer.Render(AccountEmails.Invitation(
-                email, language, address, own.NameAr, own.NameEn, Auth.InviteLinkHours)),
+                email, language, address, own.NameAr, own.NameEn, Auth.InviteLinkHours, links.SignInAddress)),
             cancellation).ConfigureAwait(false);
 
         return result == LinkSendResult.Sent;

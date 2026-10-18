@@ -80,6 +80,21 @@ public static class AuditActions
     /// <summary>A clinic is put on a plan, moved to another, or left with none (spec 014, FR-030).</summary>
     public const string SubscriptionPlanSet = "subscription.plan-set";
 
+    /// <summary>An operator adds a clinic: it becomes visible with its plan, branch and invited owner (spec 015, FR-027).</summary>
+    public const string ClinicCreated = "clinic.created";
+
+    /// <summary>An operator corrects a clinic's own data (spec 015, FR-021).</summary>
+    public const string ClinicUpdated = "clinic.updated";
+
+    /// <summary>An operator corrects the clinic owner's name, email or mobile (spec 015, FR-021).</summary>
+    public const string ClinicOwnerUpdated = "clinic.owner-updated";
+
+    /// <summary>An operator assigns the clinic's account manager, or none (spec 015, FR-016).</summary>
+    public const string ClinicAccountManagerAssigned = "clinic.account-manager-assigned";
+
+    /// <summary>An operator sends the clinic's owner a new invitation (spec 015, FR-018).</summary>
+    public const string ClinicInvitationResent = "clinic.invitation-resent";
+
     /// <summary>Fact keys no action may allow: nothing secret and no email address is ever a fact (FR-016, FR-018).</summary>
     public static IReadOnlyList<string> NeverKeys { get; } =
         ["password", "code", "token", "link", "secret", "key", "email", "proof", "cookie"];
@@ -161,7 +176,19 @@ public static class AuditActions
         new(PlanEnabled, AuditCategories.Changes, "تفعيل باقة", "Plan enabled",
             "فُعِّلت الباقة «{target}»", "Plan “{target}” was enabled", ["plan"], NeedsBeforeAfter: true),
         new(SubscriptionPlanSet, AuditCategories.Changes, "تغيير باقة العيادة", "Clinic plan changed",
-            "تغيّرت باقة العيادة{changes}", "The clinic’s plan was changed{changes}", ["plan"], NeedsBeforeAfter: true),
+            "تغيّرت باقة العيادة{changes}", "The clinic’s plan was changed{changes}", ["plan", "trial-ends"], NeedsBeforeAfter: true),
+        new(ClinicCreated, AuditCategories.Changes, "إضافة عيادة", "Clinic added",
+            "أُضيفت العيادة «{target}»", "Clinic “{target}” was added", ["slug", "plan", "specialty"], NeedsBeforeAfter: true),
+        new(ClinicUpdated, AuditCategories.Changes, "تعديل بيانات العيادة", "Clinic edited",
+            "عُدِّلت بيانات العيادة «{target}»{changes}", "Clinic “{target}” was edited{changes}", ["note"], NeedsBeforeAfter: true),
+        new(ClinicOwnerUpdated, AuditCategories.Users, "تعديل بيانات مالك العيادة", "Clinic owner edited",
+            "عُدِّلت بيانات مالك العيادة «{target}»{changes}", "The owner of clinic “{target}” was edited{changes}", ["note"],
+            NeedsBeforeAfter: true),
+        new(ClinicAccountManagerAssigned, AuditCategories.Changes, "تعيين مسؤول الحساب", "Account manager assigned",
+            "تغيّر مسؤول حساب العيادة «{target}»{changes}", "The account manager of clinic “{target}” was changed{changes}", [],
+            NeedsBeforeAfter: true),
+        new(ClinicInvitationResent, AuditCategories.Users, "إعادة إرسال دعوة المالك", "Owner invitation sent again",
+            "أُرسلت دعوة جديدة لمالك العيادة «{target}»", "A new invitation was sent to the owner of clinic “{target}”", [], NeedsBeforeAfter: false),
     ];
 
     private static readonly Dictionary<string, AuditAction> ByCode = All.ToDictionary(a => a.Code, StringComparer.Ordinal);

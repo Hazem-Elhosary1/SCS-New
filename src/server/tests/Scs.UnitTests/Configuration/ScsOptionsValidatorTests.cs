@@ -430,6 +430,21 @@ public class ScsOptionsValidatorTests
         Assert.Equal(service, options.ServiceName);
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(91)]
+    public void A_trial_outside_one_to_ninety_days_is_refused(int days)
+    {
+        Assert.Contains(Failures(Valid(o => o.Subscriptions.TrialDays = days)), f => f.Contains("SCS_SUBSCRIPTIONS__TRIAL_DAYS", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void A_new_clinic_s_trial_lasts_fourteen_days_unless_the_deployment_says_otherwise()
+    {
+        Assert.Equal(14, new ScsOptions().Subscriptions.TrialDays);
+        Assert.Empty(Failures(Valid(o => o.Subscriptions.TrialDays = 30)));
+    }
+
     [Fact]
     public void Origins_are_split_and_trimmed()
     {

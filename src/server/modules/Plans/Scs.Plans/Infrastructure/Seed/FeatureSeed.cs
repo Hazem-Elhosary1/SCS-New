@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using Scs.Plans.Domain;
+using Scs.SharedKernel.Clinics;
 
 namespace Scs.Plans.Infrastructure.Seed;
 

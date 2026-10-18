@@ -44,3 +44,5 @@ export * from './lib/notifications/notifications';
 export * from './lib/usage-meter/usage-meter.component';
 export * from './lib/chart/bar-chart.component';
 export * from './lib/ai/ai';
+export * from './lib/list/sort-header.component';
+export * from './lib/controls/copy-button.component';

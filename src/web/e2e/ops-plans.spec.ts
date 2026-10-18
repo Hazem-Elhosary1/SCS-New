@@ -432,6 +432,15 @@ for (const language of ['ar', 'en'] as const) {
                 stateAr: 'نشطة · تتجدد 25 أكتوبر 2026',
                 stateEn: 'Active · Renews Oct 25, 2026',
               },
+              {
+                id: 'c2',
+                nameAr: 'مركز الشفاء',
+                nameEn: 'Al Shifa Center',
+                stateAr: 'تجربة',
+                stateEn: 'Trial',
+                // Spec 015: a clinic in trial says when it ends, as the frame draws it.
+                trialEndsAt: new Date(Date.now() + 4 * 86_400_000 - 60_000).toISOString(),
+              },
             ],
           },
         },
@@ -448,7 +457,8 @@ for (const language of ['ar', 'en'] as const) {
         ar ? 'تُعدَّل الميزات وحدودها من «تعديل».' : 'Edit features and limits from “Edit”.',
       );
       await expect(page.getByTestId('sub-clinics')).toHaveText('64');
-      await expect(page.getByTestId('clinic-row')).toHaveCount(1);
+      await expect(page.getByTestId('clinic-row')).toHaveCount(2);
+      await expect(page.getByTestId('clinic-row').nth(1)).toContainText(ar ? 'تجربة · تنتهي خلال 4 أيام' : 'Trial · ends in 4 days');
       await look(page, language, 'plan-detail');
     });
 

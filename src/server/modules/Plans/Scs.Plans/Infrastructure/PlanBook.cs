@@ -53,7 +53,7 @@ internal sealed record PlanIncludedRow(string Key, int? Limit);
 
 internal sealed record PlanSubscriptions(int Clinics, decimal MonthlyRevenue, int NewThisMonth, int OnTrial);
 
-internal sealed record PlanClinicRow(Guid Id, string NameAr, string NameEn, string StateAr, string StateEn);
+internal sealed record PlanClinicRow(Guid Id, string NameAr, string NameEn, string StateAr, string StateEn, DateTimeOffset? TrialEndsAt);
 
 /// <summary>One plan in full: its detail and its form (contracts/plans-api.md §1).</summary>
 internal sealed record PlanDetailView(
@@ -136,7 +136,7 @@ internal sealed class PlanBook(PlansDbContext db, IPlanSubscribers subscribers, 
             plan.UpdatedAtUtc, plan.Version, plan.Description, plan.DisabledReason, plan.DisabledAtUtc, included,
             offered.Count - included.Count,
             new PlanSubscriptions(mine.Clinics, mine.MonthlyRevenue, mine.NewThisMonth, mine.OnTrial),
-            [.. clinics.Select(k => new PlanClinicRow(k.ClinicId, k.NameAr, k.NameEn, k.StateAr, k.StateEn))]);
+            [.. clinics.Select(k => new PlanClinicRow(k.ClinicId, k.NameAr, k.NameEn, k.StateAr, k.StateEn, k.TrialEndsAtUtc))]);
     }
 
     /// <summary>

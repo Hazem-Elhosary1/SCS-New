@@ -36,17 +36,3 @@ internal static class FeatureStatuses
 
     public static IReadOnlyList<string> All { get; } = [Built, Upcoming];
 }
-
-/// <summary>The fifteen specialties, in their order (SH-013, FR-013). The clinic's own is spec 015's.</summary>
-internal static class Specialties
-{
-    public const string Dental = "dental";
-
-    public static IReadOnlyList<string> All { get; } =
-    [
-        Dental, "orthopedics", "neurology", "pediatrics", "internal_medicine", "general_surgery", "dermatology", "obgyn",
-        "ophthalmology", "ent", "urology", "cardiology", "psychiatry", "nutrition", "physiotherapy",
-    ];
-
-    public static bool IsKnown(string? specialty) => specialty is not null && All.Contains(specialty, StringComparer.Ordinal);
-}

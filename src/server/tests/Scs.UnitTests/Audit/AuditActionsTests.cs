@@ -50,6 +50,11 @@ public class AuditActionsTests
         ("plan.disabled", "changes"),
         ("plan.enabled", "changes"),
         ("subscription.plan-set", "changes"),
+        ("clinic.created", "changes"),
+        ("clinic.updated", "changes"),
+        ("clinic.owner-updated", "users"),
+        ("clinic.account-manager-assigned", "changes"),
+        ("clinic.invitation-resent", "users"),
     ];
 
     [Fact]
@@ -131,7 +136,8 @@ public class AuditActionsTests
     {
         Assert.Equal(
             [
-                "account.role-changed", "feature.created", "feature.resumed", "feature.retired", "feature.updated", "operator.edited",
+                "account.role-changed", "clinic.account-manager-assigned", "clinic.created", "clinic.owner-updated", "clinic.updated",
+                "feature.created", "feature.resumed", "feature.retired", "feature.updated", "operator.edited",
                 "operator.role-changed", "opsrole.created", "opsrole.edited", "plan.created", "plan.disabled", "plan.enabled",
                 "plan.updated", "role.created", "role.deleted", "role.updated", "settings.notification-email-changed",
                 "subscription.plan-set",

@@ -8,8 +8,7 @@ import {
   opsNumber,
   opsPercent,
   opsRelative,
-  opsTime,
-} from './ops-format';
+  opsTime, opsCairoDate, opsCairoDateTime } from './ops-format';
 
 /** Spec 011, FR-049: Western digits in both languages, with the language's own words. */
 describe('ops-format', () => {
@@ -85,5 +84,14 @@ describe('ops-format', () => {
     }
     expect(hasEasternDigit('١٢')).toBe(true);
     expect(hasEasternDigit('۴')).toBe(true);
+  });
+
+  it('writes a clinic’s dates in Cairo, whatever the browser’s zone (spec 015)', () => {
+    // 21:59 and 22:00 UTC on 31 October 2026: Cairo (UTC+2) is still the 31st, then the 1st of November.
+    expect(opsCairoDate('2026-10-31T21:59:00Z', 'en')).toBe('October 31, 2026');
+    expect(opsCairoDate('2026-10-31T22:00:00Z', 'en')).toBe('November 1, 2026');
+    expect(opsCairoDate('2026-10-31T22:00:00Z', 'ar')).toBe('1 نوفمبر 2026');
+    expect(opsCairoDateTime('2026-10-31T21:59:00Z', 'en')).toBe('October 31, 2026 · 11:59 PM');
+    expect(hasEasternDigit(opsCairoDateTime('2026-10-31T21:59:00Z', 'ar'))).toBe(false);
   });
 });

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Scs.BuildingBlocks.Tenancy;
+using Scs.SharedKernel.Clinics;
 using Scs.Tenancy.Domain;
 
 namespace Scs.Tenancy.Infrastructure.Persistence;
@@ -36,7 +37,7 @@ public sealed class TenancyDbContext(DbContextOptions<TenancyDbContext> options,
 /// The same data through the operator connection: every clinic, writable. Used only by the
 /// declared cross-clinic operations (contracts/isolation.md §5). It owns no migrations.
 /// </summary>
-public sealed class CrossingDbContext(ICrossClinicConnectionFactory crossing) : DbContext
+public sealed class CrossingDbContext(ICrossClinicConnectionFactory crossing, IServiceProvider? services = null) : DbContext
 {
     public DbSet<Clinic> Clinics => Set<Clinic>();
 
@@ -44,8 +45,19 @@ public sealed class CrossingDbContext(ICrossClinicConnectionFactory crossing) : 
 
     public DbSet<CrossClinicAccess> Access => Set<CrossClinicAccess>();
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) =>
+    /// <summary>The operator connection, for a second context of the same kind (the add's turn, spec 015).</summary>
+    internal ICrossClinicConnectionFactory Factory => crossing;
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
         crossing.Configure(optionsBuilder);
+
+        // The trail names the operator of the request, as it does for every other entry (spec 015, research R5).
+        if (services is not null)
+        {
+            optionsBuilder.UseApplicationServiceProvider(services);
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) => TenancyModel.Configure(modelBuilder);
 }
@@ -60,7 +72,20 @@ internal static class TenancyModel
         modelBuilder.Entity<Clinic>(builder =>
         {
             builder.ToTable("Clinic", table =>
-                table.HasCheckConstraint("CK_Clinic_ClinicIdIsId", "[ClinicId] = [Id]"));
+            {
+                table.HasCheckConstraint("CK_Clinic_ClinicIdIsId", "[ClinicId] = [Id]");
+
+                // Spec 015 (data-model.md §1). SQL Server has no regular expressions: LIKE patterns.
+                table.HasCheckConstraint(
+                    "CK_Clinic_State", "[State] IN ('setting-up', 'active', 'suspended', 'cancelled', 'discarded')");
+                table.HasCheckConstraint(
+                    "CK_Clinic_Specialty",
+                    $"[Specialty] IS NULL OR [Specialty] IN ({string.Join(", ", Specialties.All.Select(s => $"'{s}'"))})");
+                table.HasCheckConstraint(
+                    "CK_Clinic_TaxNumber",
+                    "[TaxNumber] IS NULL OR [TaxNumber] LIKE '[0-9][0-9][0-9]-[0-9][0-9][0-9]-[0-9][0-9][0-9]'");
+                table.HasCheckConstraint("CK_Clinic_DefaultLanguage", "[DefaultLanguage] IN ('ar', 'en')");
+            });
 
             builder.HasKey(c => c.Id);
             builder.Property(c => c.Id).ValueGeneratedNever();
@@ -70,6 +95,11 @@ internal static class TenancyModel
             builder.Property(c => c.State).HasMaxLength(Clinic.StateMaxLength).IsRequired().HasDefaultValue("active");
             builder.Property(c => c.CreatedAtUtc).HasColumnType("datetimeoffset").IsRequired();
             builder.Property(c => c.Specialty).HasMaxLength(Clinic.SpecialtyMaxLength).IsUnicode(false);
+            builder.Property(c => c.Address).HasMaxLength(Clinic.AddressMaxLength);
+            builder.Property(c => c.TaxNumber).HasColumnType("char(11)").IsUnicode(false);
+            builder.Property(c => c.DefaultLanguage).HasColumnType("varchar(2)").IsUnicode(false).IsRequired().HasDefaultValue("ar");
+            builder.Property(c => c.CreatedBy).HasMaxLength(Clinic.CreatedByMaxLength);
+            builder.Property(c => c.RowVersion).IsRowVersion();
         });
 
         modelBuilder.Entity<ClinicDirectoryEntry>(builder =>

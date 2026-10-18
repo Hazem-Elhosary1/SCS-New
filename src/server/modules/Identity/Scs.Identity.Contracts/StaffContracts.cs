@@ -61,6 +61,7 @@ public static class SessionEndings
     public const string EndedForAccount = "ended-for-account";
     public const string PasswordReset = "password-reset";
     public const string RoleChanged = "role-changed";
+    public const string EmailChanged = "email-changed";
     public const string EndedForClinic = "ended-for-clinic";
     public const string ClinicSuspended = "clinic-suspended";
 }

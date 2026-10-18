@@ -201,6 +201,15 @@ public sealed class TemporaryPasswordGateTests(SqlServerFixture sql)
             using var request = new HttpRequestMessage(new HttpMethod(method), new Uri(path, UriKind.Relative));
             using var response = await held.SendAsync(request);
             var (status, code, _) = await response.ReadAsync();
+
+            // An operators' route takes nothing from a clinic's session: no session at all there
+            // (spec 010, FR-037; spec 015).
+            if (endpoint.Metadata.GetMetadata<OperatorRouteMetadata>() is not null)
+            {
+                Assert.True(status == 401, $"{method} {path}: {status} {code}");
+                continue;
+            }
+
             Assert.True(status == 403 && code == "PASSWORD_CHANGE_REQUIRED", $"{method} {path}: {status} {code}");
         }
 

@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Scs.SharedKernel.Clinics;
 
 namespace Scs.Plans.Domain;
 

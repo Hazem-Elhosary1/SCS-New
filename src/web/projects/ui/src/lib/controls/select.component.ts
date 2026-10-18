@@ -52,6 +52,20 @@ interface Row extends ScsSelectOption {
       font-weight: var(--scs-field-label-weight, 500);
       color: var(--scs-field-label-color, var(--scs-color-text-primary));
     }
+    /* A choice that must be made is marked as a required text field is (the owner's answer of 17 Oct 2026). */
+    .required {
+      color: var(--scs-color-feedback-danger-icon);
+    }
+    /* A label read by assistive technology but not drawn, where the row already names the choice. */
+    .name.hidden {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
+      margin: 0;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
     :host(.off) .name {
       color: var(--scs-field-disabled-text, var(--scs-color-text-tertiary));
     }
@@ -243,7 +257,7 @@ interface Row extends ScsSelectOption {
   `,
   host: { '[class.off]': 'disabled()' },
   template: `
-    <span class="name" [id]="id + '-label'">{{ label() }}</span>
+    <span class="name" [class.hidden]="labelHidden()" [id]="id + '-label'">{{ label() }}@if (required()) {<span class="required" aria-hidden="true"> *</span>}</span>
     <button
       #trigger
       type="button"
@@ -369,6 +383,9 @@ export class ScsSelectComponent {
   /** Shown while nothing is chosen. Without `required` it is also a choice: "nothing". */
   readonly placeholder = input('');
   readonly required = input(false, { transform: booleanAttribute });
+
+  /** The label is read but not drawn: the row it sits in names the choice already. */
+  readonly labelHidden = input(false, { transform: booleanAttribute });
   readonly disabled = input(false, { transform: booleanAttribute });
   readonly error = input('');
   readonly hint = input('');

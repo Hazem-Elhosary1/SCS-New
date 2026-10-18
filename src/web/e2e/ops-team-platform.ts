@@ -462,7 +462,11 @@ export async function opsTeam(page: Page, platform: OpsPlatform, start: Partial<
           mobile: person.mobile, department: person.department, jobTitle: person.jobTitle, language: person.language,
           createdAtUtc: person.createdAtUtc, invitedBy: person.invitedBy, firstOperator: person.invitedBy === null,
           locked: person.locked, permissions: roleOf(person.roleId).codes,
-          performance: [{ key: 'activeSessions', value: person.state === 'active' ? 1 : 0 }],
+          performance: [
+            { key: 'activeSessions', value: person.state === 'active' ? 1 : 0 },
+            // Spec 015, FR-030: the clinics whose account manager this operator is.
+            { key: 'clinicsManaged', value: 3 },
+          ],
           activity:
             person.lastSignInAtUtc === null
               ? []

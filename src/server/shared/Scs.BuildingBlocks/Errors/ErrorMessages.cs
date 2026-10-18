@@ -90,6 +90,18 @@ public static class ErrorMessages
             "The clinic has reached its plan's limit of {feature}: {limit}. The plan is raised in Profile & subscription."),
         [ErrorCodes.LimitBusy] = ("العدد مشغول بتغيير آخر الآن، تُرجى المحاولة بعد قليل", "The count is busy with another change; try again shortly"),
         [ErrorCodes.MeterGiveBackTooMuch] = ("لا يُعاد أكثر مما بقي من الاستعمال", "No more can be given back than is left of the use"),
+        // Spec 015: BRD Ops §5-2, §5-17 and §5-18 word these; the BRD's own imperatives are kept as written.
+        [ErrorCodes.PlanDisabled] = ("تعذر إنشاء العيادة.", "The clinic could not be created."),
+        [ErrorCodes.ResetEmailCooldown] = (
+            "أُرسلت دعوة لهذا البريد قبل أقل من دقيقة. يمكن إعادة الإرسال بعد قليل.",
+            "An invitation was sent to this email less than a minute ago. Wait a moment and try again."),
+        [ErrorCodes.AccountLinkNotSent] = (
+            "تعذر إرسال البريد، فلم يصل شيء إلى المالك. تُراجع إعدادات البريد ثم تُعاد المحاولة.",
+            "The email could not be sent, so nothing reached the owner. Check Settings → Email, then try again."),
+        [ErrorCodes.InvitationAlreadyAccepted] = ("مالك هذه العيادة قَبِل دعوته بالفعل.", "This clinic's owner has already accepted the invitation."),
+        [ErrorCodes.OperatorNotActive] = ("تعذر تحديث مسؤول الحساب. تُعاد المحاولة بعد قليل.", "The account manager could not be updated. Try again."),
+        [ErrorCodes.ClinicChangedElsewhere] = ("تغيّرت بيانات هذه العيادة بعد فتحها", "This clinic changed after it was opened"),
+        [ErrorCodes.ClinicHasMainBranch] = ("للعيادة فرع رئيسي بالفعل", "The clinic already has a main branch"),
     };
 
     public static string Title(string code, string language)

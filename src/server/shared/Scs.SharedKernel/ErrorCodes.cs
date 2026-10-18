@@ -217,6 +217,27 @@ public static class ErrorCodes
     /// <summary>A give-back returns more than is left of the use it names (spec 014).</summary>
     public const string MeterGiveBackTooMuch = "METER_GIVE_BACK_TOO_MUCH";
 
+    /// <summary>The plan chosen for a new clinic was disabled meanwhile (spec 015, BRD Ops §5-2).</summary>
+    public const string PlanDisabled = "PLAN_DISABLED";
+
+    /// <summary>An invitation went to this account less than a minute ago; nothing was sent (spec 015, BRD Ops §3-3).</summary>
+    public const string ResetEmailCooldown = "RESET_EMAIL_COOLDOWN";
+
+    /// <summary>The account's link could not be emailed; nothing was kept and the earlier link still works (spec 015).</summary>
+    public const string AccountLinkNotSent = "ACCOUNT_LINK_NOT_SENT";
+
+    /// <summary>The clinic's owner has already accepted the invitation (spec 015, BRD Ops §5-18).</summary>
+    public const string InvitationAlreadyAccepted = "INVITATION_ALREADY_ACCEPTED";
+
+    /// <summary>The operator chosen as account manager is not active (spec 015, BRD Ops §5-17).</summary>
+    public const string OperatorNotActive = "OPERATOR_NOT_ACTIVE";
+
+    /// <summary>The clinic changed since the form read it; nothing was overwritten (spec 015).</summary>
+    public const string ClinicChangedElsewhere = "CLINIC_CHANGED_ELSEWHERE";
+
+    /// <summary>The clinic already has its main branch (spec 015, BRD Ops §3-4).</summary>
+    public const string ClinicHasMainBranch = "CLINIC_HAS_MAIN_BRANCH";
+
     public static IReadOnlyList<string> All { get; } =
     [
         ValidationFailed, MalformedRequest, Unauthenticated, Forbidden, NotFound,
@@ -235,5 +256,7 @@ public static class ErrorCodes
         FeatureUnitsRequired, FeatureSwitchHasLimit, FeatureKeyTaken, FeatureRetiredMustBeSold, FeatureStateChanged, FeatureChangedElsewhere,
         PlanFeatureUnknown, PlanSwitchHasLimit, PlanFeatureNotSold, PlanBadgeOnDisabled, PlanChangedElsewhere, PlanCodeTaken,
         PlanFeatureNotIncluded, PlanLimitReached, LimitBusy, MeterGiveBackTooMuch,
+        PlanDisabled, ResetEmailCooldown, AccountLinkNotSent, InvitationAlreadyAccepted, OperatorNotActive,
+        ClinicChangedElsewhere, ClinicHasMainBranch,
     ];
 }

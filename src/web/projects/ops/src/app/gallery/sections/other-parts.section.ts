@@ -11,6 +11,10 @@ import {
   ScsPageHeaderComponent,
   ScsPasswordRulesComponent,
   PlaceholderPanelComponent,
+  ScsCopyButtonComponent,
+  ScsSortDirection,
+  ScsSortHeaderComponent,
+  ScsTableDirective,
 } from 'ui';
 import { GalleryPartComponent } from '../gallery-part.component';
 import { GalleryState } from '../gallery-state';
@@ -35,6 +39,9 @@ import { GalleryState } from '../gallery-state';
     ScsFilterPopoverComponent,
     PlaceholderPanelComponent,
     ScsButtonDirective,
+    ScsSortHeaderComponent,
+    ScsCopyButtonComponent,
+    ScsTableDirective,
     GalleryPartComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -44,6 +51,11 @@ import { GalleryState } from '../gallery-state';
       flex-wrap: wrap;
       gap: var(--scs-spacing-lg);
       inline-size: 100%;
+    }
+    /* The address and its copy button on one line, as the detail's row draws them (2330:3095). */
+    .row.copy {
+      align-items: center;
+      gap: var(--scs-spacing-sm);
     }
     .state {
       display: grid;
@@ -133,6 +145,25 @@ import { GalleryState } from '../gallery-state';
       </div>
     </app-gallery-part>
 
+    <!-- Spec 015: the clinics list's sortable column and the sign-in address's copy button. -->
+    <app-gallery-part [name]="words().sort" testId="specimen-other-parts/parts/sort-header">
+      <div class="fit">
+        <table scsTable>
+          <thead><tr>
+            <th>{{ words().clinic }}</th>
+            <th><button scsSortHeader [direction]="sort()" (sorted)="sort.set($event)">{{ words().ends }}</button></th>
+          </tr></thead>
+        </table>
+      </div>
+    </app-gallery-part>
+
+    <app-gallery-part [name]="words().copy" testId="specimen-other-parts/parts/copy-button">
+      <div class="row copy">
+        <bdi dir="ltr">{{ address }}</bdi>
+        <scs-copy-button [value]="address" [label]="words().copy" [copiedText]="words().copied" [failedText]="words().copyFailed" />
+      </div>
+    </app-gallery-part>
+
     <app-gallery-part [name]="words().placeholder" testId="specimen-other-parts/parts/placeholder-panel">
       <div class="fit"><scs-placeholder-panel appNameKey="app.shell.name" /></div>
     </app-gallery-part>
@@ -142,6 +173,9 @@ export class OtherPartsSection {
   private readonly state = inject(GalleryState);
   protected readonly query = signal('');
   protected readonly filterOpen = signal(false);
+  protected readonly sort = signal<ScsSortDirection>('none');
+  /** An address, the same in both languages (the clinic's sign-in address of spec 015). */
+  protected readonly address = 'https://app.scs-heta.com';
 
   protected readonly words = computed(() =>
     this.state.language() === 'ar'
@@ -171,6 +205,12 @@ export class OtherPartsSection {
           apply: 'تطبيق',
           close: 'إغلاق',
           placeholder: 'لوحة المكان المؤقت',
+          sort: 'عمود قابل للترتيب',
+          clinic: 'العيادة',
+          ends: 'ينتهي في',
+          copy: 'نسخ عنوان دخول العيادة',
+          copied: 'تم نسخ عنوان دخول العيادة.',
+          copyFailed: 'تعذر النسخ. حدّد الرابط وانسخه يدويًا.',
           states: ['فارغ', 'مكتمل', 'خطأ', 'مقبول'],
           ruleNames: ['8 أحرف على الأقل', 'حرف كبير وحرف صغير', 'رقم واحد على الأقل', 'رمز واحد على الأقل'],
         }
@@ -200,6 +240,12 @@ export class OtherPartsSection {
           apply: 'Apply',
           close: 'Close',
           placeholder: 'Placeholder panel',
+          sort: 'Sortable column',
+          clinic: 'Clinic',
+          ends: 'Expires in',
+          copy: 'Copy the clinic sign-in address',
+          copied: 'The clinic sign-in address was copied.',
+          copyFailed: 'Copying failed. Select the address and copy it by hand.',
           states: ['Empty', 'Filled', 'Error', 'Accepted'],
           ruleNames: ['At least 8 characters', 'An upper and a lower case letter', 'At least one digit', 'At least one symbol'],
         },

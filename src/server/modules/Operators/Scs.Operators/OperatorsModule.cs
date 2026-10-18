@@ -49,6 +49,8 @@ public sealed class OperatorsModule : IModule, IMigratableModule
         services.AddScoped<Roles>();
         services.AddScoped<OperatorProfile>();
         services.AddScoped<IOperatorDirectory>(provider => provider.GetRequiredService<OperatorProfile>());
+        // Replaced by the module that keeps clinics' account managers (spec 015, FR-030).
+        services.TryAddScoped<IManagedClinicCounts, NoManagedClinicCounts>();
         services.AddScoped<Scs.BuildingBlocks.Audit.IOperatorActorNames>(provider => provider.GetRequiredService<OperatorProfile>());
         services.AddScoped<OperatorsCleanupJob>();
         services.AddScoped<OperatorInviteJob>();

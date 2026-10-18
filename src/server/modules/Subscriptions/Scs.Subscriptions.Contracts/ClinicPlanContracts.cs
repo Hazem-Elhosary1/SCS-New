@@ -16,4 +16,23 @@ public interface IClinicPlans
     /// records nothing.
     /// </summary>
     Task SetAsync(Guid? planId, CancellationToken cancellation);
+
+    /// <summary>
+    /// Puts a new clinic on its plan with the end of its trial (spec 015, FR-004), recording
+    /// <c>subscription.plan-set</c> in the clinic's trail and the platform's, in one transaction. A
+    /// plan that is not offered to clinics (disabled, or unknown) is refused with <c>PLAN_DISABLED</c>.
+    /// </summary>
+    Task StartAsync(Guid planId, DateTimeOffset trialEndsAtUtc, CancellationToken cancellation);
+
+    /// <summary>The established clinic's plan, when it was set and when its trial ends; null when it has none.</summary>
+    Task<ClinicPlanState?> StateAsync(CancellationToken cancellation);
+
+    /// <summary>
+    /// Takes away the plan an add started before it failed, so that nothing of the add is left on
+    /// the given-up clinic (spec 015, SC-003). Only an add's undo calls it; its trail entry stays.
+    /// </summary>
+    Task UndoStartAsync(CancellationToken cancellation);
 }
+
+/// <summary>A clinic's plan link (spec 015).</summary>
+public sealed record ClinicPlanState(Guid? PlanId, DateTimeOffset SetAtUtc, DateTimeOffset? TrialEndsAtUtc);

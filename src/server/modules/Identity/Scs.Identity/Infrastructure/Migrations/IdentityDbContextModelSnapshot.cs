@@ -477,11 +477,23 @@ namespace Scs.Identity.Infrastructure.Migrations
                         .HasColumnType("tinyint")
                         .HasDefaultValue((byte)0);
 
+                    b.Property<string>("FullName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.Property<DateTimeOffset?>("LastFailedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("LastSignInAtUtc")
                         .HasColumnType("datetimeoffset");
 
                     b.Property<DateTimeOffset?>("LockedUntilUtc")
                         .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Mobile")
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)");
 
                     b.Property<bool>("MustChangePassword")
                         .ValueGeneratedOnAdd()
@@ -531,6 +543,8 @@ namespace Scs.Identity.Infrastructure.Migrations
                     b.ToTable("StaffAccount", "identity", t =>
                         {
                             t.HasCheckConstraint("CK_StaffAccount_ExpiryOnlyIfTemporary", "[MustChangePassword] = 1 OR [TemporaryPasswordExpiresAtUtc] IS NULL");
+
+                            t.HasCheckConstraint("CK_StaffAccount_Mobile", "[Mobile] IS NULL OR (LEN([Mobile]) BETWEEN 8 AND 16 AND [Mobile] NOT LIKE '%[^0-9+]%' AND CHARINDEX('+', [Mobile], 2) = 0)");
 
                             t.HasCheckConstraint("CK_StaffAccount_PasswordUnlessInvited", "[State] = 'invited' OR [PasswordHash] IS NOT NULL");
 

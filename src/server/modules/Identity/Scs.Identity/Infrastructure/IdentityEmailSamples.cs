@@ -21,9 +21,10 @@ internal sealed class IdentityEmailSamples : IEmailSamples
         .. Both("SignInCode", language => AccountEmails.SignInCode(To, language, "742906", 10)),
         .. Both("PasswordReset", language => AccountEmails.PasswordReset(To, language, $"{App}/set-password#t=v1.sample-token-of-a-reset-link", 30)),
         .. Both("PasswordChanged", language => AccountEmails.PasswordChanged(To, language, When)),
-        .. Both("Invitation", language => AccountEmails.Invitation(To, language, $"{App}/set-password#t=v1.sample-token-of-an-invitation", ClinicAr, ClinicEn, 72)),
+        .. Both("Invitation", language => AccountEmails.Invitation(To, language, $"{App}/set-password#t=v1.sample-token-of-an-invitation", ClinicAr, ClinicEn, 72, App)),
         .. Both("AccountCreated", language => AccountEmails.AccountCreated(To, language, ClinicAr, ClinicEn, $"{App}/sign-in")),
         .. Both("AccessReset", language => AccountEmails.AccessReset(To, language, $"{App}/sign-in")),
+        .. Both("EmailChanged", language => AccountEmails.EmailChanged(To, language, "haitham@alnoorclinic.example", ClinicAr, ClinicEn)),
     ];
 
     private static EmailSample[] Both(string kind, Func<string, EmailContent> build) =>

@@ -423,10 +423,11 @@ public sealed class RefusalOrderTests(SqlServerFixture sql)
         Assert.Empty(world.Factory.Mail.Sent);
     }
 
+    // Spec 015 checks the stored states (CK_Clinic_State): of those a team can be in, only "active"
+    // is stored today. Spec 016 adds its states to the check and their cases here; a trial is the
+    // plan's, not the clinic's (spec 015, research R10).
     [Theory]
     [InlineData("active")]
-    [InlineData("trial")]
-    [InlineData("read-only")]
     public async Task A_clinic_in_any_other_state_lets_its_team_in(string state)
     {
         using var world = await RefusalWorld.CreateAsync(sql);

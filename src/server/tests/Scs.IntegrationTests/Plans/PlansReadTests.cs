@@ -113,7 +113,9 @@ public sealed class PlansReadTests(SqlServerFixture sql)
     [Fact]
     public async Task With_no_clinics_the_cards_count_the_plans_and_have_nothing_else_to_count()
     {
-        using var world = await OpsWorld.CreateAsync(sql);
+        // The clinics module counting nothing: since spec 015 the shared database holds the clinics
+        // other tests add.
+        using var world = await OpsWorld.CreateAsync(sql, configure: f => f.WithSubscribers(new FakeSubscribers()));
         await world.Factory.PutPlanAsync(disabled: true);
         using var viewer = await world.Factory.SignInWithAsync(OperatorPermissions.BillingView);
         using var manager = await world.Factory.SignInWithAsync(OperatorPermissions.BillingManagePlans);
@@ -206,10 +208,11 @@ public sealed class PlansReadTests(SqlServerFixture sql)
         Assert.Empty(plan.GetProperty("clinics").EnumerateArray());
 
         clinics.Counts[id] = new PlanSubscriberCounts(64, 8, 5, 31936m);
+        var trialEnds = new DateTimeOffset(2026, 10, 31, 9, 0, 0, TimeSpan.Zero);
         clinics.Clinics[id] =
         [
             new PlanClinic(Guid.NewGuid(), "عيادة النور", "Al Noor Clinic", "نشطة", "Active", DateTimeOffset.UtcNow),
-            new PlanClinic(Guid.NewGuid(), "مركز الشفاء", "Al Shifa Center", "تجريبية", "Trial", DateTimeOffset.UtcNow.AddDays(-1)),
+            new PlanClinic(Guid.NewGuid(), "مركز الشفاء", "Al Shifa Center", "تجريبية", "Trial", DateTimeOffset.UtcNow.AddDays(-1), trialEnds),
         ];
         var counted = await viewer.JsonAsync($"{PlansPath}/{id}");
         var subscriptions = counted.GetProperty("subscriptions");
@@ -219,6 +222,11 @@ public sealed class PlansReadTests(SqlServerFixture sql)
         Assert.Equal(
             ["عيادة النور", "مركز الشفاء"],
             counted.GetProperty("clinics").EnumerateArray().Select(c => c.GetProperty("nameAr").GetString()));
+
+        // A clinic in trial says when the trial ends; one past it says nothing more (spec 015).
+        var rows = counted.GetProperty("clinics").EnumerateArray().ToList();
+        Assert.Equal(JsonValueKind.Null, rows[0].GetProperty("trialEndsAt").ValueKind);
+        Assert.Equal(trialEnds, rows[1].GetProperty("trialEndsAt").GetDateTimeOffset());
     }
 
     [Fact]

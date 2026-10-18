@@ -84,4 +84,64 @@ internal sealed class ClinicPlans(
 
         entitlements.Forget();
     }
+
+    public async Task UndoStartAsync(CancellationToken cancellation)
+    {
+        var clinicId = clinic.Require();
+        await db.ClinicPlans.Where(p => p.ClinicId == clinicId).ExecuteDeleteAsync(cancellation).ConfigureAwait(false);
+    }
+
+    public async Task StartAsync(Guid planId, DateTimeOffset trialEndsAtUtc, CancellationToken cancellation)
+    {
+        var clinicId = clinic.Require();
+        var offered = await plans.AssignableAsync(cancellation).ConfigureAwait(false);
+        var plan = offered.Any(p => p.Id == planId)
+            ? await plans.FindAsync(planId, cancellation).ConfigureAwait(false)
+            : null;
+        if (plan is null)
+        {
+            // Disabled between opening the form and saving it, or never offered (BRD Ops §5-2).
+            throw new ScsProblemException(StatusCodes.Status409Conflict, ErrorCodes.PlanDisabled, "The plan is not offered to clinics.");
+        }
+
+        var transaction = await db.Database.BeginTransactionAsync(cancellation).ConfigureAwait(false);
+        await using (transaction.ConfigureAwait(false))
+        {
+            await db.LockAsync($"scs:clinic-plan:{clinicId:N}", cancellation).ConfigureAwait(false);
+
+            var now = clock.GetUtcNow();
+            if (await db.ClinicPlans.AnyAsync(p => p.ClinicId == clinicId, cancellation).ConfigureAwait(false))
+            {
+                throw new InvalidOperationException($"The clinic {clinicId} already has a plan; a plan change is spec 020's.");
+            }
+
+            db.ClinicPlans.Add(ClinicPlan.Start(clinicId, planId, trialEndsAtUtc, now));
+            var record = new AuditRecord(
+                AuditActions.SubscriptionPlanSet,
+                new AuditTarget(AuditTarget.Clinic, clinicId),
+                Facts: new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["plan"] = plan.Code,
+                    ["trial-ends"] = trialEndsAtUtc.ToString("O", System.Globalization.CultureInfo.InvariantCulture),
+                },
+                Changes: [AuditChange.Of(PlanField, null, plan.Code)]);
+
+            db.Record(record);
+            await db.SaveChangesAsync(cancellation).ConfigureAwait(false);
+            await db.RecordForPlatformAsync(record, cancellation).ConfigureAwait(false);
+            await transaction.CommitAsync(cancellation).ConfigureAwait(false);
+        }
+
+        entitlements.Forget();
+    }
+
+    public async Task<ClinicPlanState?> StateAsync(CancellationToken cancellation)
+    {
+        var clinicId = clinic.Require();
+        return await db.ClinicPlans.AsNoTracking()
+            .Where(p => p.ClinicId == clinicId)
+            .Select(p => new ClinicPlanState(p.PlanId, p.SetAtUtc, p.TrialEndsAtUtc))
+            .SingleOrDefaultAsync(cancellation)
+            .ConfigureAwait(false);
+    }
 }

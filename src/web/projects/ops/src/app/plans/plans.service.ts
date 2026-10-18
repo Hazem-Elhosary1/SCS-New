@@ -66,6 +66,8 @@ export interface PlanClinic {
   readonly nameEn: string;
   readonly stateAr: string;
   readonly stateEn: string;
+  /** While the clinic is in trial, when the trial ends (spec 015). */
+  readonly trialEndsAt?: string | null;
 }
 
 /** One plan in full, for its detail and its form; its clinics' count is in `subscriptions`. */

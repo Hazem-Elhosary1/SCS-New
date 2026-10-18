@@ -51,6 +51,9 @@ public static class DeclaredCrossings
     public const string ListClinicsWithEmailWaiting = "list-clinics-with-email-waiting";
     public const string ListClinicsWithFilesToScan = "list-clinics-with-files-to-scan";
     public const string ReadPublicFile = "read-public-file";
+    public const string UpdateClinic = "update-clinic";
+    public const string ReadClinicPlansAsOperator = "read-clinic-plans-as-operator";
+    public const string ReadClinicOwnersAsOperator = "read-clinic-owners-as-operator";
 
     /// <summary>Operation, the type that performs it, whether each use is recorded, and why it exists.</summary>
     public static IReadOnlyList<(string Operation, string Type, bool Recorded, string Reason)> All { get; } =
@@ -73,6 +76,12 @@ public static class DeclaredCrossings
             "Every minute, which clinics have files waiting for their scan (spec 009). Identifiers and a count; each clinic's files are then scanned by its own job."),
         (ReadPublicFile, "Scs.Files.Infrastructure.PublicFiles", false,
             "A public image is asked for with no clinic (spec 009, FR-027). Returns one attached, clean file of a public kind and nothing else."),
+        (UpdateClinic, "Scs.Tenancy.Infrastructure.ClinicRegistry", true,
+            "An operator completes, gives up or corrects a clinic's own record, or assigns its account manager (spec 015, FR-004, FR-016, FR-021). The application login is denied writes on the clinic's table (spec 002)."),
+        (ReadClinicPlansAsOperator, "Scs.Subscriptions.Infrastructure.OperatorClinicPlans", false,
+            "Operators list and count clinics by plan and trial (spec 015, FR-007 – FR-010, FR-029). A read of each clinic's plan, trial end and join date; nothing else."),
+        (ReadClinicOwnersAsOperator, "Scs.Identity.Infrastructure.OperatorClinicOwners", false,
+            "Operators search the clinics by their owner (spec 015, FR-009). A read of each clinic owner's name, email and mobile; never a secret."),
     ];
 
     /// <summary>The distinct types that may use the operator connection.</summary>

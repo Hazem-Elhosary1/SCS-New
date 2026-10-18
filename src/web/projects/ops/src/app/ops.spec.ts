@@ -77,9 +77,10 @@ describe('the small pieces of the operators console', () => {
 
   it('lists only the sections that exist', () => {
     // Spec 011 adds the team, behind its permission; spec 012 the plans, which open the plans list since spec 013;
-    // the home stays open to every operator until spec 022.
+    // the home stays open to every operator until spec 022; spec 015 adds the clinics.
     expect(OPS_SECTIONS.map((section) => [section.key, section.permission])).toEqual([
       ['home', undefined],
+      ['clinics', 'clinics.view'],
       ['plans', 'billing.view'],
       ['operators', 'operators.view'],
     ]);

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Scs.Audit.Contracts;
 using Scs.BuildingBlocks.Security;
+using Scs.Operators.Contracts;
 using Scs.Operators.Domain;
 using Scs.Operators.Infrastructure.Persistence;
 using Scs.SharedKernel;
@@ -92,7 +93,7 @@ internal sealed record OperatorDetail(
 /// a password, a link, a token, or how an account came to be locked.
 /// </summary>
 internal sealed class OperatorsDirectory(
-    OperatorsDbContext db, IPlatformAuditReading trail, IOperatorAccess access, TimeProvider clock)
+    OperatorsDbContext db, IPlatformAuditReading trail, IOperatorAccess access, IManagedClinicCounts managed, TimeProvider clock)
 {
     public const int PageSize = 8;
     public const int ActivityLines = 10;
@@ -224,10 +225,22 @@ internal sealed class OperatorsDirectory(
             first,
             locked,
             OperatorPermissions.InOrder(codes.Where(OperatorPermissions.IsKnown)),
-            [new PerformanceCard("activeSessions", activeSessions)],
+            await PerformanceAsync(id, activeSessions, cancellation).ConfigureAwait(false),
             await ActivityAsync(id, language, cancellation).ConfigureAwait(false),
             Convert.ToBase64String(account.RowVersion),
             can);
+    }
+
+    /// <summary>The performance card's figures that exist: the sessions, and the clinics looked after (spec 015).</summary>
+    private async Task<IReadOnlyList<PerformanceCard>> PerformanceAsync(Guid id, int activeSessions, CancellationToken cancellation)
+    {
+        var cards = new List<PerformanceCard> { new("activeSessions", activeSessions) };
+        if (await managed.CountAsync(id, cancellation).ConfigureAwait(false) is { } clinics)
+        {
+            cards.Add(new PerformanceCard("clinicsManaged", clinics));
+        }
+
+        return cards;
     }
 
     /// <summary>

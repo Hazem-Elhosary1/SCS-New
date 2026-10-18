@@ -65,8 +65,10 @@ public sealed class OperatorDetailTests(SqlServerFixture sql)
         Assert.False(string.IsNullOrEmpty(detail.GetProperty("version").GetString()));
         Assert.True(detail.GetProperty("createdAtUtc").GetDateTimeOffset() <= world.Factory.Clock.GetUtcNow());
 
-        var performance = Assert.Single(detail.GetProperty("performance").EnumerateArray());
-        Assert.Equal(("activeSessions", 0), (performance.GetProperty("key").GetString(), performance.GetProperty("value").GetInt32()));
+        // The open sessions, then the clinics they manage (spec 015, FR-030).
+        Assert.Equal(
+            [("activeSessions", 0), ("clinicsManaged", 0)],
+            detail.GetProperty("performance").EnumerateArray().Select(c => (c.GetProperty("key").GetString(), c.GetProperty("value").GetInt32())));
 
         var text = detail.GetRawText();
         Assert.DoesNotContain("hash", text, StringComparison.OrdinalIgnoreCase);
@@ -173,5 +175,30 @@ public sealed class OperatorDetailTests(SqlServerFixture sql)
         Assert.Equal((false, false, false, false, false), Can(await viewer.JsonAsync($"{TeamHelp.Operators}/{active}")));
         using var refused = await viewer.OpsPostAsync($"{TeamHelp.Operators}/{active}/unlock");
         Assert.Equal(HttpStatusCode.Forbidden, refused.StatusCode);
+    }
+
+    [Fact]
+    public async Task The_page_counts_the_clinics_the_operator_is_account_manager_of()
+    {
+        // Spec 015, FR-030 and User Story 3 scenario 11: «عيادات تم إدارتها».
+        using var world = await OpsWorld.CreateAsync(sql);
+        using var admin = await world.SignInAsync();
+        var plan = await world.Factory.PutPlanAsync();
+        using var editor = await world.Factory.SignInWithAsync(ClinicFixtures.Editor);
+        var (manager, _, _) = await world.Factory.CreateOperatorWithAsync(OperatorPermissions.ClinicsView);
+
+        int Managed(JsonElement detail) => detail.GetProperty("performance").EnumerateArray()
+            .Single(c => c.GetProperty("key").GetString() == "clinicsManaged").GetProperty("value").GetInt32();
+        Assert.Equal(0, Managed(await admin.JsonAsync($"{TeamHelp.Operators}/{manager}")));
+
+        foreach (var _ in Enumerable.Range(0, 2))
+        {
+            var (clinic, _) = await editor.AddClinicAsync(ClinicFixtures.NewClinic(plan));
+            var version = (await editor.JsonAsync($"{ClinicFixtures.ClinicsPath}/{clinic}")).GetProperty("version").GetString();
+            var saved = await editor.OpsPutAsync($"{ClinicFixtures.ClinicsPath}/{clinic}/account-manager", new { version, operatorId = manager }).AnswerAsync();
+            Assert.Equal(200, saved.Status);
+        }
+
+        Assert.Equal(2, Managed(await admin.JsonAsync($"{TeamHelp.Operators}/{manager}")));
     }
 }

@@ -16,8 +16,8 @@ public static class AccountStates
 }
 
 /// <summary>
-/// A member of a clinic's team, as far as signing in is concerned, and the role they hold. Name
-/// and branch arrive with spec 026. Clinic-owned: with no clinic established it is invisible, which is
+/// A member of a clinic's team, as far as signing in is concerned, and the role they hold. The
+/// owner's name and mobile arrive with spec 015, every account's name and branch with spec 026. Clinic-owned: with no clinic established it is invisible, which is
 /// why finding it before sign-in goes through the one declared lookup.
 /// </summary>
 public sealed class StaffAccount : IClinicOwned
@@ -25,6 +25,8 @@ public sealed class StaffAccount : IClinicOwned
     public const int EmailMaxLength = EmailAddress.MaxLength;
     public const int PasswordHashMaxLength = 200;
     public const int StateMaxLength = 16;
+    public const int FullNameMaxLength = 200;
+    public const int MobileMaxLength = 20;
 
     private StaffAccount()
     {
@@ -34,7 +36,10 @@ public sealed class StaffAccount : IClinicOwned
 
     public Guid ClinicId { get; private set; }
 
-    /// <summary>Lower case, trimmed, unique on the whole platform. Never changes.</summary>
+    /// <summary>
+    /// Lower case, trimmed, unique on the whole platform. Changed only by an operator correcting
+    /// the clinic owner's address (spec 015, FR-021a).
+    /// </summary>
     [PersonalData]
     public string Email { get; private set; } = "";
 
@@ -70,6 +75,17 @@ public sealed class StaffAccount : IClinicOwned
     public Guid? RoleId { get; private set; }
 
     public DateTimeOffset CreatedAtUtc { get; private set; }
+
+    /// <summary>The person's full name: the clinic owner's since spec 015 («جهة الاتصال»); 026 gives every account one.</summary>
+    [PersonalData]
+    public string? FullName { get; private set; }
+
+    /// <summary>A phone number from any country, kept without spaces and dashes (spec 015, the owner's answer).</summary>
+    [PersonalData]
+    public string? Mobile { get; private set; }
+
+    /// <summary>When the latest session was opened, even if it has ended since (BRD Ops §3-2).</summary>
+    public DateTimeOffset? LastSignInAtUtc { get; private set; }
 
 #pragma warning disable CA1819 // The concurrency token is a byte array by the database's definition.
     public byte[] RowVersion { get; private set; } = [];
@@ -121,6 +137,22 @@ public sealed class StaffAccount : IClinicOwned
     }
 
     public void ReplacePasswordHash(string passwordHash) => PasswordHash = passwordHash;
+
+    /// <summary>The clinic owner's name and mobile, as an operator gives them (spec 015).</summary>
+    public void SetOwnerDetails(string fullName, string mobile)
+    {
+        FullName = fullName.Trim();
+        Mobile = mobile;
+    }
+
+    /// <summary>A new sign-in address; ending sessions and links is the caller's, in the same transaction.</summary>
+    public void ChangeEmail(EmailAddress email)
+    {
+        ArgumentNullException.ThrowIfNull(email);
+        Email = email.Value;
+    }
+
+    public void SignedIn(DateTimeOffset now) => LastSignInAtUtc = now;
 
     /// <summary>Gives the account a role. Ending its sessions is the caller's to do, in the same transaction (SH-045).</summary>
     public void AssignRole(Guid roleId) => RoleId = roleId;

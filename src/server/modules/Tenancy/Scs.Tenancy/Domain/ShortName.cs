@@ -49,8 +49,49 @@ public static partial class ShortName
     public static bool CouldBeAName(string canonical) =>
         canonical.Length is >= MinLength and <= MaxLength && Pattern().IsMatch(canonical);
 
+    /// <summary>The longest derived base: room is left for <c>-NN</c> on a clash (spec 015, research R9).</summary>
+    public const int DerivedMaxLength = 33;
+
+    /// <summary>
+    /// The slug of a new clinic, from the Latin letters and digits of its English name, or of its
+    /// Arabic name when it has no English one (spec 015, FR-004; BRD Ops §3-1): lower case, runs
+    /// joined by dashes, starting with a letter, at most 33 characters. A result that is too
+    /// short, reserved or empty becomes <c>clinic-</c> and six random letters and digits.
+    /// </summary>
+    public static string Derive(string? englishName, string? arabicName, Func<int, int>? random = null)
+    {
+        var source = string.IsNullOrWhiteSpace(englishName) ? arabicName : englishName;
+        var runs = LatinRuns().Matches((source ?? "").ToLowerInvariant()).Select(m => m.Value);
+        var joined = string.Join('-', runs).TrimStart('-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
+
+        if (joined.Length > DerivedMaxLength)
+        {
+            joined = joined[..DerivedMaxLength].TrimEnd('-');
+        }
+
+        return TryCreate(joined, out var canonical, out _) ? canonical : Fallback(random ?? Random.Shared.Next);
+    }
+
+    /// <summary>The <paramref name="number"/>th candidate of a base: the base, then <c>-2</c>, <c>-3</c> and so on.</summary>
+    public static string Candidate(string derived, int number) => number <= 1 ? derived : $"{derived}-{number}";
+
+    private static string Fallback(Func<int, int> random)
+    {
+        const string alphabet = "abcdefghijklmnopqrstuvwxyz0123456789";
+        var tail = new char[6];
+        for (var i = 0; i < tail.Length; i++)
+        {
+            tail[i] = alphabet[random(alphabet.Length)];
+        }
+
+        return "clinic-" + new string(tail);
+    }
+
     [GeneratedRegex("^[a-z][a-z0-9]*(-[a-z0-9]+)*$", RegexOptions.CultureInvariant)]
     private static partial Regex Pattern();
+
+    [GeneratedRegex("[a-z0-9]+", RegexOptions.CultureInvariant)]
+    private static partial Regex LatinRuns();
 }
 
 /// <summary>

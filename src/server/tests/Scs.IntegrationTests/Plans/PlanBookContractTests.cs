@@ -58,7 +58,7 @@ public sealed class PlanBookContractTests(SqlServerFixture sql)
     }
 
     [Fact]
-    public async Task Until_clinics_have_plans_no_clinic_is_on_any()
+    public async Task A_new_plan_has_no_clinic_and_no_clinic_without_a_cycle_adds_revenue()
     {
         using var world = await OpsWorld.CreateAsync(sql);
         var id = await world.Factory.PutPlanAsync();
@@ -66,7 +66,11 @@ public sealed class PlanBookContractTests(SqlServerFixture sql)
         using var scope = world.Factory.Services.CreateScope();
         var clinics = scope.ServiceProvider.GetRequiredService<IPlanSubscribers>();
         Assert.Empty(await clinics.CountsAsync([id], CancellationToken.None));
-        Assert.Null(await clinics.RevenueAsync(CancellationToken.None));
         Assert.Empty(await clinics.ClinicsAsync(id, CancellationToken.None));
+
+        // Nothing when no clinic is on a plan; nought until spec 018 gives clinics billing cycles
+        // (spec 015, clarification of 17 Oct 2026).
+        var revenue = await clinics.RevenueAsync(CancellationToken.None);
+        Assert.True(revenue is null || revenue == new PlanRevenue(0m, null), revenue?.ToString());
     }
 }

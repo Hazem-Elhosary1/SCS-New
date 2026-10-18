@@ -355,7 +355,9 @@ test.describe('where the design puts things', () => {
   for (const entry of [...drawn('PasswordReset', 'clinic'), ...drawn('Invitation', 'clinic'), ...drawn('ResetLink', 'operators'), ...drawn('FirstPassword', 'operators')]) {
     test(`a link, ${entry.slug} (frames 2227:111 to 2227:216)`, async ({ page }) => {
       await page.goto(pageOf(entry.slug));
-      expect(await order(page, BODY)).toEqual(['eyebrow', 'title', 'paragraph', 'button', 'link', 'note']);
+      // The invitation also names where to sign in once the password is set (spec 015).
+      const signIn = entry.kind === 'Invitation' ? ['paragraph'] : [];
+      expect(await order(page, BODY)).toEqual(['eyebrow', 'title', 'paragraph', 'button', 'link', ...signIn, 'note']);
       const button = await box(part(page, 'button'));
       expect(button.height).toBe(48);
       expect(button.width).toBeGreaterThanOrEqual(200);
@@ -411,6 +413,22 @@ test.describe('where the design puts things', () => {
       await expect(attention.locator('[data-part="mark-warning"]')).toHaveCount(1);
       await expect(attention.locator('p')).toHaveCount(3);
       expect(Math.round((await box(attention)).width)).toBe(400);
+    });
+  }
+
+  // Spec 015, FR-021a: the notice to the old address when an operator changes the owner's email.
+  // It names the new address only masked, and offers nothing to press.
+  for (const entry of drawn('EmailChanged', 'clinic')) {
+    test(`the email-changed notice, ${entry.language} (spec 015, FR-021a)`, async ({ page }) => {
+      await page.goto(pageOf(entry.slug));
+      expect(await order(page, BODY)).toEqual(['eyebrow', 'title', 'paragraph', 'attention']);
+      await expect(part(page, 'button')).toHaveCount(0);
+      const text = (await part(page, 'card').textContent()) ?? '';
+      expect(text).toContain('h•••@alnoorclinic.example');
+      expect(text).not.toContain('haitham@');
+      // The address keeps its order inside an Arabic line.
+      await expect(page.locator('span[dir="ltr"]', { hasText: 'h•••@alnoorclinic.example' })).toHaveCount(1);
+      await expect(part(page, 'attention')).toHaveCount(1);
     });
   }
 });

@@ -30,9 +30,16 @@ public sealed class FakeEmailSender : IEmailSender
 
     public IReadOnlyCollection<EmailMessage> Sent => _sent;
 
-    public Task SendAsync(EmailMessage message, CancellationToken cancellation)
+    /// <summary>How long each send takes, as a slow mail server would (spec 015, SC-002).</summary>
+    public TimeSpan Delay { get; set; }
+
+    public async Task SendAsync(EmailMessage message, CancellationToken cancellation)
     {
         ArgumentNullException.ThrowIfNull(message);
+        if (Delay > TimeSpan.Zero)
+        {
+            await Task.Delay(Delay, cancellation);
+        }
 
         if (Failing || FailingFor.ContainsKey(message.To))
         {
@@ -45,7 +52,6 @@ public sealed class FakeEmailSender : IEmailSender
         }
 
         _sent.Enqueue(message);
-        return Task.CompletedTask;
     }
 
     public IReadOnlyList<EmailMessage> To(string email) =>
