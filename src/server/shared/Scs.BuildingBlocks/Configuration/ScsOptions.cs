@@ -48,6 +48,8 @@ public sealed class ScsOptions
 
     public PlatformOptions Platform { get; set; } = new();
 
+    public SubscriptionsOptions Subscriptions { get; set; } = new();
+
     /// <summary><c>SCS_VERSION</c>, set at build.</summary>
     public string Version { get; set; } = "0.0.0-dev";
 
@@ -288,6 +290,20 @@ public sealed class MailOptions
 }
 
 /// <summary>The operators console (spec 010).</summary>
+/// <summary>
+/// The clinics' subscriptions (spec 015). The trial length is the deployment's until spec 024 makes
+/// it a platform setting; a clinic keeps the trial end it was created with.
+/// </summary>
+public sealed class SubscriptionsOptions
+{
+    public const int MinTrialDays = 1;
+    public const int MaxTrialDays = 90;
+
+    /// <summary><c>SCS_SUBSCRIPTIONS__TRIAL_DAYS</c>: how many days a new clinic's trial lasts (the owner's answer: 14).</summary>
+    [ConfigurationKeyName("TRIAL_DAYS")]
+    public int TrialDays { get; set; } = 14;
+}
+
 public sealed class OpsOptions
 {
     public const string LocalAppUrl = "http://localhost:4203";

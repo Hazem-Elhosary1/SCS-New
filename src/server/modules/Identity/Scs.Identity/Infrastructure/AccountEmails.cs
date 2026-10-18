@@ -88,9 +88,12 @@ internal static class AccountEmails
 
     /// <summary>A team member is added and chooses the password through a link.</summary>
     public static EmailContent Invitation(
-        string to, string language, string address, string clinicAr, string clinicEn, int validHours)
+        string to, string language, string address, string clinicAr, string clinicEn, int validHours, string signInAddress)
     {
         var hours = validHours.ToString(CultureInfo.InvariantCulture);
+        // Where to sign in once the password is set, named by its host only: the button is the one
+        // link (spec 015, contracts/emails.md). Proposed words.
+        var signIn = EmailContent.LeftToRight(new Uri(signInAddress).Authority);
         var english = language == Words.English;
         var clinic = ClinicName(english, clinicAr, clinicEn);
         return english
@@ -99,6 +102,7 @@ internal static class AccountEmails
                 [
                     new EmailParagraph($"An account was created for you at {clinic} on {Platform}. Set your password to sign in — the link expires in {hours} hours."),
                     new EmailButton("Set password", address),
+                    new EmailParagraph($"Once the password is set, sign in at {signIn}."),
                     new EmailNote("Weren’t expecting this? You can ignore this email."),
                 ],
                 CreatedReason(english, clinic))
@@ -107,6 +111,7 @@ internal static class AccountEmails
                 [
                     new EmailParagraph($"أُنشئ لك حساب في {clinic} على {Platform}. عيّن كلمة المرور لتسجيل الدخول — ينتهي الرابط خلال {hours} ساعة."),
                     new EmailButton("تعيين كلمة المرور", address),
+                    new EmailParagraph($"بعد تعيين كلمة المرور يكون الدخول من {signIn}."),
                     new EmailNote("لم تكن تتوقع هذه الرسالة؟ يمكنك تجاهلها."),
                 ],
                 CreatedReason(english, clinic));
@@ -155,6 +160,40 @@ internal static class AccountEmails
                 new EmailButton("تسجيل الدخول", signInAddress),
                 new EmailNote("إن لم يكن هذا متوقَّعًا، تواصل مع مسؤول العيادة أو فريق الدعم."),
             ]);
+
+    /// <summary>
+    /// To the old address when an operator changed the clinic owner's sign-in email (spec 015,
+    /// FR-021a; contracts/emails.md). The new address is masked. Proposed words, with no gendered
+    /// address; the BRD does not word this email.
+    /// </summary>
+    public static EmailContent EmailChanged(string to, string language, string newAddress, string clinicAr, string clinicEn)
+    {
+        var english = language == Words.English;
+        var clinic = ClinicName(english, clinicAr, clinicEn);
+        var masked = EmailContent.LeftToRight(Mask(newAddress));
+        return english
+            ? new(
+                to, "en", $"The sign-in email of the {clinic} owner account changed", "SECURITY NOTICE", "Your sign-in email changed",
+                [
+                    new EmailParagraph($"The {Platform} team changed the sign-in email of the {clinic} owner account to {masked}. This address no longer signs in, and open sessions were ended."),
+                    new EmailAttention("If this change was not requested, contact the support team right away."),
+                ],
+                "You received this because this account's sign-in email changed.")
+            : new(
+                to, "ar", $"تغيّر بريد الدخول لحساب مالك {clinic}", "تنبيه أمني", "تغيّر بريد الدخول",
+                [
+                    new EmailParagraph($"غيّر فريق {Platform} بريد الدخول لحساب مالك {clinic} إلى {masked}. لم يعد هذا البريد يصلح للدخول، وأُنهيت الجلسات المفتوحة."),
+                    new EmailAttention("إن لم يكن التغيير مطلوبًا، يُتواصل مع فريق الدعم فورًا."),
+                ],
+                "أُرسلت هذه الرسالة لأن بريد الدخول لهذا الحساب تغيّر.");
+    }
+
+    /// <summary>The first character of the address and its whole domain: <c>m•••@example.com</c>.</summary>
+    public static string Mask(string address)
+    {
+        var at = address.IndexOf('@', StringComparison.Ordinal);
+        return at <= 0 ? "•••" : $"{address[0]}•••{address[at..]}";
+    }
 
     /// <summary>The clinic's name in the email's language; the other when that one is not kept.</summary>
     private static string ClinicName(bool english, string clinicAr, string clinicEn)

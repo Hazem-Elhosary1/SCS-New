@@ -55,6 +55,9 @@ public sealed class IdentityModule : IModule, IMigratableModule
         services.AddScoped<PasswordSetter>();
         services.AddScoped<ForgotPasswordService>();
         services.AddScoped<IAccountHandover, AccountHandover>();
+        // The clinic's owner, for the operators console (spec 015).
+        services.AddScoped<OperatorClinicOwners>();
+        services.AddScoped<IClinicOwners, ClinicOwners>();
         services.AddScoped<IStaffSessions>(provider => provider.GetRequiredService<SessionService>());
         services.AddScoped<IStaffSessionCheck>(provider => provider.GetRequiredService<SessionService>());
         services.AddScoped<IStaffAccounts, StaffAccounts>();

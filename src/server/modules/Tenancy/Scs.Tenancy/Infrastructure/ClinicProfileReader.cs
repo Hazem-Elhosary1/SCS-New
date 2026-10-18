@@ -14,9 +14,23 @@ internal sealed class ClinicProfileReader(TenancyDbContext db, IClinicContext cl
     public async Task<ClinicProfile> GetOwnAsync(CancellationToken cancellation)
     {
         var id = clinic.Require();
-        return await db.Clinics.AsNoTracking()
-                   .Where(c => c.Id == id)
-                   .Select(c => new ClinicProfile(c.Id, c.NameAr, c.NameEn, c.State, c.Specialty))
+        return await (
+                       from c in db.Clinics.AsNoTracking()
+                       where c.Id == id
+                       select new ClinicProfile(
+                           c.Id,
+                           c.NameAr,
+                           c.NameEn,
+                           c.State,
+                           c.Specialty,
+                           c.Address,
+                           c.TaxNumber,
+                           c.DefaultLanguage,
+                           c.AccountManagerId,
+                           c.CreatedBy,
+                           c.CreatedAtUtc,
+                           db.Directory.Where(e => e.ClinicId == c.Id && e.IsCurrent).Select(e => e.ShortName).FirstOrDefault(),
+                           c.RowVersion))
                    .SingleOrDefaultAsync(cancellation)
                    .ConfigureAwait(false)
                ?? throw new ScsProblemException(

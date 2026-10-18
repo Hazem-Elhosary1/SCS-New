@@ -10,6 +10,9 @@ public static class ClinicSource
     public const string PatientAddress = "patient-address";
     public const string Account = "account";
     public const string Job = "job";
+
+    /// <summary>An operator acting on one clinic from the operators console (spec 015, research R4).</summary>
+    public const string Operator = "operator";
 }
 
 /// <summary>

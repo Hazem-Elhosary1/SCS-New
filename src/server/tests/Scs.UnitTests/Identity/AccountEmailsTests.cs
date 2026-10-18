@@ -107,7 +107,7 @@ public partial class AccountEmailsTests
     public void The_invitation_names_the_clinic_in_the_email_s_language(
         string language, string subject, string eyebrow, string title, string body, string button, string note, string reason)
     {
-        var content = AccountEmails.Invitation(To, language, Link, "عيادة النور", "Al Noor Clinic", 72);
+        var content = AccountEmails.Invitation(To, language, Link, "عيادة النور", "Al Noor Clinic", 72, SignIn);
         var message = Render(content);
 
         Assert.Equal((subject, eyebrow), (content.Subject, content.Eyebrow));
@@ -115,6 +115,9 @@ public partial class AccountEmailsTests
         Assert.Contains(body, message.TextBody, StringComparison.Ordinal);
         Assert.Equal((button, Link), (Button(content).Label, Button(content).Address));
         Assert.Contains(note, message.TextBody, StringComparison.Ordinal);
+        // Where to sign in afterwards, kept left to right in an Arabic line (spec 015).
+        Assert.Contains(language == "ar" ? "بعد تعيين كلمة المرور يكون الدخول من app.scs.test." : "Once the password is set, sign in at app.scs.test.", message.TextBody, StringComparison.Ordinal);
+        Assert.Contains($"dir=\"ltr\"", message.HtmlBody, StringComparison.Ordinal);
         Assert.EndsWith(reason + "\n", message.TextBody, StringComparison.Ordinal);
         Assert.DoesNotContain(language == "ar" ? "Al Noor Clinic" : "عيادة النور", message.TextBody, StringComparison.Ordinal);
         Assert.DoesNotMatch("[٠-٩]", message.TextBody + message.HtmlBody);
@@ -123,8 +126,8 @@ public partial class AccountEmailsTests
     [Fact]
     public void A_clinic_with_one_name_is_named_by_it_in_both_languages()
     {
-        Assert.Equal("Invitation to عيادة النور", AccountEmails.Invitation(To, "en", Link, "عيادة النور", "", 72).Subject);
-        Assert.Equal("دعوة إلى Al Noor Clinic", AccountEmails.Invitation(To, "ar", Link, " ", "Al Noor Clinic", 72).Subject);
+        Assert.Equal("Invitation to عيادة النور", AccountEmails.Invitation(To, "en", Link, "عيادة النور", "", 72, SignIn).Subject);
+        Assert.Equal("دعوة إلى Al Noor Clinic", AccountEmails.Invitation(To, "ar", Link, " ", "Al Noor Clinic", 72, SignIn).Subject);
     }
 
     [Theory]

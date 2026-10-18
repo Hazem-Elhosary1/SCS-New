@@ -75,6 +75,11 @@ public sealed class RouteAuditDeclarationTests(SqlServerFixture sql)
         ["PUT /v1/ops/plans/{id:guid}"] = AuditDeclarationKind.Records,
         ["POST /v1/ops/plans/{id:guid}/disable"] = AuditDeclarationKind.Records,
         ["POST /v1/ops/plans/{id:guid}/enable"] = AuditDeclarationKind.Records,
+        // Spec 015: the clinics, written to the clinic's trail and the platform's.
+        ["POST /v1/ops/clinics"] = AuditDeclarationKind.Records,
+        ["PUT /v1/ops/clinics/{id:guid}"] = AuditDeclarationKind.Records,
+        ["PUT /v1/ops/clinics/{id:guid}/account-manager"] = AuditDeclarationKind.Records,
+        ["POST /v1/ops/clinics/{id:guid}/invitation"] = AuditDeclarationKind.Records,
         ["PUT /v1/settings/notification-emails/{eventKey}"] = AuditDeclarationKind.Records,
         ["POST /v1/files"] = AuditDeclarationKind.RecordsNothing,
         ["DELETE /v1/files/{id:guid}"] = AuditDeclarationKind.RecordsNothing,

@@ -89,7 +89,15 @@ public sealed class StaffSessionAuthenticationHandler(
 
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        if (Context.GetEndpoint()?.Metadata.GetMetadata<HandlesOwnSessionMetadata>() is not null)
+        var endpoint = Context.GetEndpoint();
+        if (endpoint?.Metadata.GetMetadata<HandlesOwnSessionMetadata>() is not null)
+        {
+            return AuthenticateResult.NoResult();
+        }
+
+        // An operators' route takes nothing from a clinic's session, its clinic least of all: where
+        // both consoles share a host, the browser carries both cookies (spec 010, FR-037; spec 015).
+        if (endpoint?.Metadata.GetMetadata<OperatorRouteMetadata>() is not null)
         {
             return AuthenticateResult.NoResult();
         }

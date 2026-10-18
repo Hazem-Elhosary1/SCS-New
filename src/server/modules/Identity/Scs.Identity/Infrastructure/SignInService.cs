@@ -295,6 +295,12 @@ internal sealed class SignInService(
         await devices.SeenAsync(accountId, origin, cancellation).ConfigureAwait(false);
         await db.SaveChangesAsync(cancellation).ConfigureAwait(false);
 
+        // «آخر تسجيل دخول»: the latest session opened, kept even after it ends (spec 015, BRD Ops §3-2).
+        var openedAt = clock.GetUtcNow();
+        await db.Accounts.Where(a => a.Id == accountId)
+            .ExecuteUpdateAsync(update => update.SetProperty(a => a.LastSignInAtUtc, openedAt), cancellation)
+            .ConfigureAwait(false);
+
         // A completed sign-in forgets the codes spent before it.
         await db.Accounts.Where(a => a.Id == accountId && a.SpentCodes != 0)
             .ExecuteUpdateAsync(update => update.SetProperty(a => a.SpentCodes, (byte)0), cancellation)

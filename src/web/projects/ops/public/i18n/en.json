@@ -11,6 +11,7 @@
       },
       "nav": {
         "home": "Home",
+        "clinics": "Clinics",
         "plans": "Plans",
         "operators": "Operators"
       }
@@ -301,7 +302,8 @@
         "reactivated": "The operator account was reactivated.",
         "reactivateFailed": "Couldn't reactivate this operator's account.",
         "unlocked": "Account unlocked.",
-        "unlockFailed": "Couldn't unlock this account."
+        "unlockFailed": "Couldn't unlock this account.",
+        "clinicsManaged": "Clinics managed"
       },
       "activity": {
         "signed-in": "Logged in from {{device}}",
@@ -883,7 +885,8 @@
           "newSubs": "New Subscriptions This Month",
           "trial": "Clinics on Trial",
           "clinicsTitle": "Clinics on This Plan",
-          "noClinics": "No clinics are on this plan yet."
+          "noClinics": "No clinics are on this plan yet.",
+          "trialEnds": "ends {{when}}"
         },
         "disable": {
           "title": "Disable Plan",
@@ -903,6 +906,250 @@
     },
     "ai": {
       "badge": "AI"
+    },
+    "clinics": {
+      "retry": "Retry",
+      "none": "—",
+      "days": {
+        "zero": "0 days",
+        "one": "day",
+        "two": "days",
+        "few": "days",
+        "many": "days",
+        "other": "days"
+      },
+      "hours": {
+        "zero": "less than an hour",
+        "one": "hour",
+        "two": "hours",
+        "few": "hours",
+        "many": "hours",
+        "other": "hours"
+      },
+      "doctors": {
+        "zero": "0 doctors",
+        "one": "doctor",
+        "two": "doctors",
+        "few": "doctors",
+        "many": "doctors",
+        "other": "doctors"
+      },
+      "branches": {
+        "zero": "0 branches",
+        "one": "branch",
+        "two": "branches",
+        "few": "branches",
+        "many": "branches",
+        "other": "branches"
+      },
+      "list": {
+        "title": "Clinics",
+        "line": "Manage all clinics on the platform.",
+        "add": "Add Clinic",
+        "cards": {
+          "total": "Total Clinics",
+          "newThisMonth": "+{{count}} this month",
+          "active": "Active Clinics",
+          "activeShare": "{{share}}% of total",
+          "trial": "Trial Clinics",
+          "trialSoon": "Nearing expiry",
+          "follow": "Needs Attention",
+          "followParts": "{{overdue}} past due · {{readOnly}} read-only · {{suspended}} suspended",
+          "noData": "No data"
+        },
+        "search": "Search clinics by name or contact...",
+        "clearSearch": "Clear search",
+        "filter": "Filter",
+        "filterTitle": "Filter results",
+        "close": "Close",
+        "apply": "Apply filters",
+        "reset": "Reset",
+        "clearAll": "Clear all",
+        "removeFilter": "Remove filter",
+        "applied": {
+          "1": "1 filter applied",
+          "2": "2 filters applied",
+          "3": "3 filters applied",
+          "4": "4 filters applied"
+        },
+        "facets": {
+          "status": "Status",
+          "plan": "Plan",
+          "allPlans": "All plans",
+          "length": "Subscription Duration",
+          "allLengths": "All durations",
+          "endsWithin": "Expires within",
+          "anyTime": "Any time",
+          "within": {
+            "7": "Within 7 days",
+            "14": "Within 14 days",
+            "30": "Within 30 days"
+          }
+        },
+        "lengths": {
+          "monthly": "Monthly",
+          "annual": "Annual",
+          "trial": "Trial",
+          "unset": "Not set"
+        },
+        "statuses": {
+          "trial": "Trial",
+          "active": "Active"
+        },
+        "columns": {
+          "clinic": "Clinic",
+          "addedBy": "Added By",
+          "plan": "Plan",
+          "status": "Status",
+          "length": "Subscription Duration",
+          "ends": "Expires in",
+          "actions": "Actions"
+        },
+        "sortEnds": "Sort by expiry date",
+        "added": "Added {{at}}",
+        "trialLength": "{{days}}-day trial",
+        "endsIn": "in {{days}}",
+        "edit": "Edit clinic",
+        "menu": "Actions for {{name}}",
+        "caption": "Clinics",
+        "count": "Showing {{from}}–{{to}} of {{total}} clinics",
+        "paging": "Clinic pages",
+        "previous": "Previous",
+        "next": "Next",
+        "loading": "Loading clinics",
+        "emptyTitle": "No clinics",
+        "emptyText": "Try adjusting the search or filters, or add a new clinic to get started.",
+        "emptyAdd": "Add Clinic",
+        "noneMatch": "No clinics match the search or filters used.",
+        "clearFilters": "Clear filters",
+        "failedTitle": "Something went wrong",
+        "failedText": "The clinics could not be loaded. Check your connection and try again."
+      },
+      "form": {
+        "crumb": "Clinics",
+        "addCrumb": "Add New Clinic",
+        "editCrumb": "Edit Clinic",
+        "addTitle": "Add New Clinic",
+        "addLine": "Fill in the details below to add a new clinic to the platform.",
+        "editTitle": "Edit Clinic",
+        "editLine": "Update the details for {{name}}.",
+        "nameAr": "Clinic Name (Arabic)",
+        "nameEn": "Clinic Name (English)",
+        "nameEnHint": "The Arabic name is used when left empty.",
+        "ownerName": "Contact Person",
+        "email": "Email",
+        "mobile": "Mobile Number",
+        "address": "Address",
+        "plan": "Plan",
+        "planPlaceholder": "Select a plan",
+        "tax": "Tax Registration Number (optional)",
+        "taxHint": "9 digits, e.g. 123-456-789",
+        "specialty": "Specialty",
+        "specialtyPlaceholder": "Select a specialty",
+        "specialtyHint": "Decides which exam modules and clinical screens the clinic sees. The clinic cannot change it.",
+        "unrecorded": "Not recorded",
+        "language": "Default language",
+        "languages": {
+          "ar": "Arabic",
+          "en": "English"
+        },
+        "timeZone": "Time zone",
+        "cairo": "Cairo (GMT+2)",
+        "note": "Change note (optional)",
+        "notePlaceholder": "e.g. Requested by the clinic to update its address",
+        "noteHint": "Shown in the clinic's and the operator's activity logs.",
+        "add": "Add Clinic",
+        "adding": "Adding…",
+        "save": "Save Changes",
+        "saving": "Saving…",
+        "cancel": "Cancel",
+        "added": "Clinic created!",
+        "saved": "The clinic details were updated.",
+        "addFailed": "The clinic could not be created.",
+        "saveFailed": "The clinic details could not be updated.",
+        "busy": "Another add is in progress; try again shortly.",
+        "changed": "This clinic changed after it was opened",
+        "reload": "Reload",
+        "loading": "Loading the form",
+        "loadFailed": "The clinic could not be loaded. Check your connection and try again.",
+        "errors": {
+          "REQUIRED": "This field is required.",
+          "TOO_LONG": "The text is longer than allowed.",
+          "TAX_NUMBER": "Enter the 9-digit tax registration number.",
+          "MOBILE": "The mobile number is not valid.",
+          "TAKEN": "This email belongs to another account on the platform.",
+          "INVALID_FORMAT": "The email address is not valid.",
+          "INVALID": "The value is not valid."
+        }
+      },
+      "detail": {
+        "loading": "Loading the clinic",
+        "failedTitle": "Something went wrong",
+        "failedText": "This clinic's details could not be loaded. Check your connection and try again.",
+        "tabs": {
+          "overview": "Overview",
+          "settings": "Settings"
+        },
+        "contact": "Contact: {{name}}",
+        "joined": "Joined {{date}}",
+        "plan": "{{name}} plan",
+        "edit": "Edit Clinic",
+        "info": "Clinic Information",
+        "rows": {
+          "email": "Email",
+          "phone": "Phone",
+          "address": "Address",
+          "tax": "Tax Registration Number",
+          "plan": "Plan",
+          "cycle": "Billing Cycle",
+          "renewal": "Next Renewal",
+          "signIn": "Sign-in Address",
+          "manager": "SCS Account Manager",
+          "team": "Doctors / Branches",
+          "lastSignIn": "Last Login"
+        },
+        "never": "Has not signed in yet",
+        "unassigned": "Unassigned",
+        "assign": "Assign",
+        "save": "Save",
+        "saving": "Saving...",
+        "cancel": "Cancel",
+        "managerSaved": "The account manager was updated.",
+        "managerFailed": "The account manager could not be updated. Try again.",
+        "changedElsewhere": "The clinic changed elsewhere, so it was read again.",
+        "copy": "Copy the clinic sign-in address",
+        "copied": "The clinic sign-in address was copied.",
+        "copyFailed": "Copying failed. Select the address and copy it by hand.",
+        "invitation": {
+          "badge": {
+            "live": "Invitation pending",
+            "lapsed": "Invitation expired",
+            "none": "No live invitation"
+          },
+          "live": "Invitation expires {{at}} — in {{left}}.",
+          "lapsed": "Expired {{at}}. Send a fresh one, good for another 72 hours.",
+          "none": "There is no live invitation. Send one.",
+          "resend": "Resend Invitation",
+          "resending": "Sending…",
+          "resent": "The invitation was sent again — the new link expires {{at}}.",
+          "failed": "The invitation could not be sent again.",
+          "cooldown": "An invitation was sent to this email less than a minute ago. Wait a moment and try again.",
+          "notSent": "The email could not be sent, so nothing reached the owner. Check Settings → Email, then try again.",
+          "accepted": "This clinic's owner has already accepted the invitation."
+        }
+      },
+      "settings": {
+        "stripEditor": "Read only: these are settings the clinic sets in its own app. Operators with “Edit Clinic Data” can change the language (in “Edit Clinic”), the booking page address and the renewal reminder emails, and can pause the booking page or an AI feature for this clinic.",
+        "stripViewer": "Read only: these are settings the clinic sets in its own app. Changing the booking page address or the renewal reminder emails, or pausing the booking page or an AI feature, needs the “Edit Clinic Data” permission.",
+        "general": "General settings",
+        "editLink": "Edit Clinic →",
+        "language": "Default language",
+        "timeZone": "Time zone",
+        "cairo": "Cairo (GMT+2)",
+        "staffAddress": "Staff sign-in address",
+        "loading": "Loading the clinic settings",
+        "failed": "The clinic's settings could not be loaded. Check your connection and try again."
+      }
     }
   }
 }

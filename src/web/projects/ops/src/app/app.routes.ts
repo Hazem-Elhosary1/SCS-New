@@ -53,6 +53,22 @@ export const routes: Routes = [
         path: 'profile',
         loadComponent: () => import('./profile/profile.page').then((file) => file.ProfilePage),
       },
+      // The clinics (spec 015). `clinics/new` before `clinics/:id`; the detail's two tabs are two addresses of one page.
+      ...guarded('clinics', OpsCan.clinicsView, () =>
+        import('./clinics/clinics-list.page').then((file) => file.ClinicsListPage),
+      ),
+      ...guarded('clinics/new', OpsCan.clinicsEdit, () =>
+        import('./clinics/clinic-form.page').then((file) => file.ClinicFormPage),
+      ),
+      ...guarded('clinics/:id', OpsCan.clinicsView, () =>
+        import('./clinics/clinic-detail.page').then((file) => file.ClinicDetailPage),
+      ),
+      ...guarded('clinics/:id/settings', OpsCan.clinicsView, () =>
+        import('./clinics/clinic-detail.page').then((file) => file.ClinicDetailPage),
+      ),
+      ...guarded('clinics/:id/edit', OpsCan.clinicsEdit, () =>
+        import('./clinics/clinic-form.page').then((file) => file.ClinicFormPage),
+      ),
       // The team and its roles (spec 011). Each page stands behind the permission its reads need.
       ...guarded('operators', OpsCan.operatorsView, () =>
         import('./operators/operators.page').then((file) => file.OperatorsPage),

@@ -84,6 +84,21 @@ makes them: `ClinicPlan` (one row per clinic, keyed by it; no row is no plan) an
 `tenancy.Clinic` has a nullable `Specialty`, set by clinic creation (015). Spec 014 marked
 `max_users` built (`MaxUsersBuilt`, only where it was still upcoming).
 
+## A clinic's onboarding (spec 015)
+
+- **`tenancy.Clinic`** has two states nobody sees: `setting-up`, while an add is not complete, and
+  `discarded`, an add that failed part-way and was given up. `CK_Clinic_State` holds the stored
+  states (`setting-up`, `active`, `suspended`, `cancelled`, `discarded`); spec 016 adds its own.
+  New columns: `Address`, `TaxNumber` (nine digits), `DefaultLanguage` (`ar` or `en`),
+  `AccountManagerId`, `CreatedBy` and a `RowVersion` that a stale edit is refused by.
+- **`clinicdata`** is a new schema, of the new `ClinicData` module, for a clinic's own records. Its
+  first table, `Branch`, is clinic-owned under isolation from the migration that makes it, with
+  at most one main branch a clinic (`UX_Branch_OneMain`).
+- **`identity.StaffAccount`** has `FullName`, `Mobile` (international, `CK_StaffAccount_Mobile`)
+  and `LastSignInAtUtc`, filled for existing accounts from their sessions by the migration.
+- **`subscriptions.ClinicPlan`** has `TrialEndsAtUtc`. A clinic without it is past its trial or
+  never had one.
+
 ## Creating a migration
 
 ```bash

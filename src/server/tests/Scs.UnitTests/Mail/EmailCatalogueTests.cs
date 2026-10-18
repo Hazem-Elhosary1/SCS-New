@@ -43,13 +43,13 @@ public partial class EmailCatalogueTests
     private static partial Regex Word();
 
     [Fact]
-    public void The_catalogue_holds_the_eleven_emails_and_the_template_s_samples_in_both_languages()
+    public void The_catalogue_holds_the_twelve_emails_and_the_template_s_samples_in_both_languages()
     {
         var samples = EmailCatalogueExport.AllSamples();
 
         Assert.Equal(
             [
-                "clinic:AccessReset", "clinic:AccountCreated", "clinic:Invitation", "clinic:Notification", "clinic:PasswordChanged",
+                "clinic:AccessReset", "clinic:AccountCreated", "clinic:EmailChanged", "clinic:Invitation", "clinic:Notification", "clinic:PasswordChanged",
                 "clinic:PasswordReset", "clinic:SignInCode", "operators:Code", "operators:Code:change", "operators:FirstPassword", "operators:FirstPassword:invited",
                 "operators:NewBrowser", "operators:ResetLink", "sample:Invoice", "sample:LongContent", "sample:Shell",
                 "sample:SubscriptionNotice", "sample:TicketNotification",

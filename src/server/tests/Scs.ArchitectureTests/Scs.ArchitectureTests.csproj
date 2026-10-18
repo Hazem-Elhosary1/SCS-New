@@ -18,6 +18,7 @@
     <ProjectReference Include="..\..\modules\Operators\Scs.Operators\Scs.Operators.csproj" />
     <ProjectReference Include="..\..\modules\Plans\Scs.Plans\Scs.Plans.csproj" />
     <ProjectReference Include="..\..\modules\Subscriptions\Scs.Subscriptions\Scs.Subscriptions.csproj" />
+    <ProjectReference Include="..\..\modules\ClinicData\Scs.ClinicData\Scs.ClinicData.csproj" />
   </ItemGroup>
 
 </Project>

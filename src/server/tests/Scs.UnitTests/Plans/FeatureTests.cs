@@ -1,4 +1,5 @@
 using Scs.Plans.Domain;
+using Scs.SharedKernel.Clinics;
 
 namespace Scs.UnitTests.Plans;
 

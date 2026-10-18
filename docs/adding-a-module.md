@@ -312,6 +312,38 @@ On the front end, a page of the console goes under the frame in
 header `X-Scs-Background: 1`, so that it is not taken for the operator's activity and does not
 keep an unattended console signed in.
 
+## Acting in a clinic from the operators console (spec 015)
+
+An operator who changes one clinic works **inside** that clinic, as its own staff would, never
+across clinics:
+
+- the route establishes the clinic before anything reads or writes:
+  `clinic.Establish(id, ClinicSource.Operator)` on `IClinicContext` (see `EnterAsync` in
+  `Subscriptions/Api/OpsClinicsEndpoints.cs`). From there every clinic-owned table answers for that
+  clinic alone, under isolation, through the module's usual contracts;
+- a clinic that is not there, and one being set up or given up (`ClinicStates.Invisible`), answer
+  alike: 404 `NOT_FOUND`;
+- what it records goes to both trails. In the clinic's trail the operator is the one who did it:
+  `AmbientAsync` falls back to the operator when there is no staff member. A write that must be
+  in a clinic's trail from outside its context uses `RecordForClinicAsync`;
+- a write that several modules make together runs one module's part after the other, each in its
+  own transaction, in the order that leaves nothing visible if a later part fails, and undoes the
+  earlier parts on a fault (see `ClinicOnboarding.cs` and research R2 of spec 015).
+
+## Reading across clinics for operators (spec 015)
+
+A list of every clinic reads **each module's own part** through a narrow crossing of that module,
+and joins them in memory: the clinics from Tenancy, their plans from Subscriptions
+(`read-clinic-plans-as-operator`), their owners from Identity (`read-clinic-owners-as-operator`).
+
+- Declare the crossing in `DeclaredCrossings` (`BuildingBlocks/Tenancy/Crossing.cs`): the
+  operation, the one type that performs it, whether each use is recorded, and why. The
+  architecture tests count the list and fail for any other type that uses the operator connection.
+- A crossing reads only what the list shows — never a secret — and writes nothing, unless writing
+  is its purpose and it is recorded (`update-clinic`).
+- Publish it behind a contract of the module (`IClinicOwners.ListForOperatorsAsync`,
+  `IClinicPlans`), so that no other module reads your tables.
+
 ## Conventions to follow
 
 These are decided once in `specs/001-platform-foundation/contracts/` and are not re-decided in

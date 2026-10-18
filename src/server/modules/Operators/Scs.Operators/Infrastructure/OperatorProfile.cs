@@ -140,6 +140,14 @@ internal sealed class OperatorProfile(OperatorsDbContext db, IOperatorAccessSour
             .Select(o => new OperatorSummary(o.Id, o.FullName, o.Language, o.State))
             .SingleOrDefaultAsync(cancellation)
             .ConfigureAwait(false);
+
+    public async Task<IReadOnlyList<OperatorSummary>> ActiveAsync(CancellationToken cancellation) =>
+        await db.Operators.AsNoTracking()
+            .Where(o => o.State == OperatorStates.Active)
+            .OrderBy(o => o.FullName)
+            .Select(o => new OperatorSummary(o.Id, o.FullName, o.Language, o.State))
+            .ToListAsync(cancellation)
+            .ConfigureAwait(false);
 }
 
 /// <summary>

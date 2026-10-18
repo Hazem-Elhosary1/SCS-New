@@ -325,7 +325,8 @@ public sealed class AuditFactsTests(SqlServerFixture sql)
         // to a clinic's (spec 011: PlatformEntryTests, NobodyGainsTests), and those of the feature
         // catalogue and of the plans, which are the platform's as well (spec 012: FeaturesAddTests
         // and its kin; spec 013: PlansAddTests and its kin), and a clinic's plan, which is set by the
-        // platform's own work (spec 014: ClinicPlansTests) …
+        // platform's own work (spec 014: ClinicPlansTests), and those of a clinic's onboarding, which
+        // an operator does from the console (spec 015: AddClinicTests, EditClinicTests) …
         Assert.Equal(
             AuditActions.All.Select(a => a.Code)
                 .Where(code => !code.StartsWith("file.", StringComparison.Ordinal)
@@ -333,7 +334,8 @@ public sealed class AuditFactsTests(SqlServerFixture sql)
                                && !code.StartsWith("opsrole.", StringComparison.Ordinal)
                                && !code.StartsWith("feature.", StringComparison.Ordinal)
                                && !code.StartsWith("plan.", StringComparison.Ordinal)
-                               && !code.StartsWith("subscription.", StringComparison.Ordinal))
+                               && !code.StartsWith("subscription.", StringComparison.Ordinal)
+                               && !code.StartsWith("clinic.", StringComparison.Ordinal))
                 .Order(StringComparer.Ordinal),
             entries.Select(e => e.ActionCode).Distinct().Order(StringComparer.Ordinal));
 

@@ -142,7 +142,8 @@ test.describe('the frame of the console', () => {
   });
 
   test('an address that does not exist stays in the frame, with a way home', async ({ page }) => {
-    await inside(page, {}, '/clinics');
+    // Spec 015 made «/clinics» a page; this address is still nowhere.
+    await inside(page, {}, '/no-such-page');
 
     await expect(page.getByTestId('ops-not-found')).toHaveText('الصفحة غير موجودة');
     await page.getByTestId('ops-not-found-home').click();

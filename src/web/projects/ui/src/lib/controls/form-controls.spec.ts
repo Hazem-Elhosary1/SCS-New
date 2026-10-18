@@ -90,6 +90,10 @@ describe('the form controls of the ui library', () => {
     expect(trigger.getAttribute('role')).toBe('combobox');
     expect(trigger.textContent).toContain('اختر الدور');
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
+    // A choice that must be made is marked like a required text field (spec 015).
+    const star = find<HTMLElement>('scs-select .name .required');
+    expect(star.textContent?.trim()).toBe('*');
+    expect(star.getAttribute('aria-hidden')).toBe('true');
 
     trigger.click();
     fixture.detectChanges();

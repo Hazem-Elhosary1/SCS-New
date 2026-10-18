@@ -36,3 +36,8 @@ plan.updated changes
 plan.disabled changes
 plan.enabled changes
 subscription.plan-set changes
+clinic.created changes
+clinic.updated changes
+clinic.owner-updated users
+clinic.account-manager-assigned changes
+clinic.invitation-resent users

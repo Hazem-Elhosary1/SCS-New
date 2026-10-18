@@ -33,6 +33,8 @@ export const OpsCan = {
   operatorsManage: 'operators.manage',
   operatorsManageRoles: 'operators.manageRoles',
   billingView: 'billing.view',
+  clinicsView: 'clinics.view',
+  clinicsEdit: 'clinics.edit',
   billingManagePlans: 'billing.managePlans',
 } as const;
 

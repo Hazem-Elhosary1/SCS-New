@@ -63,7 +63,10 @@ for (const language of ['ar', 'en'] as const) {
       const { team } = await open(page, language, '/');
 
       // Spec 012 adds «الباقات», for whoever may view plans.
-      await expect(page.getByTestId('ops-side-bar').getByRole('link')).toHaveText(ar ? ['الرئيسية', 'الباقات', 'المشغلون'] : ['Home', 'Plans', 'Operators']);
+      // Spec 015 adds «العيادات» after the home.
+      await expect(page.getByTestId('ops-side-bar').getByRole('link')).toHaveText(
+        ar ? ['الرئيسية', 'العيادات', 'الباقات', 'المشغلون'] : ['Home', 'Clinics', 'Plans', 'Operators'],
+      );
       await expect(page.getByTestId('ops-role')).toHaveText(ar ? 'مسؤول عام' : 'Super Admin');
 
       // A custom role is named as it was written, in both languages.
@@ -71,7 +74,8 @@ for (const language of ['ar', 'en'] as const) {
       team.actAs(SUCCESS);
       await page.goto(`${OPS}/`);
       await expect(page.getByTestId('ops-role')).toHaveText('نجاح العملاء');
-      await expect(page.getByTestId('ops-side-bar').getByRole('link')).toHaveText(ar ? ['الرئيسية'] : ['Home']);
+      // «clinics.view» opens «العيادات» since spec 015.
+      await expect(page.getByTestId('ops-side-bar').getByRole('link')).toHaveText(ar ? ['الرئيسية', 'العيادات'] : ['Home', 'Clinics']);
 
       // Its address says so, in the frame, with a way back — and shows nothing of the page.
       for (const path of ['/operators', '/operators/roles', '/operators/new', '/operators/roles/new']) {

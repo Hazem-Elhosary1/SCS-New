@@ -28,11 +28,29 @@ namespace Scs.Tenancy.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("AccountManagerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
                     b.Property<Guid>("ClinicId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("DefaultLanguage")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(2)")
+                        .HasDefaultValue("ar");
 
                     b.Property<string>("NameAr")
                         .IsRequired()
@@ -43,6 +61,12 @@ namespace Scs.Tenancy.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
 
                     b.Property<string>("Specialty")
                         .HasMaxLength(40)
@@ -56,11 +80,23 @@ namespace Scs.Tenancy.Infrastructure.Migrations
                         .HasColumnType("nvarchar(20)")
                         .HasDefaultValue("active");
 
+                    b.Property<string>("TaxNumber")
+                        .IsUnicode(false)
+                        .HasColumnType("char(11)");
+
                     b.HasKey("Id");
 
                     b.ToTable("Clinic", "tenancy", t =>
                         {
                             t.HasCheckConstraint("CK_Clinic_ClinicIdIsId", "[ClinicId] = [Id]");
+
+                            t.HasCheckConstraint("CK_Clinic_DefaultLanguage", "[DefaultLanguage] IN ('ar', 'en')");
+
+                            t.HasCheckConstraint("CK_Clinic_Specialty", "[Specialty] IS NULL OR [Specialty] IN ('dental', 'orthopedics', 'neurology', 'pediatrics', 'internal_medicine', 'general_surgery', 'dermatology', 'obgyn', 'ophthalmology', 'ent', 'urology', 'cardiology', 'psychiatry', 'nutrition', 'physiotherapy')");
+
+                            t.HasCheckConstraint("CK_Clinic_State", "[State] IN ('setting-up', 'active', 'suspended', 'cancelled', 'discarded')");
+
+                            t.HasCheckConstraint("CK_Clinic_TaxNumber", "[TaxNumber] IS NULL OR [TaxNumber] LIKE '[0-9][0-9][0-9]-[0-9][0-9][0-9]-[0-9][0-9][0-9]'");
                         });
                 });
 

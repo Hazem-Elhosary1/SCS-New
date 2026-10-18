@@ -857,6 +857,8 @@ test('a super admin sees the plans between the home and the operators', async ({
   await open(page, 'ar', '/', SUPER);
   await expect(page.getByTestId('ops-side-bar').getByRole('link')).toHaveText([
     'الرئيسية',
+    // Spec 015 adds «العيادات» after the home.
+    'العيادات',
     'الباقات',
     'المشغلون',
   ]);

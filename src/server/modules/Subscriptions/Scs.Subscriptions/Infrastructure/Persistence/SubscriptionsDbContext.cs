@@ -36,6 +36,7 @@ public sealed class SubscriptionsDbContext(DbContextOptions<SubscriptionsDbConte
             builder.HasKey(p => p.ClinicId);
             builder.Property(p => p.ClinicId).ValueGeneratedNever();
             builder.Property(p => p.SetAtUtc).HasColumnType("datetimeoffset");
+            builder.Property(p => p.TrialEndsAtUtc).HasColumnType("datetimeoffset");
             builder.Property(p => p.Version).IsRowVersion();
         });
 

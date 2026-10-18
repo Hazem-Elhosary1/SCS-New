@@ -13,6 +13,7 @@ import {
   ToastService,
 } from 'ui';
 import { OpsAccess, OpsCan } from '../access/ops-access.service';
+import { endsIn } from '../clinics/clinic-words';
 import { opsDate, opsDateTime, opsNumber, opsRelative } from '../i18n/ops-format';
 import { DisablePlanDialog, DisablingPlan } from './disable-plan.dialog';
 import { FEATURE_GROUPS, FeatureRow, FeaturesService } from './features.service';
@@ -516,8 +517,15 @@ export class PlanDetailPage {
     return initials(this.name(plan), this.language.language());
   }
 
-  protected clinicState(clinic: { stateAr: string; stateEn: string }): string {
-    return this.language.language() === 'ar' ? clinic.stateAr : clinic.stateEn;
+  /** «تجربة · تنتهي خلال 4 أيام» while in trial, as the frame draws it (spec 015); the state alone otherwise. */
+  protected clinicState(clinic: { stateAr: string; stateEn: string; trialEndsAt?: string | null }): string {
+    const language = this.language.language();
+    const state = language === 'ar' ? clinic.stateAr : clinic.stateEn;
+    if (!clinic.trialEndsAt) {
+      return state;
+    }
+    const when = endsIn(this.words, clinic.trialEndsAt, Date.now(), language);
+    return `${state} · ${this.words.translate('app.plans.plan.detail.trialEnds', { when })}`;
   }
 
   protected date(value: string): string {

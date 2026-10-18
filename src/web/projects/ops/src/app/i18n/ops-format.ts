@@ -60,6 +60,32 @@ export function opsDateTime(value: string | number | Date, language: OpsLanguage
   return `${opsDate(value, language)}${separator}${opsTime(value, language)}`;
 }
 
+/** The clinics' time zone (SH-001): a clinic's dates are Cairo's, wherever the operator sits. */
+export const CAIRO = 'Africa/Cairo';
+
+/** «12 يناير 2026» in Cairo (spec 015): a clinic's join date, trial end and invitation expiry. */
+export function opsCairoDate(value: string | number | Date, language: OpsLanguage): string {
+  return tidy(
+    new Intl.DateTimeFormat(LOCALE[language], { day: 'numeric', month: 'long', year: 'numeric', timeZone: CAIRO }).format(
+      toDate(value),
+    ),
+  );
+}
+
+/** «4:30 م» in Cairo. */
+export function opsCairoTime(value: string | number | Date, language: OpsLanguage): string {
+  return tidy(
+    new Intl.DateTimeFormat(LOCALE[language], { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: CAIRO }).format(
+      toDate(value),
+    ),
+  );
+}
+
+/** «12 يناير 2026 · 4:30 م» · "January 12, 2026 · 4:30 PM", in Cairo — the clinics' frames write both with « · ». */
+export function opsCairoDateTime(value: string | number | Date, language: OpsLanguage): string {
+  return `${opsCairoDate(value, language)} · ${opsCairoTime(value, language)}`;
+}
+
 function daysApart(from: Date, now: Date): number {
   const start = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
   return Math.round((start(now) - start(from)) / DAY);

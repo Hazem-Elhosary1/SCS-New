@@ -10,6 +10,8 @@ using Scs.BuildingBlocks.Audit;
 using Scs.BuildingBlocks.Configuration;
 using Scs.BuildingBlocks.Modules;
 using Scs.BuildingBlocks.Plans;
+using Scs.Operators.Contracts;
+using Scs.Plans.Contracts;
 using Scs.Subscriptions.Api;
 using Scs.Subscriptions.Contracts;
 using Scs.Subscriptions.Infrastructure;
@@ -47,9 +49,18 @@ public sealed class SubscriptionsModule : IModule, IMigratableModule
         services.AddScoped<MonthlyMeter>();
         services.AddScoped<IMonthlyMeter>(provider => provider.GetRequiredService<MonthlyMeter>());
         services.AddScoped<IClinicLimits, ClinicLimits>();
+
+        // Spec 015: the operators' clinics — the add, the list, and the figures other modules show.
+        services.AddScoped<OperatorClinicPlans>();
+        services.AddScoped<ClinicOnboarding>();
+        services.AddScoped<ClinicsReading>();
+
+        // Registered after Plans and Operators, so these replace their "nothing yet" answers.
+        services.AddScoped<IPlanSubscribers, PlanSubscribers>();
+        services.AddScoped<IManagedClinicCounts, ManagedClinicCounts>();
     }
 
-    public void MapEndpoints(IEndpointRouteBuilder v1) => v1.MapDevClinicPlan();
+    public void MapEndpoints(IEndpointRouteBuilder v1) => v1.MapDevClinicPlan().MapOpsClinics();
 
     public IReadOnlyList<string> GetMigrations(string migrationConnection)
     {

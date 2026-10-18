@@ -21,11 +21,18 @@ public sealed class ClinicPlan : IClinicOwned
 
     public DateTimeOffset SetAtUtc { get; private set; }
 
+    /// <summary>When the clinic's trial ends, fixed when it was created (spec 015, research R10); null for none.</summary>
+    public DateTimeOffset? TrialEndsAtUtc { get; private set; }
+
     /// <summary>Two sets at once: the second is refused rather than lost.</summary>
     public byte[] Version { get; private set; } = [];
 
     public static ClinicPlan Create(Guid clinicId, Guid? planId, DateTimeOffset now) =>
         new() { ClinicId = clinicId, PlanId = planId, SetAtUtc = now };
+
+    /// <summary>A new clinic's plan and the end of its trial (spec 015, FR-004).</summary>
+    public static ClinicPlan Start(Guid clinicId, Guid planId, DateTimeOffset trialEndsAtUtc, DateTimeOffset now) =>
+        new() { ClinicId = clinicId, PlanId = planId, SetAtUtc = now, TrialEndsAtUtc = trialEndsAtUtc };
 
     /// <returns>Whether anything changed.</returns>
     public bool Set(Guid? planId, DateTimeOffset now)

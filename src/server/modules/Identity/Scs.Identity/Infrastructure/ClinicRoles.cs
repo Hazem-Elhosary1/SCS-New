@@ -53,6 +53,15 @@ internal static class RoleEntries
 }
 
 /// <summary>
+/// The ready role «مالك العيادة», by which spec 015 names a clinic's owner (SH-052, BRD Ops §3-2):
+/// the one role that holds everything. Who may do what is still asked as a permission.
+/// </summary>
+internal static class OwnerRole
+{
+    public static IQueryable<Guid> Ids(IQueryable<Role> roles) => roles.Where(r => r.HoldsEverything).Select(r => r.Id);
+}
+
+/// <summary>
 /// The three roles every clinic starts with (SH-052, CL-AD-082). One routine creates them, for
 /// a clinic that has none: called when a clinic is registered, by the seed, and for spec 015.
 /// </summary>

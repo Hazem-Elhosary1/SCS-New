@@ -37,6 +37,7 @@ export interface FakePlanClinic {
   nameEn: string;
   stateAr: string;
   stateEn: string;
+  trialEndsAt?: string | null;
 }
 
 /** The clinics on one plan, as a test gives them. */

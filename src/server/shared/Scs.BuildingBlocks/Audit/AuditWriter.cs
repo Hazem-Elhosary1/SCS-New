@@ -135,6 +135,23 @@ public static class PlatformAudit
     }
 }
 
+/// <summary>
+/// Records into one named clinic's trail from a context that is not the clinic's own: the
+/// operator connection of a declared crossing that changes the clinic's own record (spec 015,
+/// research R5). The entry is written on that connection, inside its open transaction, and the
+/// actor is the operator of the request as for any other entry.
+/// </summary>
+public static class ClinicAudit
+{
+    /// <exception cref="AuditRefusedException">No transaction is open, or the record breaks the catalogue's rules.</exception>
+    public static Task RecordForClinicAsync(this DbContext db, Guid clinicId, AuditRecord record, CancellationToken cancellation)
+    {
+        ArgumentNullException.ThrowIfNull(db);
+        ArgumentNullException.ThrowIfNull(record);
+        return AuditWriter.WriteAsync(db, clinicId, [record], AuditWriter.Now(db), cancellation);
+    }
+}
+
 /// <summary>Who is acting and from where, on this piece of work. Taken by the trail, never by the caller.</summary>
 public sealed record AuditActor(
     string Kind, Guid? AccountId, [property: PersonalData] string? Name, AuditOrigin Origin);
@@ -374,6 +391,13 @@ internal static class AuditWriter
 
         if (accountId is not { } actor)
         {
+            // An operator acting on a clinic (spec 015, research R5) is named in the clinic's
+            // trail as in the platform's; with neither a person nor an operator, the platform.
+            if (http is not null && Guid.TryParse(http.User.FindFirstValue(OperatorClaims.OperatorId), out _))
+            {
+                return await OperatorActorAsync(services, cancellation).ConfigureAwait(false);
+            }
+
             return new AuditActor(AuditSql.ActorSystem, null, null, origin);
         }
 

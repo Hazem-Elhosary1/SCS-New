@@ -70,6 +70,9 @@ public sealed class ScsOptionsValidator : IValidateOptions<ScsOptions>
         Range(options.Mail.TimeoutSeconds, 1, 60, "SCS_MAIL__TIMEOUT_SECONDS", failures);
 
         Range(options.Ops.IdleMinutes, 15, 10_080, "SCS_OPS__IDLE_MINUTES", failures);
+        Range(
+            options.Subscriptions.TrialDays, SubscriptionsOptions.MinTrialDays, SubscriptionsOptions.MaxTrialDays,
+            "SCS_SUBSCRIPTIONS__TRIAL_DAYS", failures);
         Range(options.Ops.ResetLinkMinutes, 5, 1_440, "SCS_OPS__RESET_LINK_MINUTES", failures);
         Range(options.Ops.FirstLinkHours, 1, 168, "SCS_OPS__FIRST_LINK_HOURS", failures);
         Range(options.Ops.RecordMonths, 1, 120, "SCS_OPS__RECORD_MONTHS", failures);

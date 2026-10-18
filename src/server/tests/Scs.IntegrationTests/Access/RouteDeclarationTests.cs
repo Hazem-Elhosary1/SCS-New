@@ -145,6 +145,7 @@ public sealed class RouteDeclarationTests(SqlServerFixture sql)
             {
                 OperatorPermissions.OperatorsView, OperatorPermissions.OperatorsManage, OperatorPermissions.OperatorsManageRoles,
                 OperatorPermissions.BillingView, OperatorPermissions.BillingManagePlans, // spec 012: the feature catalogue
+                OperatorPermissions.ClinicsView, OperatorPermissions.ClinicsEdit, // spec 015: the clinics
             }
             .Where(code => named.All(x => x.Code != code))
             .ToList();

@@ -165,7 +165,8 @@ public sealed class ClinicProfileTests(SqlServerFixture sql)
 
         var profile = await factory.ForClinicAsync(mine, services => services.GetRequiredService<IClinicProfile>().GetOwnAsync(default));
 
-        Assert.Equal(new ClinicProfile(mine, "عيادة تجريبية", "Test clinic", "suspended"), profile);
+        // Spec 015 grew the profile; what this asks is that it is the established clinic's own.
+        Assert.Equal((mine, "عيادة تجريبية", "Test clinic", "suspended"), (profile.Id, profile.NameAr, profile.NameEn, profile.State));
     }
 
     [Fact]
